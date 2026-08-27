@@ -1,0 +1,26 @@
+<server description="Servidor Open Liberty para GalenaSV">
+    <featureManager>
+        <!-- Habilita la plataforma completa (JPA, JTA, EJB, REST, JSP) -->
+        <feature>jakartaee-11.0</feature>
+    </featureManager>
+
+    <httpEndpoint httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint" />
+
+    <!-- Configuración de la base de datos PostgreSQL -->
+    <dataSource id="postgresDS" jndiName="jdbc/postgres">
+        <jdbcDriver libraryRef="PostgreSQL-Library"/>
+        <properties.postgresql databaseName="mi_proyecto_db"
+                               serverName="localhost"
+                               portNumber="5432"
+                               user="admin"
+                               password="secret"/>
+    </dataSource>
+
+    <!-- Ruta al driver de PostgreSQL copiado por el plugin de Maven -->
+    <library id="PostgreSQL-Library">
+        <fileset dir="${server.config.dir}/lib/global" includes="postgresql-*.jar"/>
+    </library>
+
+    <!-- Aplicación renombrada a galenasv -->
+    <webApplication id="galenasv" location="galenasv.war" name="galenasv"/>
+</server>
