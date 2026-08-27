@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
+  <!-- Define Persistence Unit -->
+  <persistence-unit name="GalenoSV-PU">
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Documento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimiento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPasoSecuencia</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPasoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.OrdenExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPaso</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Clinica</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenTipoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.MedioContacto</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoMedioContacto</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Procedimiento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Rol</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenResultado</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoDocumento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimientoPaso</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Examen</class>
+  </persistence-unit>
+</persistence>

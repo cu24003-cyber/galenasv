@@ -1,0 +1,47 @@
+
+# Maven
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# NetBeans
+nbproject/private/
+/nb-configuration.xml
+nbbuild/
+dist/
+.nb-gradle/
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
