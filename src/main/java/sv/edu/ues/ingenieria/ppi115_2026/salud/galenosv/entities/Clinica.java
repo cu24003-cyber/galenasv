@@ -6,16 +6,17 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.UUID;
 
 /**
  *
@@ -36,7 +37,7 @@ public class Clinica implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_clinica")
-    private Object idClinica;
+    private UUID idClinica;
     @Basic(optional = false)
     @Column(name = "nombre")
     private String nombre;
@@ -53,11 +54,11 @@ public class Clinica implements Serializable {
     }
 
     public Clinica(Object idClinica) {
-        this.idClinica = idClinica;
+        this.idClinica = (UUID) idClinica;
     }
 
     public Clinica(Object idClinica, String nombre) {
-        this.idClinica = idClinica;
+        this.idClinica = (UUID) idClinica;
         this.nombre = nombre;
     }
 
@@ -66,7 +67,7 @@ public class Clinica implements Serializable {
     }
 
     public void setIdClinica(Object idClinica) {
-        this.idClinica = idClinica;
+        this.idClinica = (UUID) idClinica;
     }
 
     public String getNombre() {
