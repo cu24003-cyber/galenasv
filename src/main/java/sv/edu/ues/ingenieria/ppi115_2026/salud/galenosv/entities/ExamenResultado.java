@@ -6,19 +6,20 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import java.util.UUID;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -39,7 +40,7 @@ public class ExamenResultado implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_examen_resultado")
-    private Object idExamenResultado;
+    private UUID idExamenResultado;
     @Column(name = "fecha_creacion")
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaCreacion;
@@ -56,15 +57,15 @@ public class ExamenResultado implements Serializable {
     public ExamenResultado() {
     }
 
-    public ExamenResultado(Object idExamenResultado) {
+    public ExamenResultado(UUID idExamenResultado) {
         this.idExamenResultado = idExamenResultado;
     }
 
-    public Object getIdExamenResultado() {
+    public UUID getIdExamenResultado() {
         return idExamenResultado;
     }
 
-    public void setIdExamenResultado(Object idExamenResultado) {
+    public void setIdExamenResultado(UUID idExamenResultado) {
         this.idExamenResultado = idExamenResultado;
     }
 

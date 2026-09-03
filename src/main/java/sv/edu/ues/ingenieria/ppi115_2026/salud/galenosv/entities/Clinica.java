@@ -6,6 +6,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +17,7 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.util.UUID;
+
 
 /**
  *
@@ -53,21 +54,21 @@ public class Clinica implements Serializable {
     public Clinica() {
     }
 
-    public Clinica(Object idClinica) {
-        this.idClinica = (UUID) idClinica;
+    public Clinica(UUID idClinica) {
+        this.idClinica =  idClinica;
     }
 
-    public Clinica(Object idClinica, String nombre) {
-        this.idClinica = (UUID) idClinica;
+    public Clinica(UUID idClinica, String nombre) {
+        this.idClinica = idClinica;
         this.nombre = nombre;
     }
 
-    public Object getIdClinica() {
+    public UUID getIdClinica() {
         return idClinica;
     }
 
-    public void setIdClinica(Object idClinica) {
-        this.idClinica = (UUID) idClinica;
+    public void setIdClinica(UUID idClinica) {
+        this.idClinica =  idClinica;
     }
 
     public String getNombre() {

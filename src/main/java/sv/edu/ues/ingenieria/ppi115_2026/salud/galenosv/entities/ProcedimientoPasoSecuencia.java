@@ -5,17 +5,18 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
+import java.util.UUID;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
 
 /**
  *
@@ -33,10 +34,10 @@ public class ProcedimientoPasoSecuencia implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_procedimiento_paso_secuencia")
-    private Object idProcedimientoPasoSecuencia;
+    private UUID idProcedimientoPasoSecuencia;
     @Lob
     @Column(name = "id_procedimiento_paso_referencia")
-    private Object idProcedimientoPasoReferencia;
+    private UUID idProcedimientoPasoReferencia;
     @Column(name = "tipo_secuencia")
     private String tipoSecuencia;
     @JoinColumn(name = "id_procedimiento_paso", referencedColumnName = "id_procedimiento_paso")
@@ -46,23 +47,23 @@ public class ProcedimientoPasoSecuencia implements Serializable {
     public ProcedimientoPasoSecuencia() {
     }
 
-    public ProcedimientoPasoSecuencia(Object idProcedimientoPasoSecuencia) {
+    public ProcedimientoPasoSecuencia(UUID idProcedimientoPasoSecuencia) {
         this.idProcedimientoPasoSecuencia = idProcedimientoPasoSecuencia;
     }
 
-    public Object getIdProcedimientoPasoSecuencia() {
+    public UUID getIdProcedimientoPasoSecuencia() {
         return idProcedimientoPasoSecuencia;
     }
 
-    public void setIdProcedimientoPasoSecuencia(Object idProcedimientoPasoSecuencia) {
+    public void setIdProcedimientoPasoSecuencia(UUID idProcedimientoPasoSecuencia) {
         this.idProcedimientoPasoSecuencia = idProcedimientoPasoSecuencia;
     }
 
-    public Object getIdProcedimientoPasoReferencia() {
+    public UUID getIdProcedimientoPasoReferencia() {
         return idProcedimientoPasoReferencia;
     }
 
-    public void setIdProcedimientoPasoReferencia(Object idProcedimientoPasoReferencia) {
+    public void setIdProcedimientoPasoReferencia(UUID idProcedimientoPasoReferencia) {
         this.idProcedimientoPasoReferencia = idProcedimientoPasoReferencia;
     }
 

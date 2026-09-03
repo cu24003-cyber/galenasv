@@ -6,19 +6,20 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import java.util.UUID;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -37,7 +38,7 @@ public class MedioContacto implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_medio_contacto")
-    private Object idMedioContacto;
+    private UUID idMedioContacto;
     @Column(name = "valor")
     private String valor;
     @Column(name = "fecha_creacion")
@@ -53,15 +54,15 @@ public class MedioContacto implements Serializable {
     public MedioContacto() {
     }
 
-    public MedioContacto(Object idMedioContacto) {
+    public MedioContacto(UUID idMedioContacto) {
         this.idMedioContacto = idMedioContacto;
     }
 
-    public Object getIdMedioContacto() {
+    public UUID getIdMedioContacto() {
         return idMedioContacto;
     }
 
-    public void setIdMedioContacto(Object idMedioContacto) {
+    public void setIdMedioContacto(UUID idMedioContacto) {
         this.idMedioContacto = idMedioContacto;
     }
 

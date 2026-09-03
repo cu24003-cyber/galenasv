@@ -7,6 +7,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +22,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+
 
 /**
  *
@@ -41,7 +43,7 @@ public class Consulta implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_consulta")
-    private Object idConsulta;
+    private UUID idConsulta;
     @Column(name = "fecha_inicio")
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaInicio;
@@ -61,16 +63,16 @@ public class Consulta implements Serializable {
     public Consulta() {
     }
 
-    public Consulta(Object idConsulta) {
-        this.idConsulta = idConsulta;
+    public Consulta(UUID idConsulta) {
+        this.idConsulta =  idConsulta;
     }
 
-    public Object getIdConsulta() {
+    public UUID getIdConsulta() {
         return idConsulta;
     }
 
-    public void setIdConsulta(Object idConsulta) {
-        this.idConsulta = idConsulta;
+    public void setIdConsulta(UUID idConsulta) {
+        this.idConsulta =  idConsulta;
     }
 
     public Date getFechaInicio() {

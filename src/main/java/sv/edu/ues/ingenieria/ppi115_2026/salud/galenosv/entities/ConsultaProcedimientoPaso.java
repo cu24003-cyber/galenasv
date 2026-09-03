@@ -7,6 +7,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +22,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+
 /**
  *
  * @author carlo_dev
@@ -39,7 +41,7 @@ public class ConsultaProcedimientoPaso implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_consulta_procedimiento_paso")
-    private Object idConsultaProcedimientoPaso;
+    private UUID idConsultaProcedimientoPaso;
     @Column(name = "fecha_inicio")
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaInicio;
@@ -60,16 +62,16 @@ public class ConsultaProcedimientoPaso implements Serializable {
     public ConsultaProcedimientoPaso() {
     }
 
-    public ConsultaProcedimientoPaso(Object idConsultaProcedimientoPaso) {
-        this.idConsultaProcedimientoPaso = idConsultaProcedimientoPaso;
+    public ConsultaProcedimientoPaso(UUID idConsultaProcedimientoPaso) {
+        this.idConsultaProcedimientoPaso =  idConsultaProcedimientoPaso;
     }
 
-    public Object getIdConsultaProcedimientoPaso() {
+    public UUID getIdConsultaProcedimientoPaso() {
         return idConsultaProcedimientoPaso;
     }
 
-    public void setIdConsultaProcedimientoPaso(Object idConsultaProcedimientoPaso) {
-        this.idConsultaProcedimientoPaso = idConsultaProcedimientoPaso;
+    public void setIdConsultaProcedimientoPaso(UUID idConsultaProcedimientoPaso) {
+        this.idConsultaProcedimientoPaso =  idConsultaProcedimientoPaso;
     }
 
     public Date getFechaInicio() {

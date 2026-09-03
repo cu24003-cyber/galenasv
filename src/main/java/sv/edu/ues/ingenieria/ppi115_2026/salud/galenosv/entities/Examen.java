@@ -6,16 +6,18 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import java.util.UUID;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 
 /**
  *
@@ -35,7 +37,7 @@ public class Examen implements Serializable {
     @Basic(optional = false)
     @Lob
     @Column(name = "id_examen")
-    private Object idExamen;
+    private UUID idExamen;
     @Column(name = "nombre")
     private String nombre;
     @Column(name = "activo")
@@ -50,15 +52,15 @@ public class Examen implements Serializable {
     public Examen() {
     }
 
-    public Examen(Object idExamen) {
+    public Examen(UUID idExamen) {
         this.idExamen = idExamen;
     }
 
-    public Object getIdExamen() {
+    public UUID getIdExamen() {
         return idExamen;
     }
 
-    public void setIdExamen(Object idExamen) {
+    public void setIdExamen(UUID idExamen) {
         this.idExamen = idExamen;
     }
 
