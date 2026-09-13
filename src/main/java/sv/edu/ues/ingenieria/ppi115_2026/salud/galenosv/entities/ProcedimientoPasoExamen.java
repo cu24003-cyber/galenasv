@@ -37,8 +37,7 @@ public class ProcedimientoPasoExamen implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_procedimiento_paso_examen")
+        @Column(name = "id_procedimiento_paso_examen")
     private UUID idProcedimientoPasoExamen;
     @Column(name = "fecha_creacion")
     @Temporal(TemporalType.TIMESTAMP)

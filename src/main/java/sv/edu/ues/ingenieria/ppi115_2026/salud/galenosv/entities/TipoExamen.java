@@ -34,8 +34,7 @@ public class TipoExamen implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_tipo_examen")
+        @Column(name = "id_tipo_examen")
     private UUID idTipoExamen;
     @Column(name = "nombre")
     private String nombre;

@@ -41,8 +41,7 @@ public class Consulta implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_consulta")
+        @Column(name = "id_consulta")
     private UUID idConsulta;
     @Column(name = "fecha_inicio")
     @Temporal(TemporalType.TIMESTAMP)

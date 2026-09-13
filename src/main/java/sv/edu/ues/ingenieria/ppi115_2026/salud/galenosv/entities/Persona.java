@@ -38,7 +38,6 @@ public class Persona implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
     @Column(name = "id_persona")
     private UUID idPersona;
     @Column(name = "nombres")

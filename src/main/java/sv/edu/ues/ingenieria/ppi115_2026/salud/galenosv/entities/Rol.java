@@ -34,8 +34,7 @@ public class Rol implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_rol")
+        @Column(name = "id_rol")
     private UUID idRol;
     @Column(name = "nombre")
     private String nombre;

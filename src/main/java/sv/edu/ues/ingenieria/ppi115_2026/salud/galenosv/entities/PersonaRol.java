@@ -37,8 +37,7 @@ public class PersonaRol implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_persona_rol")
+        @Column(name = "id_persona_rol")
     private UUID idPersonaRol;
     @Column(name = "fecha_creacion")
     @Temporal(TemporalType.TIMESTAMP)

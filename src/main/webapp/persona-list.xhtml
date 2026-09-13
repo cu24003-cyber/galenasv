@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="primefaces">
+<h:head>
+    <title>Listado de Personas</title>
+</h:head>
+<h:body>
+    <h:form id="frmPersonaList">
+        <p:dataTable var="p" value="#{personaBean.personas}" id="tblPersonas">
+            <p:column headerText="Nombres">
+                <h:outputText value="#{p.nombres}" />
+            </p:column>
+            <p:column headerText="Apellidos">
+                <h:outputText value="#{p.apellidos}" />
+            </p:column>
+            <p:column headerText="Fecha de nacimiento">
+                <h:outputText value="#{p.fechaNacimiento}">
+                    <f:convertDateTime pattern="dd/MM/yyyy" />
+                </h:outputText>
+            </p:column>
+            <p:column headerText="Acciones">
+                <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm"
+                                 oncomplete="PF('dlgPersona').show()"
+                                 actionListener="#{personaBean.editar(p)}" />
+                <p:commandButton icon="pi pi-trash"
+                                 actionListener="#{personaBean.eliminar(p)}"
+                                 update=":frmPersonaList" />
+            </p:column>
+        </p:dataTable>
+
+        <p:commandButton value="Nueva persona" update=":frmPersonaForm"
+                         oncomplete="PF('dlgPersona').show()"
+                         actionListener="#{personaBean.nuevo()}" />
+    </h:form>
+
+    <h:form id="frmPersonaForm">
+        <p:dialog header="Persona" widgetVar="dlgPersona" modal="true" appendToBody="false">
+            <p:panelGrid columns="2" rendered="#{personaBean.seleccionada != null}">
+                <h:outputLabel value="Nombres" />
+                <p:inputText value="#{personaBean.seleccionada.nombres}" />
+
+                <h:outputLabel value="Apellidos" />
+                <p:inputText value="#{personaBean.seleccionada.apellidos}" />
+
+                <h:outputLabel value="Fecha de nacimiento" />
+                <p:calendar value="#{personaBean.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy" />
+            </p:panelGrid>
+            <p:commandButton value="Guardar" update=":frmPersonaList"
+                             oncomplete="PF('dlgPersona').hide()"
+                             actionListener="#{personaBean.guardar()}" />
+        </p:dialog>
+    </h:form>
+</h:body>
+</html>

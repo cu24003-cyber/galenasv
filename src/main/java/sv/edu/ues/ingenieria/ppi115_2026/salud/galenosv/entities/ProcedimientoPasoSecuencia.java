@@ -32,11 +32,9 @@ public class ProcedimientoPasoSecuencia implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_procedimiento_paso_secuencia")
+        @Column(name = "id_procedimiento_paso_secuencia")
     private UUID idProcedimientoPasoSecuencia;
-    @Lob
-    @Column(name = "id_procedimiento_paso_referencia")
+        @Column(name = "id_procedimiento_paso_referencia")
     private UUID idProcedimientoPasoReferencia;
     @Column(name = "tipo_secuencia")
     private String tipoSecuencia;

@@ -39,8 +39,7 @@ public class ConsultaProcedimientoPaso implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_consulta_procedimiento_paso")
+        @Column(name = "id_consulta_procedimiento_paso")
     private UUID idConsultaProcedimientoPaso;
     @Column(name = "fecha_inicio")
     @Temporal(TemporalType.TIMESTAMP)

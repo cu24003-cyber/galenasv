@@ -38,8 +38,7 @@ public class OrdenExamen implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_orden_examen")
+        @Column(name = "id_orden_examen")
     private UUID idOrdenExamen;
     @Column(name = "fecha_creacion")
     @Temporal(TemporalType.TIMESTAMP)

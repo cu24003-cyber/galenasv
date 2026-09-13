@@ -36,8 +36,7 @@ public class MedioContacto implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_medio_contacto")
+        @Column(name = "id_medio_contacto")
     private UUID idMedioContacto;
     @Column(name = "valor")
     private String valor;

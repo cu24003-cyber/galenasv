@@ -35,8 +35,7 @@ public class TipoDocumento implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_tipo_documento")
+        @Column(name = "id_tipo_documento")
     private UUID idTipoDocumento;
     @Column(name = "nombre")
     private String nombre;

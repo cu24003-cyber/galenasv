@@ -35,8 +35,7 @@ public class Examen implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
-    @Lob
-    @Column(name = "id_examen")
+        @Column(name = "id_examen")
     private UUID idExamen;
     @Column(name = "nombre")
     private String nombre;
