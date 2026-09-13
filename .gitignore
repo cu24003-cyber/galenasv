@@ -38,7 +38,8 @@ Desktop.ini
 .env
 .env.*
 !.env.example
-
+# Configuración local con credenciales (Liberty server.xml)
+src/main/liberty/config/server.xml
 # Archivos temporales
 *.tmp
 *.temp
