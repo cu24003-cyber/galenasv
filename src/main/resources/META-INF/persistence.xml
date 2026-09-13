@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
-  <!-- Define Persistence Unit -->
-  <persistence-unit name="GalenoSV-PU">
+  <persistence-unit name="GalenoSV-PU" transaction-type="JTA">
+    <jta-data-source>jdbc/postgres</jta-data-source>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Documento</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimiento</class>
@@ -22,5 +22,9 @@
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoDocumento</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimientoPaso</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Examen</class>
+    <properties>
+      <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
+      <property name="jakarta.persistence.show_sql" value="true"/>
+    </properties>
   </persistence-unit>
 </persistence>

@@ -26,6 +26,13 @@
             <artifactId>postgresql</artifactId>
             <version>42.7.5</version>
         </dependency>
+        <!-- PrimeFaces (Jakarta Faces 4.1 / EE 11) -->
+        <dependency>
+            <groupId>org.primefaces</groupId>
+            <artifactId>primefaces</artifactId>
+            <version>16.0.0</version>
+        </dependency>
+
 
         <!-- Testing JUnit 5 -->
         <dependency>
@@ -51,6 +58,7 @@
     </dependencies>
     
     <build>
+        <finalName>galenosv</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -68,16 +76,8 @@
             </plugin>
             <plugin>
                 <groupId>io.openliberty.tools</groupId>
-                <artifactId>liberty-maven-plugin</artifactId> 
-                <version>3.7.1</version>
-                <configuration>
-                    <runtimeArtifact> 
-                        <groupId>com.ibm.websphere.appserver.runtime</groupId> 
-                        <artifactId>wlp-jakartaee9</artifactId>
-                        <version>22.0.0.10</version>
-                        <type>zip</type>
-                    </runtimeArtifact>         
-                </configuration>
+                <artifactId>liberty-maven-plugin</artifactId>
+                <version>3.12.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
