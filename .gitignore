@@ -46,3 +46,4 @@ src/main/liberty/config/server.xml
 *.swp
 *.swo
 *~
+/nbproject/
