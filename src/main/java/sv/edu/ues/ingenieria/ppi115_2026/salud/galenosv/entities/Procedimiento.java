@@ -7,12 +7,12 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
@@ -101,15 +101,14 @@ public class Procedimiento implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof Procedimiento)) {
             return false;
         }
         Procedimiento other = (Procedimiento) object;
-        if ((this.idProcedimiento == null && other.idProcedimiento != null) || (this.idProcedimiento != null && !this.idProcedimiento.equals(other.idProcedimiento))) {
-            return false;
-        }
-        return true;
+        return this.idProcedimiento != null && this.idProcedimiento.equals(other.idProcedimiento);
     }
 
     @Override

@@ -8,13 +8,13 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -41,8 +41,9 @@ public class ConsultaProcedimiento implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_consulta_procedimiento")
     private UUID idConsultaProcedimiento;
-        @Column(name = "id_procedimiento")
-    private UUID idProcedimiento;
+    @JoinColumn(name = "id_procedimiento", referencedColumnName = "id_procedimiento")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Procedimiento idProcedimiento;
     @Column(name = "fecha_inicio")
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaInicio;
@@ -72,11 +73,11 @@ public class ConsultaProcedimiento implements Serializable {
         this.idConsultaProcedimiento =  idConsultaProcedimiento;
     }
 
-    public UUID getIdProcedimiento() {
+    public Procedimiento getIdProcedimiento() {
         return idProcedimiento;
     }
 
-    public void setIdProcedimiento(UUID idProcedimiento) {
+    public void setIdProcedimiento(Procedimiento idProcedimiento) {
         this.idProcedimiento = idProcedimiento;
     }
 
@@ -129,15 +130,14 @@ public class ConsultaProcedimiento implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof ConsultaProcedimiento)) {
             return false;
         }
         ConsultaProcedimiento other = (ConsultaProcedimiento) object;
-        if ((this.idConsultaProcedimiento == null && other.idConsultaProcedimiento != null) || (this.idConsultaProcedimiento != null && !this.idConsultaProcedimiento.equals(other.idConsultaProcedimiento))) {
-            return false;
-        }
-        return true;
+        return this.idConsultaProcedimiento != null && this.idConsultaProcedimiento.equals(other.idConsultaProcedimiento);
     }
 
     @Override

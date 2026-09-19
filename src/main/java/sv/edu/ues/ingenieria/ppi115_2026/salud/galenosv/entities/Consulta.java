@@ -8,13 +8,13 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -129,17 +129,16 @@ public class Consulta implements Serializable {
         return hash;
     }
 
-    @Override
+        @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof Consulta)) {
             return false;
         }
         Consulta other = (Consulta) object;
-        if ((this.idConsulta == null && other.idConsulta != null) || (this.idConsulta != null && !this.idConsulta.equals(other.idConsulta))) {
-            return false;
-        }
-        return true;
+        return this.idConsulta != null && this.idConsulta.equals(other.idConsulta);
     }
 
     @Override

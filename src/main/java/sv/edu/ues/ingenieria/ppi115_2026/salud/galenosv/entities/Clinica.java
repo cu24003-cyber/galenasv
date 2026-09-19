@@ -6,17 +6,19 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
 
 
 /**
@@ -112,27 +114,24 @@ public class Clinica implements Serializable {
 
     @Override
     public int hashCode() {
-        int hash = 0;
-        hash += (idClinica != null ? idClinica.hashCode() : 0);
-        return hash;
+        return Objects.hashCode(idClinica);
     }
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof Clinica)) {
             return false;
         }
         Clinica other = (Clinica) object;
-        if ((this.idClinica == null && other.idClinica != null) || (this.idClinica != null && !this.idClinica.equals(other.idClinica))) {
-            return false;
-        }
-        return true;
+        return this.idClinica != null && this.idClinica.equals(other.idClinica);
     }
 
     @Override
     public String toString() {
         return "sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Clinica[ idClinica=" + idClinica + " ]";
     }
-    
+
 }

@@ -14,7 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -128,15 +127,14 @@ public class PersonaRol implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof PersonaRol)) {
             return false;
         }
         PersonaRol other = (PersonaRol) object;
-        if ((this.idPersonaRol == null && other.idPersonaRol != null) || (this.idPersonaRol != null && !this.idPersonaRol.equals(other.idPersonaRol))) {
-            return false;
-        }
-        return true;
+        return this.idPersonaRol != null && this.idPersonaRol.equals(other.idPersonaRol);
     }
 
     @Override

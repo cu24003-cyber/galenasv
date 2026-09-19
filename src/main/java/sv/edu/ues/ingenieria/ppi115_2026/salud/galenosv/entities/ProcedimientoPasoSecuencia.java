@@ -12,7 +12,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -34,8 +33,9 @@ public class ProcedimientoPasoSecuencia implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_procedimiento_paso_secuencia")
     private UUID idProcedimientoPasoSecuencia;
-        @Column(name = "id_procedimiento_paso_referencia")
-    private UUID idProcedimientoPasoReferencia;
+    @JoinColumn(name = "id_procedimiento_paso_referencia", referencedColumnName = "id_procedimiento_paso")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ProcedimientoPaso idProcedimientoPasoReferencia;
     @Column(name = "tipo_secuencia")
     private String tipoSecuencia;
     @JoinColumn(name = "id_procedimiento_paso", referencedColumnName = "id_procedimiento_paso")
@@ -57,11 +57,11 @@ public class ProcedimientoPasoSecuencia implements Serializable {
         this.idProcedimientoPasoSecuencia = idProcedimientoPasoSecuencia;
     }
 
-    public UUID getIdProcedimientoPasoReferencia() {
+    public ProcedimientoPaso getIdProcedimientoPasoReferencia() {
         return idProcedimientoPasoReferencia;
     }
 
-    public void setIdProcedimientoPasoReferencia(UUID idProcedimientoPasoReferencia) {
+    public void setIdProcedimientoPasoReferencia(ProcedimientoPaso idProcedimientoPasoReferencia) {
         this.idProcedimientoPasoReferencia = idProcedimientoPasoReferencia;
     }
 
@@ -90,15 +90,14 @@ public class ProcedimientoPasoSecuencia implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof ProcedimientoPasoSecuencia)) {
             return false;
         }
         ProcedimientoPasoSecuencia other = (ProcedimientoPasoSecuencia) object;
-        if ((this.idProcedimientoPasoSecuencia == null && other.idProcedimientoPasoSecuencia != null) || (this.idProcedimientoPasoSecuencia != null && !this.idProcedimientoPasoSecuencia.equals(other.idProcedimientoPasoSecuencia))) {
-            return false;
-        }
-        return true;
+        return this.idProcedimientoPasoSecuencia != null && this.idProcedimientoPasoSecuencia.equals(other.idProcedimientoPasoSecuencia);
     }
 
     @Override

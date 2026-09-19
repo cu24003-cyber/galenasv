@@ -12,7 +12,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
@@ -112,15 +111,14 @@ public class TipoMedioContacto implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof TipoMedioContacto)) {
             return false;
         }
         TipoMedioContacto other = (TipoMedioContacto) object;
-        if ((this.idTipoMedioContacto == null && other.idTipoMedioContacto != null) || (this.idTipoMedioContacto != null && !this.idTipoMedioContacto.equals(other.idTipoMedioContacto))) {
-            return false;
-        }
-        return true;
+        return this.idTipoMedioContacto != null && this.idTipoMedioContacto.equals(other.idTipoMedioContacto);
     }
 
     @Override

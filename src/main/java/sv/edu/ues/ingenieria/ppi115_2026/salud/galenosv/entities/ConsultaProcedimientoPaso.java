@@ -14,7 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -130,15 +129,14 @@ public class ConsultaProcedimientoPaso implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof ConsultaProcedimientoPaso)) {
             return false;
         }
         ConsultaProcedimientoPaso other = (ConsultaProcedimientoPaso) object;
-        if ((this.idConsultaProcedimientoPaso == null && other.idConsultaProcedimientoPaso != null) || (this.idConsultaProcedimientoPaso != null && !this.idConsultaProcedimientoPaso.equals(other.idConsultaProcedimientoPaso))) {
-            return false;
-        }
-        return true;
+        return this.idConsultaProcedimientoPaso != null && this.idConsultaProcedimientoPaso.equals(other.idConsultaProcedimientoPaso);
     }
 
     @Override

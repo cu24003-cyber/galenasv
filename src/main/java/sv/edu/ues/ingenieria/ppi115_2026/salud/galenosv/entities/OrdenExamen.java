@@ -14,7 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -107,15 +106,14 @@ public class OrdenExamen implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (this == object) {
+            return true;
+        }
         if (!(object instanceof OrdenExamen)) {
             return false;
         }
         OrdenExamen other = (OrdenExamen) object;
-        if ((this.idOrdenExamen == null && other.idOrdenExamen != null) || (this.idOrdenExamen != null && !this.idOrdenExamen.equals(other.idOrdenExamen))) {
-            return false;
-        }
-        return true;
+        return this.idOrdenExamen != null && this.idOrdenExamen.equals(other.idOrdenExamen);
     }
 
     @Override
