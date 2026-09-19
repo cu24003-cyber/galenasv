@@ -24,19 +24,21 @@ public abstract class DefaultDAO<T, ID>
     @Override
     public void create(T entity) {
         em.persist(entity);
+        em.flush();
     }
 
     @Override
     public void update(T entity) {
         em.merge(entity);
+        em.flush();
     }
 
     @Override
     public void delete(ID id) {
         T entity = find(id);
-
         if (entity != null) {
             em.remove(entity);
+            em.flush();
         }
     }
 

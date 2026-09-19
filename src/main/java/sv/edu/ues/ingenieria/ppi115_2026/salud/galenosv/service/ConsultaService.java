@@ -31,5 +31,7 @@ public class ConsultaService extends AbstractService<Consulta, UUID> {
         }
         super.crear(entidad);
     }
-
+    public java.util.List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta> listarPorPersona(UUID idPersona) {
+        return consultaDAO.listarPorPersona(idPersona);
+    }
 }
