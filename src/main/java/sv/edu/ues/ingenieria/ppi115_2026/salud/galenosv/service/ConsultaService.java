@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.ConsultaDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.ConsultaRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class ConsultaService extends AbstractService<Consulta, UUID> {
 
     @Inject
-    private ConsultaDAO consultaDAO;
+    private ConsultaRepository consultaRepository;
 
     @Override
-    protected DefaultDAOInterface<Consulta, UUID> getRepository() {
-        return consultaDAO;
+    protected RepositoryInterface<Consulta, UUID> getRepository() {
+        return consultaRepository;
     }
 
     @Override
@@ -32,6 +32,6 @@ public class ConsultaService extends AbstractService<Consulta, UUID> {
         super.crear(entidad);
     }
     public java.util.List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta> listarPorPersona(UUID idPersona) {
-        return consultaDAO.listarPorPersona(idPersona);
+        return consultaRepository.listarPorPersona(idPersona);
     }
 }

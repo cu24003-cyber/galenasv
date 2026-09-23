@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.ClinicaDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.ClinicaRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Clinica;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class ClinicaService extends AbstractService<Clinica, UUID> {
 
     @Inject
-    private ClinicaDAO clinicaDAO;
+    private ClinicaRepository clinicaRepository;
 
     @Override
-    protected DefaultDAOInterface<Clinica, UUID> getRepository() {
-        return clinicaDAO;
+    protected RepositoryInterface<Clinica, UUID> getRepository() {
+        return clinicaRepository;
     }
 
     @Override

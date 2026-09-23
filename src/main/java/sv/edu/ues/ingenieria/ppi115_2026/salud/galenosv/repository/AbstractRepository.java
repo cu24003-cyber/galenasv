@@ -1,18 +1,18 @@
-package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control;
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
-public abstract class DefaultDAO<T, ID>
-        implements DefaultDAOInterface<T, ID> {
+public abstract class AbstractRepository<T, ID>
+        implements RepositoryInterface<T, ID> {
 
     @PersistenceContext
     protected EntityManager em;
 
     private final Class<T> entityClass;
 
-    protected DefaultDAO(Class<T> entityClass) {
+    protected AbstractRepository(Class<T> entityClass) {
         this.entityClass = entityClass;
     }
 

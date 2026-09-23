@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.PersonaDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
 
 @Named
@@ -15,7 +15,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
 public class PersonaModel implements Serializable {
 
     @EJB
-    private PersonaDAO personaDAO;
+    private PersonaRepository personaRepository;
 
     private List<Persona> personas;
     private Persona seleccionada;
@@ -26,7 +26,7 @@ public class PersonaModel implements Serializable {
     }
 
     private void cargarPersonas() {
-        personas = personaDAO.findAll();
+        personas = personaRepository.findAll();
     }
 
     public void nuevo() {
@@ -41,16 +41,16 @@ public class PersonaModel implements Serializable {
     public void guardar() {
         if (seleccionada.getIdPersona() == null) {
             seleccionada.setIdPersona(UUID.randomUUID());
-            personaDAO.create(seleccionada);
+            personaRepository.create(seleccionada);
         } else {
-            personaDAO.update(seleccionada);
+            personaRepository.update(seleccionada);
         }
         cargarPersonas();
         seleccionada = null;
     }
 
     public void eliminar(Persona p) {
-        personaDAO.delete(p.getIdPersona());
+        personaRepository.delete(p.getIdPersona());
         cargarPersonas();
     }
 

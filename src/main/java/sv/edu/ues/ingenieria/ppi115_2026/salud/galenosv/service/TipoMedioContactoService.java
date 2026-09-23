@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.TipoMedioContactoDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.TipoMedioContactoRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoMedioContacto;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class TipoMedioContactoService extends AbstractService<TipoMedioContacto, UUID> {
 
     @Inject
-    private TipoMedioContactoDAO tipoMedioContactoDAO;
+    private TipoMedioContactoRepository tipoMedioContactoRepository;
 
     @Override
-    protected DefaultDAOInterface<TipoMedioContacto, UUID> getRepository() {
-        return tipoMedioContactoDAO;
+    protected RepositoryInterface<TipoMedioContacto, UUID> getRepository() {
+        return tipoMedioContactoRepository;
     }
 
     @Override

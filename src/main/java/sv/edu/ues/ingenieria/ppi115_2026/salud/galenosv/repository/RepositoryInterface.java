@@ -1,8 +1,8 @@
-package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control;
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository;
 
 import java.util.List;
 
-    public interface DefaultDAOInterface<T, ID> {
+    public interface RepositoryInterface<T, ID> {
 
     void create(T entity);
 
