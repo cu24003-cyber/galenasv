@@ -1,13 +1,13 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.PersistenceException;
 import java.util.List;
 
 public abstract class AbstractService<T, ID> {
 
-    protected abstract DefaultDAOInterface<T, ID> getRepository();
+    protected abstract RepositoryInterface<T, ID> getRepository();
 
     protected void validar(T entidad) {
         if (entidad == null) {

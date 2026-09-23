@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.PersonaDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
 import java.util.UUID;
 import java.util.Date;
@@ -12,11 +12,11 @@ import java.util.Date;
 public class PersonaService extends AbstractService<Persona, UUID> {
 
     @Inject
-    private PersonaDAO personaDAO;
+    private PersonaRepository personaRepository;
 
     @Override
-    protected DefaultDAOInterface<Persona, UUID> getRepository() {
-        return personaDAO;
+    protected RepositoryInterface<Persona, UUID> getRepository() {
+        return personaRepository;
     }
 
     @Override

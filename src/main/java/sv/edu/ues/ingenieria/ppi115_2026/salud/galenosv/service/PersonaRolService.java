@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.PersonaRolDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaRolRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class PersonaRolService extends AbstractService<PersonaRol, UUID> {
 
     @Inject
-    private PersonaRolDAO personaRolDAO;
+    private PersonaRolRepository personaRolRepository;
 
     @Override
-    protected DefaultDAOInterface<PersonaRol, UUID> getRepository() {
-        return personaRolDAO;
+    protected RepositoryInterface<PersonaRol, UUID> getRepository() {
+        return personaRolRepository;
     }
 
     @Override

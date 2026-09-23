@@ -1,4 +1,4 @@
-package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control;
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository;
 
 import jakarta.ejb.Stateless;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta;
@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Stateless
-public class ConsultaDAO extends DefaultDAO<Consulta, UUID> {
+public class ConsultaRepository extends AbstractRepository<Consulta, UUID> {
 
-    public ConsultaDAO() {
+    public ConsultaRepository() {
         super(Consulta.class);
     }
 

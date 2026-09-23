@@ -11,10 +11,10 @@
     <h:form id="frmPersonaList">
         <!-- Botón movido arriba para mejor usabilidad -->
         <p:commandButton value="Nueva persona" icon="pi pi-plus" update=":frmPersonaForm"
-            oncomplete="PF('dlgPersona').show()" actionListener="#{personaBean.nuevo()}" styleClass="ui-button-success"
+            oncomplete="PF('dlgPersona').show()" actionListener="#{personaModel.nuevo()}" styleClass="ui-button-success"
             style="margin-bottom: 10px;" />
 
-        <p:dataTable var="p" value="#{personaBean.personas}" id="tblPersonas" paginator="true" rows="10"
+        <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
             paginatorPosition="bottom">
             <p:column headerText="Nombres">
                 <h:outputText value="#{p.nombres}" />
@@ -30,11 +30,11 @@
             <p:column headerText="Acciones" style="width: 150px; text-align: center;">
                 <!-- process="@this" para que solo se procese el botón y no envíe todo el formulario -->
                 <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
-                    actionListener="#{personaBean.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
+                    actionListener="#{personaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
                     style="margin-right: 5px;" />
 
                 <!-- Solo actualiza la tabla y los mensajes, no todo el form -->
-                <p:commandButton icon="pi pi-trash" actionListener="#{personaBean.eliminar(p)}"
+                <p:commandButton icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
                     update=":frmPersonaList:tblPersonas :messages" process="@this"
                     styleClass="rounded-button ui-button-danger">
                     <p:confirm header="Confirmación" message="¿Está seguro de eliminar esta persona?"
@@ -56,19 +56,19 @@
         resizable="false" closable="false" width="450">
         <h:form id="frmPersonaForm">
             <!-- ui-fluid hace que los inputs ocupen todo el ancho disponible -->
-            <p:outputPanel id="personaDetalle" rendered="#{personaBean.seleccionada != null}" styleClass="ui-fluid">
+            <p:outputPanel id="personaDetalle" rendered="#{personaModel.seleccionada != null}" styleClass="ui-fluid">
                 <p:panelGrid columns="2" columnClasses="label,value" style="width: 100%; border: none;">
                     <p:outputLabel for="nombres" value="Nombres" />
-                    <p:inputText id="nombres" value="#{personaBean.seleccionada.nombres}" required="true"
+                    <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}" required="true"
                         requiredMessage="El nombre es obligatorio" />
 
                     <p:outputLabel for="apellidos" value="Apellidos" />
-                    <p:inputText id="apellidos" value="#{personaBean.seleccionada.apellidos}" required="true"
+                    <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
                         requiredMessage="El apellido es obligatorio" />
 
                     <p:outputLabel for="fechaNac" value="Fecha de nacimiento" />
                     <!-- Se recomienda usar p:datePicker en lugar de p:calendar si usas PrimeFaces moderno -->
-                    <p:calendar id="fechaNac" value="#{personaBean.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
+                    <p:calendar id="fechaNac" value="#{personaModel.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
                         showIcon="true" required="true" requiredMessage="La fecha es obligatoria" />
                 </p:panelGrid>
             </p:outputPanel>
@@ -77,7 +77,7 @@
             <div style="text-align: right; margin-top: 15px;">
                 <p:commandButton value="Cancelar" icon="pi pi-times" onclick="PF('dlgPersona').hide()" type="button"
                     styleClass="ui-button-secondary" style="margin-right: .5rem" />
-                <p:commandButton value="Guardar" icon="pi pi-check" actionListener="#{personaBean.guardar()}"
+                <p:commandButton value="Guardar" icon="pi pi-check" actionListener="#{personaModel.guardar()}"
                     update=":frmPersonaList:tblPersonas :messages @form"
                     oncomplete="if (!args.validationFailed) PF('dlgPersona').hide()" />
             </div>

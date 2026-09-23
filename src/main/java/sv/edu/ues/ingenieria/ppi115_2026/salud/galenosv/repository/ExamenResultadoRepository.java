@@ -1,4 +1,4 @@
-package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control;
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository;
 
 import jakarta.ejb.Stateless;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenResultado;
@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Stateless
-public class ExamenResultadoDAO extends DefaultDAO<ExamenResultado, UUID> {
+public class ExamenResultadoRepository extends AbstractRepository<ExamenResultado, UUID> {
 
-    public ExamenResultadoDAO() {
+    public ExamenResultadoRepository() {
         super(ExamenResultado.class);
     }
 

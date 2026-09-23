@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DocumentoDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.DocumentoRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Documento;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class DocumentoService extends AbstractService<Documento, UUID> {
 
     @Inject
-    private DocumentoDAO documentoDAO;
+    private DocumentoRepository documentoRepository;
 
     @Override
-    protected DefaultDAOInterface<Documento, UUID> getRepository() {
-        return documentoDAO;
+    protected RepositoryInterface<Documento, UUID> getRepository() {
+        return documentoRepository;
     }
 
     @Override

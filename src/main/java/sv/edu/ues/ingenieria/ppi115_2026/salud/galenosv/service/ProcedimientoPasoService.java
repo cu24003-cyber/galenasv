@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.ProcedimientoPasoDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.ProcedimientoPasoRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPaso;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class ProcedimientoPasoService extends AbstractService<ProcedimientoPaso, UUID> {
 
     @Inject
-    private ProcedimientoPasoDAO procedimientoPasoDAO;
+    private ProcedimientoPasoRepository procedimientoPasoRepository;
 
     @Override
-    protected DefaultDAOInterface<ProcedimientoPaso, UUID> getRepository() {
-        return procedimientoPasoDAO;
+    protected RepositoryInterface<ProcedimientoPaso, UUID> getRepository() {
+        return procedimientoPasoRepository;
     }
 
     @Override

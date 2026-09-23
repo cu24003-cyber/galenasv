@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.TipoExamenDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.TipoExamenRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class TipoExamenService extends AbstractService<TipoExamen, UUID> {
 
     @Inject
-    private TipoExamenDAO tipoExamenDAO;
+    private TipoExamenRepository tipoExamenRepository;
 
     @Override
-    protected DefaultDAOInterface<TipoExamen, UUID> getRepository() {
-        return tipoExamenDAO;
+    protected RepositoryInterface<TipoExamen, UUID> getRepository() {
+        return tipoExamenRepository;
     }
 
     @Override

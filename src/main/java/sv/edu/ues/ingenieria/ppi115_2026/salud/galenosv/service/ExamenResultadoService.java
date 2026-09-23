@@ -2,8 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.DefaultDAOInterface;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.ExamenResultadoDAO;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.ExamenResultadoRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenResultado;
 import java.util.UUID;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 public class ExamenResultadoService extends AbstractService<ExamenResultado, UUID> {
 
     @Inject
-    private ExamenResultadoDAO examenResultadoDAO;
+    private ExamenResultadoRepository examenResultadoRepository;
 
     @Override
-    protected DefaultDAOInterface<ExamenResultado, UUID> getRepository() {
-        return examenResultadoDAO;
+    protected RepositoryInterface<ExamenResultado, UUID> getRepository() {
+        return examenResultadoRepository;
     }
 
     @Override
@@ -32,6 +32,6 @@ public class ExamenResultadoService extends AbstractService<ExamenResultado, UUI
         super.crear(entidad);
     }
     public java.util.List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenResultado> listarPorOrdenExamen(UUID idOrdenExamen) {
-        return examenResultadoDAO.listarPorOrdenExamen(idOrdenExamen);
+        return examenResultadoRepository.listarPorOrdenExamen(idOrdenExamen);
     }
 }
