@@ -1,4 +1,4 @@
-package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.bean;
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
 import jakarta.ejb.EJB;
 import jakarta.faces.view.ViewScoped;
@@ -12,7 +12,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
 
 @Named
 @ViewScoped
-public class PersonaBean implements Serializable {
+public class PersonaModel implements Serializable {
 
     @EJB
     private PersonaDAO personaDAO;
