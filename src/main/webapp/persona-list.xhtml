@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="jakarta.faces.html"
-      xmlns:f="jakarta.faces.core"
-      xmlns:p="primefaces">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:f="jakarta.faces.core"
+    xmlns:p="http://primefaces.org/ui">
 <h:head>
     <title>Listado de Personas</title>
 </h:head>
 <h:body>
+    <!-- Growl para mostrar mensajes de éxito o error sin recargar la página -->
+    <p:growl id="messages" showDetail="true" life="3000" />
+
     <h:form id="frmPersonaList">
-        <p:dataTable var="p" value="#{personaBean.personas}" id="tblPersonas">
+        <!-- Botón movido arriba para mejor usabilidad -->
+        <p:commandButton value="Nueva persona" icon="pi pi-plus" update=":frmPersonaForm"
+            oncomplete="PF('dlgPersona').show()" actionListener="#{personaBean.nuevo()}" styleClass="ui-button-success"
+            style="margin-bottom: 10px;" />
+
+        <p:dataTable var="p" value="#{personaBean.personas}" id="tblPersonas" paginator="true" rows="10"
+            paginatorPosition="bottom">
             <p:column headerText="Nombres">
                 <h:outputText value="#{p.nombres}" />
             </p:column>
@@ -20,37 +27,62 @@
                     <f:convertDateTime pattern="dd/MM/yyyy" />
                 </h:outputText>
             </p:column>
-            <p:column headerText="Acciones">
-                <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm"
-                                 oncomplete="PF('dlgPersona').show()"
-                                 actionListener="#{personaBean.editar(p)}" />
-                <p:commandButton icon="pi pi-trash"
-                                 actionListener="#{personaBean.eliminar(p)}"
-                                 update=":frmPersonaList" />
+            <p:column headerText="Acciones" style="width: 150px; text-align: center;">
+                <!-- process="@this" para que solo se procese el botón y no envíe todo el formulario -->
+                <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
+                    actionListener="#{personaBean.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
+                    style="margin-right: 5px;" />
+
+                <!-- Solo actualiza la tabla y los mensajes, no todo el form -->
+                <p:commandButton icon="pi pi-trash" actionListener="#{personaBean.eliminar(p)}"
+                    update=":frmPersonaList:tblPersonas :messages" process="@this"
+                    styleClass="rounded-button ui-button-danger">
+                    <p:confirm header="Confirmación" message="¿Está seguro de eliminar esta persona?"
+                        icon="pi pi-exclamation-triangle" />
+                </p:commandButton>
             </p:column>
         </p:dataTable>
 
-        <p:commandButton value="Nueva persona" update=":frmPersonaForm"
-                         oncomplete="PF('dlgPersona').show()"
-                         actionListener="#{personaBean.nuevo()}" />
+        <!-- Diálogo global de confirmación para eliminar -->
+        <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
+            <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+            <p:commandButton value="Sí" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
+        </p:confirmDialog>
     </h:form>
 
-    <h:form id="frmPersonaForm">
-        <p:dialog header="Persona" widgetVar="dlgPersona" modal="true" appendToBody="false">
-            <p:panelGrid columns="2" rendered="#{personaBean.seleccionada != null}">
-                <h:outputLabel value="Nombres" />
-                <p:inputText value="#{personaBean.seleccionada.nombres}" />
+    <!-- El diálogo debe ir fuera del formulario principal, y contener su propio formulario -->
+    <!-- Se agregó closable="false" para quitar la X y width="450" para que no se vea tan pequeño -->
+    <p:dialog header="Detalle de Persona" widgetVar="dlgPersona" modal="true" showEffect="fade" hideEffect="fade"
+        resizable="false" closable="false" width="450">
+        <h:form id="frmPersonaForm">
+            <!-- ui-fluid hace que los inputs ocupen todo el ancho disponible -->
+            <p:outputPanel id="personaDetalle" rendered="#{personaBean.seleccionada != null}" styleClass="ui-fluid">
+                <p:panelGrid columns="2" columnClasses="label,value" style="width: 100%; border: none;">
+                    <p:outputLabel for="nombres" value="Nombres" />
+                    <p:inputText id="nombres" value="#{personaBean.seleccionada.nombres}" required="true"
+                        requiredMessage="El nombre es obligatorio" />
 
-                <h:outputLabel value="Apellidos" />
-                <p:inputText value="#{personaBean.seleccionada.apellidos}" />
+                    <p:outputLabel for="apellidos" value="Apellidos" />
+                    <p:inputText id="apellidos" value="#{personaBean.seleccionada.apellidos}" required="true"
+                        requiredMessage="El apellido es obligatorio" />
 
-                <h:outputLabel value="Fecha de nacimiento" />
-                <p:calendar value="#{personaBean.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy" />
-            </p:panelGrid>
-            <p:commandButton value="Guardar" update=":frmPersonaList"
-                             oncomplete="PF('dlgPersona').hide()"
-                             actionListener="#{personaBean.guardar()}" />
-        </p:dialog>
-    </h:form>
+                    <p:outputLabel for="fechaNac" value="Fecha de nacimiento" />
+                    <!-- Se recomienda usar p:datePicker en lugar de p:calendar si usas PrimeFaces moderno -->
+                    <p:calendar id="fechaNac" value="#{personaBean.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
+                        showIcon="true" required="true" requiredMessage="La fecha es obligatoria" />
+                </p:panelGrid>
+            </p:outputPanel>
+
+            <!-- Botones colocados en un contenedor normal, ya que f:facet no puede ir dentro de h:form -->
+            <div style="text-align: right; margin-top: 15px;">
+                <p:commandButton value="Cancelar" icon="pi pi-times" onclick="PF('dlgPersona').hide()" type="button"
+                    styleClass="ui-button-secondary" style="margin-right: .5rem" />
+                <p:commandButton value="Guardar" icon="pi pi-check" actionListener="#{personaBean.guardar()}"
+                    update=":frmPersonaList:tblPersonas :messages @form"
+                    oncomplete="if (!args.validationFailed) PF('dlgPersona').hide()" />
+            </div>
+        </h:form>
+    </p:dialog>
 </h:body>
+
 </html>
