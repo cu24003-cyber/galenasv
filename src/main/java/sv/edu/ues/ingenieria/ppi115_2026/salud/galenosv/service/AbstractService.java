@@ -7,7 +7,7 @@ import java.util.List;
 
 public abstract class AbstractService<T, ID> {
 
-    protected abstract DefaultDAOInterface<T, ID> getDao();
+    protected abstract DefaultDAOInterface<T, ID> getRepository();
 
     protected void validar(T entidad) {
         if (entidad == null) {
@@ -18,7 +18,7 @@ public abstract class AbstractService<T, ID> {
     public void crear(T entidad) {
         validar(entidad);
         try {
-            getDao().create(entidad);
+            getRepository().create(entidad);
         } catch (EntityExistsException e) {
             throw new ServiceException("Ya existe un registro con ese identificador.", e);
         } catch (PersistenceException e) {
@@ -28,33 +28,33 @@ public abstract class AbstractService<T, ID> {
 
     public void actualizar(T entidad) {
         validar(entidad);
-        if (getDao().find(obtenerId(entidad)) == null) {
+        if (getRepository().find(obtenerId(entidad)) == null) {
             throw new ServiceException("No existe un registro con ese id para actualizar.");
         }
         try {
-            getDao().update(entidad);
+            getRepository().update(entidad);
         } catch (PersistenceException e) {
             throw new ServiceException("No se pudo actualizar el registro: " + causaLegible(e), e);
         }
     }
 
     public void eliminar(ID id) {
-        if (getDao().find(id) == null) {
+        if (getRepository().find(id) == null) {
             throw new ServiceException("No existe un registro con ese id para eliminar.");
         }
         try {
-            getDao().delete(id);
+            getRepository().delete(id);
         } catch (PersistenceException e) {
             throw new ServiceException("No se puede eliminar: el registro esta siendo utilizado por otro dato relacionado.", e);
         }
     }
 
     public T buscarPorId(ID id) {
-        return getDao().find(id);
+        return getRepository().find(id);
     }
 
     public List<T> listarTodos() {
-        return getDao().findAll();
+        return getRepository().findAll();
     }
 
     protected abstract ID obtenerId(T entidad);

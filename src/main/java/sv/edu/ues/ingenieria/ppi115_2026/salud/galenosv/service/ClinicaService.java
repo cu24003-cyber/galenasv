@@ -15,7 +15,7 @@ public class ClinicaService extends AbstractService<Clinica, UUID> {
     private ClinicaDAO clinicaDAO;
 
     @Override
-    protected DefaultDAOInterface<Clinica, UUID> getDao() {
+    protected DefaultDAOInterface<Clinica, UUID> getRepository() {
         return clinicaDAO;
     }
 

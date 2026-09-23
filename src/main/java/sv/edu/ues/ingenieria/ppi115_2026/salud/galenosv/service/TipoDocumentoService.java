@@ -15,7 +15,7 @@ public class TipoDocumentoService extends AbstractService<TipoDocumento, UUID> {
     private TipoDocumentoDAO tipoDocumentoDAO;
 
     @Override
-    protected DefaultDAOInterface<TipoDocumento, UUID> getDao() {
+    protected DefaultDAOInterface<TipoDocumento, UUID> getRepository() {
         return tipoDocumentoDAO;
     }
 

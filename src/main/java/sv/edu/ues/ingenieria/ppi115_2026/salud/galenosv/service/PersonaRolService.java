@@ -15,7 +15,7 @@ public class PersonaRolService extends AbstractService<PersonaRol, UUID> {
     private PersonaRolDAO personaRolDAO;
 
     @Override
-    protected DefaultDAOInterface<PersonaRol, UUID> getDao() {
+    protected DefaultDAOInterface<PersonaRol, UUID> getRepository() {
         return personaRolDAO;
     }
 

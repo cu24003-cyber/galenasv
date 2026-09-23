@@ -15,7 +15,7 @@ public class ConsultaProcedimientoService extends AbstractService<ConsultaProced
     private ConsultaProcedimientoDAO consultaProcedimientoDAO;
 
     @Override
-    protected DefaultDAOInterface<ConsultaProcedimiento, UUID> getDao() {
+    protected DefaultDAOInterface<ConsultaProcedimiento, UUID> getRepository() {
         return consultaProcedimientoDAO;
     }
 

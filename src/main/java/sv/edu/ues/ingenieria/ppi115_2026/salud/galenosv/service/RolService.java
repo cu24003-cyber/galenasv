@@ -15,7 +15,7 @@ public class RolService extends AbstractService<Rol, UUID> {
     private RolDAO rolDAO;
 
     @Override
-    protected DefaultDAOInterface<Rol, UUID> getDao() {
+    protected DefaultDAOInterface<Rol, UUID> getRepository() {
         return rolDAO;
     }
 

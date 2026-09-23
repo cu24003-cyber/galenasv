@@ -15,7 +15,7 @@ public class MedioContactoService extends AbstractService<MedioContacto, UUID> {
     private MedioContactoDAO medioContactoDAO;
 
     @Override
-    protected DefaultDAOInterface<MedioContacto, UUID> getDao() {
+    protected DefaultDAOInterface<MedioContacto, UUID> getRepository() {
         return medioContactoDAO;
     }
 

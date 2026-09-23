@@ -15,7 +15,7 @@ public class PersonaService extends AbstractService<Persona, UUID> {
     private PersonaDAO personaDAO;
 
     @Override
-    protected DefaultDAOInterface<Persona, UUID> getDao() {
+    protected DefaultDAOInterface<Persona, UUID> getRepository() {
         return personaDAO;
     }
 

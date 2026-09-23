@@ -15,7 +15,7 @@ public class ExamenService extends AbstractService<Examen, UUID> {
     private ExamenDAO examenDAO;
 
     @Override
-    protected DefaultDAOInterface<Examen, UUID> getDao() {
+    protected DefaultDAOInterface<Examen, UUID> getRepository() {
         return examenDAO;
     }
 

@@ -15,7 +15,7 @@ public class OrdenExamenService extends AbstractService<OrdenExamen, UUID> {
     private OrdenExamenDAO ordenExamenDAO;
 
     @Override
-    protected DefaultDAOInterface<OrdenExamen, UUID> getDao() {
+    protected DefaultDAOInterface<OrdenExamen, UUID> getRepository() {
         return ordenExamenDAO;
     }
 

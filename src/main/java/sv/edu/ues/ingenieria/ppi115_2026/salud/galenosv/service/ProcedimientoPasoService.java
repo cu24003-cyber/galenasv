@@ -15,7 +15,7 @@ public class ProcedimientoPasoService extends AbstractService<ProcedimientoPaso,
     private ProcedimientoPasoDAO procedimientoPasoDAO;
 
     @Override
-    protected DefaultDAOInterface<ProcedimientoPaso, UUID> getDao() {
+    protected DefaultDAOInterface<ProcedimientoPaso, UUID> getRepository() {
         return procedimientoPasoDAO;
     }
 

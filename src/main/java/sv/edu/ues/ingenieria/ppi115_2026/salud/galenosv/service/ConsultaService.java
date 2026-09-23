@@ -15,7 +15,7 @@ public class ConsultaService extends AbstractService<Consulta, UUID> {
     private ConsultaDAO consultaDAO;
 
     @Override
-    protected DefaultDAOInterface<Consulta, UUID> getDao() {
+    protected DefaultDAOInterface<Consulta, UUID> getRepository() {
         return consultaDAO;
     }
 
