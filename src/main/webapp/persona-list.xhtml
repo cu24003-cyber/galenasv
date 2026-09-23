@@ -13,9 +13,8 @@
         <p:commandButton value="Nueva persona" icon="pi pi-plus" update=":frmPersonaForm"
             oncomplete="PF('dlgPersona').show()" actionListener="#{personaBean.nuevo()}" styleClass="ui-button-success"
             style="margin-bottom: 10px;" />
-
-        <p:dataTable var="p" value="#{personaBean.personas}" id="tblPersonas" paginator="true" rows="10"
-            paginatorPosition="bottom">
+        <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
+                     paginatorPosition="bottom">
             <p:column headerText="Nombres">
                 <h:outputText value="#{p.nombres}" />
             </p:column>
@@ -28,17 +27,15 @@
                 </h:outputText>
             </p:column>
             <p:column headerText="Acciones" style="width: 150px; text-align: center;">
-                <!-- process="@this" para que solo se procese el botón y no envíe todo el formulario -->
                 <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
-                    actionListener="#{personaBean.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
-                    style="margin-right: 5px;" />
+                                 actionListener="#{personaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
+                                 style="margin-right: 5px;" />
 
-                <!-- Solo actualiza la tabla y los mensajes, no todo el form -->
-                <p:commandButton icon="pi pi-trash" actionListener="#{personaBean.eliminar(p)}"
-                    update=":frmPersonaList:tblPersonas :messages" process="@this"
-                    styleClass="rounded-button ui-button-danger">
+                <p:commandButton icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
+                                 update=":frmPersonaList:tblPersonas :messages" process="@this"
+                                 styleClass="rounded-button ui-button-danger">
                     <p:confirm header="Confirmación" message="¿Está seguro de eliminar esta persona?"
-                        icon="pi pi-exclamation-triangle" />
+                               icon="pi pi-exclamation-triangle" />
                 </p:commandButton>
             </p:column>
         </p:dataTable>

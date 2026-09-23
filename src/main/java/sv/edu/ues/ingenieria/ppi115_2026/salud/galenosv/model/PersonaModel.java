@@ -1,21 +1,22 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
 import jakarta.ejb.EJB;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import java.io.Serializable;
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.PersonaDAO;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.PersonaService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ServiceException;
 
 @Named
 @ViewScoped
 public class PersonaModel implements Serializable {
 
     @EJB
-    private PersonaDAO personaDAO;
+    private PersonaService personaService;
 
     private List<Persona> personas;
     private Persona seleccionada;
@@ -26,12 +27,11 @@ public class PersonaModel implements Serializable {
     }
 
     private void cargarPersonas() {
-        personas = personaDAO.findAll();
+        personas = personaService.listarTodos();
     }
 
     public void nuevo() {
         seleccionada = new Persona();
-        seleccionada.setFechaCreacion(new Date());
     }
 
     public void editar(Persona p) {
@@ -39,19 +39,28 @@ public class PersonaModel implements Serializable {
     }
 
     public void guardar() {
-        if (seleccionada.getIdPersona() == null) {
-            seleccionada.setIdPersona(UUID.randomUUID());
-            personaDAO.create(seleccionada);
-        } else {
-            personaDAO.update(seleccionada);
+        try {
+            if (seleccionada.getIdPersona() == null) {
+                personaService.crear(seleccionada);
+            } else {
+                personaService.actualizar(seleccionada);
+            }
+            cargarPersonas();
+            seleccionada = null;
+        } catch (ServiceException e) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error al guardar", e.getMessage()));
         }
-        cargarPersonas();
-        seleccionada = null;
     }
 
     public void eliminar(Persona p) {
-        personaDAO.delete(p.getIdPersona());
-        cargarPersonas();
+        try {
+            personaService.eliminar(p.getIdPersona());
+            cargarPersonas();
+        } catch (ServiceException e) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error al eliminar", e.getMessage()));
+        }
     }
 
     public List<Persona> getPersonas() {
