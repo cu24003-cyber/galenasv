@@ -77,6 +77,14 @@
                 <groupId>io.openliberty.tools</groupId>
                 <artifactId>liberty-maven-plugin</artifactId>
                 <version>3.12.0</version>
+                <configuration>
+                    <serverName>galenosv</serverName>
+                    <features>
+                        <feature>jakartaee-11.0</feature>
+                    </features>
+                    <appsDirectory>dropins</appsDirectory>
+                    <stripVersion>true</stripVersion>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
