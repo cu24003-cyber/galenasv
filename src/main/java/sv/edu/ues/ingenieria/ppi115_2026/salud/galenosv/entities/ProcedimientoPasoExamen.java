@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -52,6 +53,16 @@ public class ProcedimientoPasoExamen implements Serializable {
     @JoinColumn(name = "id_procedimiento_paso", referencedColumnName = "id_procedimiento_paso")
     @ManyToOne(fetch = FetchType.LAZY)
     private ProcedimientoPaso idProcedimientoPaso;
+
+    @PrePersist
+    protected void prePersist() {
+        if (activo == null) {
+            activo = Boolean.TRUE;
+        }
+        if (fechaCreacion == null) {
+            fechaCreacion = new Date();
+        }
+    }
 
     public ProcedimientoPasoExamen() {
     }

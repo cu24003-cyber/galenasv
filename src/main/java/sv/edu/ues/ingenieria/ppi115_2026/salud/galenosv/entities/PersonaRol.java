@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -54,6 +56,13 @@ public class PersonaRol implements Serializable {
     private Rol idRol;
     @OneToMany(mappedBy = "idPersonaRol", fetch = FetchType.LAZY)
     private Collection<Consulta> consultaCollection;
+
+    @PrePersist
+    protected void prePersist() {
+        if (fechaCreacion == null) {
+            fechaCreacion = new Date();
+        }
+    }
 
     public PersonaRol() {
     }

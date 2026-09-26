@@ -45,7 +45,7 @@ public class Clinica implements Serializable {
     private String nombre;
     @Column(name = "activo")
     private Boolean activo;
-    @Column(name = "tipo")
+    @Column(name = "tipo" , length = 20)
     private String tipo;
     @Column(name = "comentarios")
     private String comentarios;

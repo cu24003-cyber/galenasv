@@ -35,7 +35,7 @@ public class Rol implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_rol")
     private UUID idRol;
-    @Column(name = "nombre")
+    @Column(name = "nombre" , length = 155)
     private String nombre;
     @Column(name = "activo")
     private Boolean activo;

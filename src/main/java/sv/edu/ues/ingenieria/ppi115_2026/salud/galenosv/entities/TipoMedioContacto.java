@@ -7,6 +7,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,7 +37,7 @@ public class TipoMedioContacto implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_tipo_medio_contacto")
     private UUID idTipoMedioContacto;
-    @Column(name = "nombre")
+    @Column(name = "nombre" , length = 155)
     private String nombre;
     @Column(name = "indicaciones")
     private String indicaciones;

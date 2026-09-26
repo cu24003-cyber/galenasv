@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -46,7 +48,7 @@ public class ConsultaProcedimientoPaso implements Serializable {
     @Column(name = "fecha_fin")
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaFin;
-    @Column(name = "estado")
+    @Column(name = "estado" , length = 20)
     private String estado;
     @JoinColumn(name = "id_consulta_procedimiento", referencedColumnName = "id_consulta_procedimiento")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,6 +58,13 @@ public class ConsultaProcedimientoPaso implements Serializable {
     private PersonaRol idPersonaRol;
     @OneToMany(mappedBy = "idConsultaProcedimientoPaso", fetch = FetchType.LAZY)
     private Collection<OrdenExamen> ordenExamenCollection;
+
+    @PrePersist
+    protected void prePersist() {
+        if (fechaInicio == null) {
+            fechaInicio = new Date();
+        }
+    }
 
     public ConsultaProcedimientoPaso() {
     }

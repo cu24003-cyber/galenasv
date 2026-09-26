@@ -18,6 +18,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 /**
@@ -37,7 +38,7 @@ public class ProcedimientoPaso implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_procedimiento_paso")
     private UUID idProcedimientoPaso;
-    @Column(name = "nombre")
+    @Column(name = "nombre" , length = 155)
     private String nombre;
     @Column(name = "indica_fin")
     private Boolean indicaFin;
@@ -51,7 +52,14 @@ public class ProcedimientoPaso implements Serializable {
     @JoinColumn(name = "id_rol", referencedColumnName = "id_rol")
     @ManyToOne(fetch = FetchType.LAZY)
     private Rol idRol;
-
+    
+    @PrePersist
+    protected void prePersist() {
+        if (indicaFin == null) {
+            indicaFin = Boolean.FALSE;
+        }
+    }
+    
     public ProcedimientoPaso() {
     }
 

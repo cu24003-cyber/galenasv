@@ -7,6 +7,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 /**
@@ -36,7 +38,7 @@ public class TipoDocumento implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_tipo_documento")
     private UUID idTipoDocumento;
-    @Column(name = "nombre")
+    @Column(name = "nombre" , length = 155)
     private String nombre;
     @Column(name = "indicaciones")
     private String indicaciones;
@@ -46,6 +48,13 @@ public class TipoDocumento implements Serializable {
     private Boolean activo;
     @OneToMany(mappedBy = "idTipoDocumento", fetch = FetchType.LAZY)
     private Collection<Documento> documentoCollection;
+
+    @PrePersist
+    protected void prePersist() {
+        if (expresionRegular == null) {
+            expresionRegular = ".";
+        }
+    }
 
     public TipoDocumento() {
     }

@@ -7,6 +7,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -51,6 +53,13 @@ public class ExamenResultado implements Serializable {
     @JoinColumn(name = "id_orden_examen", referencedColumnName = "id_orden_examen")
     @ManyToOne(fetch = FetchType.LAZY)
     private OrdenExamen idOrdenExamen;
+
+    @PrePersist
+    protected void prePersist() {
+        if (fechaCreacion == null) {
+            fechaCreacion = new Date();
+        }
+    }
 
     public ExamenResultado() {
     }

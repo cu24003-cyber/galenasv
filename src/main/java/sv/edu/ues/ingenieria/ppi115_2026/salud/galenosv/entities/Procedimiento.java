@@ -36,7 +36,7 @@ public class Procedimiento implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_procedimiento")
     private UUID idProcedimiento;
-    @Column(name = "nombre")
+    @Column(name = "nombre" , length = 155)
     private String nombre;
     @Column(name = "activo")
     private Boolean activo;

@@ -6,6 +6,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,7 +37,7 @@ public class ProcedimientoPasoSecuencia implements Serializable {
     @JoinColumn(name = "id_procedimiento_paso_referencia", referencedColumnName = "id_procedimiento_paso")
     @ManyToOne(fetch = FetchType.LAZY)
     private ProcedimientoPaso idProcedimientoPasoReferencia;
-    @Column(name = "tipo_secuencia")
+    @Column(name = "tipo_secuencia", length= 20)
     private String tipoSecuencia;
     @JoinColumn(name = "id_procedimiento_paso", referencedColumnName = "id_procedimiento_paso")
     @ManyToOne(fetch = FetchType.LAZY)

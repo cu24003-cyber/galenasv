@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -58,6 +59,13 @@ public class Consulta implements Serializable {
     private PersonaRol idPersonaRol;
     @OneToMany(mappedBy = "idConsulta", fetch = FetchType.LAZY)
     private Collection<ConsultaProcedimiento> consultaProcedimientoCollection;
+
+    @PrePersist
+    protected void prePersist() {
+        if (fechaInicio == null) {
+            fechaInicio = new Date();
+        }
+    }
 
     public Consulta() {
     }
