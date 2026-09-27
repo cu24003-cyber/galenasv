@@ -1,82 +1,94 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.UUID;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
-
 import jakarta.inject.Named;
+
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.AbstractService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.PersonaService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ServiceException;
 
-@Named
+@Named("personaModel")
 @ViewScoped
 public class PersonaModel implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @EJB
     private PersonaService personaService;
 
-    @Override
-    protected AbstractService<Persona, UUID> getService() {
-        return personaService;
-    private List<Persona> personas;
+    private List<Persona> personas = new ArrayList<>();
     private Persona seleccionada;
 
-    @jakarta.annotation.PostConstruct
+    @PostConstruct
     public void init() {
-        System.out.println("=================================");
-        System.out.println("PersonaModel @PostConstruct");
-        System.out.println("PersonaService: " + personaService);
-        System.out.println("=================================");
         cargarPersonas();
     }
 
-    private void cargarPersonas() {
-        personas = personaService.listarTodos();
+    public void cargarPersonas() {
+        try {
+            personas = personaService.listarTodos();
+        } catch (ServiceException e) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Error al cargar personas", e.getMessage()));
+        }
     }
 
     public void nuevo() {
-         System.out.println(">>> PersonaModel.nuevo()");
         seleccionada = new Persona();
     }
 
-    @Override
-    protected Persona nuevaInstancia() {
-        return new Persona();
-    public void editar(Persona p) {
-         System.out.println(">>> PersonaModel.editar()");
-        seleccionada = p;
+    public void editar(Persona persona) {
+        seleccionada = persona;
     }
 
-    @Override
-    protected UUID obtenerId(Persona entidad) {
-        return entidad.getIdPersona();
     public void guardar() {
-         System.out.println(">>> PersonaModel.guardar()");
+        FacesContext context = FacesContext.getCurrentInstance();
+
+        if (seleccionada == null) {
+            context.validationFailed();
+            context.addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_WARN,
+                            "Sin selección",
+                            "Selecciona una persona o crea una nueva."));
+            return;
+        }
+
         try {
             if (seleccionada.getIdPersona() == null) {
                 personaService.crear(seleccionada);
             } else {
                 personaService.actualizar(seleccionada);
             }
-            cargarPersonas();
-            seleccionada = null;
         } catch (ServiceException e) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error al guardar", e.getMessage()));
+            context.validationFailed();
+            context.addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Error al guardar", e.getMessage()));
+            return;
         }
+
+        seleccionada = null;
+        cargarPersonas();
     }
 
-    // Wrapper para mantener el binding #{personaModel.personas} del .xhtml sin cambios
     public List<Persona> getPersonas() {
-        return getRegistros();
+        return personas;
+    }
+
+    public Persona getSeleccionada() {
+        return seleccionada;
+    }
+
+    public void setSeleccionada(Persona seleccionada) {
+        this.seleccionada = seleccionada;
     }
 }
