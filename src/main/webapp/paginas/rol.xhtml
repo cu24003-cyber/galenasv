@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui"
+>
+    <ui:composition template="/WEB-INF/templates/template.xhtml">
+        <ui:define name="title">
+            <h3>Roles</h3>
+        </ui:define>
+        <ui:define name="congig-menu">
+            Here will be a configuration menu
+        </ui:define>
+        <ui:define name="menusidebar">
+            here will be a side bar
+        </ui:define>
+        <ui:define name="content">
+           <h:form id="frmRol-list">
+               <p:commandButton
+                       id="btnNuevoRol"
+                       value="Nuevo Rol"
+                       icon="pi pi-plus"
+                       update="frmRol"
+                       oncomplete="PF(dlgRol).show()"
+                       action="#{rolModel.newRol()}"
+                       process="@this"
+                       styleClass="ui-button-success"
+                       style="margin-bottom: 10px;"
+               />
+           </h:form>
+            <h:form id="frmRol">
+
+            </h:form>
+        </ui:define>
+    </ui:composition>
+</html>

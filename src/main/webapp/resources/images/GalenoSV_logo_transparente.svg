@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">GalenoSV - Gestión Clínica en un Solo Lugar</title>
+  <desc id="desc">Logo médico de GalenoSV con una cruz, una G, un electrocardiograma y un estetoscopio.</desc>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B63B6"/>
+      <stop offset="1" stop-color="#1557A6"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#42C7C4"/>
+      <stop offset="1" stop-color="#19AFAF"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0B5FA5" flood-opacity=".12"/>
+    </filter>
+  </defs>
+
+  <!-- Transparent background: no background rectangle -->
+
+  <!-- Medical cross -->
+  <g opacity=".92" filter="url(#shadow)">
+    <rect x="470" y="70" width="260" height="260" rx="52" fill="url(#teal)"/>
+    <rect x="300" y="240" width="600" height="260" rx="52" fill="url(#teal)"/>
+  </g>
+
+  <!-- Main G / medical emblem -->
+  <circle cx="600" cy="425" r="245" fill="white" opacity=".96"/>
+  <path d="M735 265 A220 220 0 1 0 760 545"
+        fill="none" stroke="url(#blue)" stroke-width="78"
+        stroke-linecap="round"/>
+  <path d="M690 500 H790 V405"
+        fill="none" stroke="url(#blue)" stroke-width="58"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ECG -->
+  <path d="M455 425 H505 L530 392 L555 458 L585 350 L620 500 L650 425 H735"
+        fill="none" stroke="url(#teal)" stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Stethoscope -->
+  <path d="M355 555 C355 735 480 825 615 825 C720 825 805 775 845 685"
+        fill="none" stroke="url(#blue)" stroke-width="34" stroke-linecap="round"/>
+  <path d="M845 685 C855 655 875 630 900 615"
+        fill="none" stroke="url(#blue)" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="925" cy="600" r="70" fill="white" stroke="url(#blue)" stroke-width="24"/>
+  <circle cx="925" cy="600" r="35" fill="url(#teal)"/>
+
+  <!-- Wordmark -->
+  <text x="600" y="960" text-anchor="middle"
+        font-family="Inter, Arial, Helvetica, sans-serif"
+        font-size="142" font-weight="700" letter-spacing="-5">
+    <tspan fill="#0864B5">Galeno</tspan><tspan fill="#20B5B5">SV</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="1035" text-anchor="middle"
+        font-family="Inter, Arial, Helvetica, sans-serif"
+        font-size="34" font-weight="500" letter-spacing="3"
+        fill="#64748B">Gestión Clínica en un Solo Lugar</text>
+</svg>

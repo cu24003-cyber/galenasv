@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui"
+>
+<f:view>
+    <h:head>
+        <title>GalenoSV</title>
+        <h:outputStylesheet
+                library="primefaces"
+                name="components.css"/>
+    </h:head>
+    <h:body>
+        <div class="ui-g">
+            <div class="ui-g-1" >
+                <ui:insert name="logo">
+                    <h:graphicImage library="images" name="GalenoSV_logo_transparente.svg" alt="GalenoSVLogo" height="86" width="64"/>
+                </ui:insert>
+            </div>
+            <div class="ui-g-9" >
+                <ui:insert name="title">
+                   <h1>
+                       GalenoSV
+                   </h1>
+                </ui:insert>
+            </div>
+            <div class="ui-g-2" >
+                <ui:insert name="congig-menu">
+                    config menu
+                </ui:insert>
+
+            </div>
+        </div>
+        <div class="ui-g">
+            <div class="ui-g-2">
+                <ui:insert name="menusidebar">
+                    Menu sidebar
+                </ui:insert>
+            </div>
+            <div class="ui-g-10">
+                <ui:insert name="content">
+                    Content
+                </ui:insert>
+            </div>
+        </div>
+        <div class="ui-g">
+          <ui:insert name="footer">
+              GalenoSV todos los derechos reservados
+          </ui:insert>
+        </div>
+    </h:body>
+</f:view>
+</html>
