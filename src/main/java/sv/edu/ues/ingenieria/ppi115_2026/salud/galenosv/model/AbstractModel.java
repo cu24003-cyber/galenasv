@@ -1,6 +1,7 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.annotation.PostConstruct;
@@ -18,8 +19,10 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ServiceException
  */
 public abstract class AbstractModel<T, ID> implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     protected T seleccionada;
-    protected List<T> registros;
+    protected List<T> registros = new ArrayList<>();
 
     protected abstract AbstractService<T, ID> getService();
     protected abstract T nuevaInstancia();
@@ -31,7 +34,11 @@ public abstract class AbstractModel<T, ID> implements Serializable {
     }
 
     protected void cargarRegistros() {
-        registros = getService().listarTodos();
+        try {
+            registros = getService().listarTodos();
+        } catch (ServiceException e) {
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, "Error al cargar registros", e.getMessage());
+        }
     }
 
     public void nuevo() {
@@ -43,15 +50,22 @@ public abstract class AbstractModel<T, ID> implements Serializable {
     }
 
     public void guardar() {
+        if (seleccionada == null) {
+            marcarValidacionFallida();
+            agregarMensaje(FacesMessage.SEVERITY_WARN, "Sin selección",
+                    "Selecciona un registro o crea uno nuevo.");
+            return;
+        }
         try {
             if (obtenerId(seleccionada) == null) {
                 getService().crear(seleccionada);
             } else {
                 getService().actualizar(seleccionada);
             }
-            cargarRegistros();
             seleccionada = null;
+            cargarRegistros();
         } catch (ServiceException e) {
+            marcarValidacionFallida();
             agregarMensaje(FacesMessage.SEVERITY_ERROR, "Error al guardar", e.getMessage());
         }
     }
@@ -62,6 +76,13 @@ public abstract class AbstractModel<T, ID> implements Serializable {
             cargarRegistros();
         } catch (ServiceException e) {
             agregarMensaje(FacesMessage.SEVERITY_ERROR, "Error al eliminar", e.getMessage());
+        }
+    }
+
+    protected void marcarValidacionFallida() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx != null) {
+            ctx.validationFailed();
         }
     }
 

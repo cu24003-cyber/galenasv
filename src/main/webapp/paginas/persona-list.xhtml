@@ -74,10 +74,10 @@
                         <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
                             requiredMessage="El apellido es obligatorio" />
 
-                        <p:outputLabel for="fechaNac" value="Fecha de nacimiento" />
-                        <!-- Se recomienda usar p:datePicker en lugar de p:calendar si usas PrimeFaces moderno -->
-                        <p:calendar id="fechaNac" value="#{personaModel.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
-                            showIcon="true" required="true" requiredMessage="La fecha es obligatoria" />
+                        <p:outputLabel for="birthDate" value="Fecha de nacimiento" />
+                        <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}" showIcon="true" showOnFocus="false"
+                                      monthNavigator="true" yearNavigator="true" showWeek="true"/>
+
                     </p:panelGrid>
                 </p:outputPanel>
 

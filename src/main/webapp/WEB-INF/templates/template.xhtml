@@ -1,55 +1,97 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="es"
       xmlns="http://www.w3.org/1999/xhtml"
       xmlns:f="jakarta.faces.core"
       xmlns:h="jakarta.faces.html"
       xmlns:ui="jakarta.faces.facelets"
-      xmlns:p="http://primefaces.org/ui"
->
-<f:view>
+      xmlns:p="http://primefaces.org/ui">
+
+<f:view contentType="text/html" encoding="UTF-8">
     <h:head>
-        <title>GalenoSV</title>
-        <h:outputStylesheet
-                library="primefaces"
-                name="components.css"/>
+        <f:facet name="first">
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title><ui:insert name="title">GalenoSV - Sistema Médico</ui:insert></title>
+        </f:facet>
+
+        <!-- Tipografía Inter para un aspecto moderno y limpio -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
+
+        <!-- Estilos de PrimeFaces Icons y Estilos Personalizados -->
+        <h:outputStylesheet library="primefaces" name="primeicons/primeicons.css" />
+        <h:outputStylesheet library="css" name="layout.css" />
     </h:head>
-    <h:body>
-        <div class="ui-g">
-            <div class="ui-g-1" >
-                <ui:insert name="logo">
-                    <h:graphicImage library="images" name="GalenoSV_logo_transparente.svg" alt="GalenoSVLogo" height="86" width="64"/>
-                </ui:insert>
-            </div>
-            <div class="ui-g-9" >
-                <ui:insert name="title">
-                   <h1>
-                       GalenoSV
-                   </h1>
-                </ui:insert>
-            </div>
-            <div class="ui-g-2" >
-                <ui:insert name="congig-menu">
-                    config menu
-                </ui:insert>
+
+    <h:body class="galeno-body">
+        <div class="galeno-wrapper">
+
+            <!-- Barra Superior (Header) -->
+            <header class="galeno-header">
+                <div class="header-left">
+                    <ui:insert name="logo">
+                        <h:graphicImage library="images"
+                                        name="GalenoSV_logo_transparente.svg"
+                                        alt="GalenoSV Logo"
+                                        styleClass="galeno-logo" />
+                    </ui:insert>
+                    <ui:insert name="title">
+                        <span class="app-brand-name">Galeno<span class="accent-text">SV</span></span>
+                    </ui:insert>
+                </div>
+
+                <div class="header-right">
+                    <ui:insert name="config-menu">
+                        <!-- Ejemplo de Menú de Configuración / Perfil -->
+                        <div class="user-profile-badge">
+                            <i class="pi pi-bell icon-action" title="Notificaciones"></i>
+                            <div class="avatar-circle">
+                                <i class="pi pi-user"></i>
+                            </div>
+                            <span class="user-name">Dr. Usuario</span>
+                        </div>
+                    </ui:insert>
+                </div>
+            </header>
+
+            <!-- Cuerpo Principal: Sidebar + Contenido -->
+            <div class="galeno-container">
+
+                <!-- Menú Lateral (Sidebar) -->
+                <aside class="galeno-sidebar">
+                    <ui:insert name="menusidebar">
+                        <nav class="sidebar-nav">
+                            <ul>
+                                <li class="active"><a href="#"><i class="pi pi-home"></i> <span>Inicio</span></a></li>
+                                <li><a href="#"><i class="pi pi-calendar"></i> <span>Agenda / Citas</span></a></li>
+                                <li><a href="#"><i class="pi pi-users"></i> <span>Pacientes</span></a></li>
+                                <li><a href="#"><i class="pi pi-folder"></i> <span>Expedientes</span></a></li>
+                                <li><a href="#"><i class="pi pi-cog"></i> <span>Configuración</span></a></li>
+                            </ul>
+                        </nav>
+                    </ui:insert>
+                </aside>
+
+                <!-- Área de Contenido Principal -->
+                <main class="galeno-content">
+                    <div class="content-card">
+                        <ui:insert name="content">
+                            <h2>Bienvenido a GalenoSV</h2>
+                            <p>Seleccione una opción del menú para comenzar.</p>
+                        </ui:insert>
+                    </div>
+                </main>
 
             </div>
-        </div>
-        <div class="ui-g">
-            <div class="ui-g-2">
-                <ui:insert name="menusidebar">
-                    Menu sidebar
+
+            <!-- Pie de Página (Footer) -->
+            <footer class="galeno-footer">
+                <ui:insert name="footer">
+                    <span>GalenoSV - Todos los derechos reservados</span>
                 </ui:insert>
-            </div>
-            <div class="ui-g-10">
-                <ui:insert name="content">
-                    Content
-                </ui:insert>
-            </div>
-        </div>
-        <div class="ui-g">
-          <ui:insert name="footer">
-              GalenoSV todos los derechos reservados
-          </ui:insert>
+            </footer>
+
         </div>
     </h:body>
 </f:view>

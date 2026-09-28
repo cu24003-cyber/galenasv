@@ -1,0 +1,232 @@
+/* ==========================================================
+   VARIABLES DE TEMA - PALETA CLÍNICA MODERNA
+   ========================================================== */
+:root {
+    --primary-color: #0284c7;       /* Azul Médico */
+    --primary-hover: #0369a1;
+    --accent-color: #0d9488;        /* Menta / Turquesa */
+    --bg-main: #f8fafc;             /* Fondo gris/azul muy claro */
+    --bg-surface: #ffffff;          /* Fondo blanco de tarjetas */
+    --text-primary: #0f172a;        /* Oscuro de alto contraste */
+    --text-muted: #64748b;          /* Gris para texto secundario */
+    --border-color: #e2e8f0;        /* Borde sutil */
+
+    --header-height: 65px;
+    --sidebar-width: 240px;
+
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --transition: all 0.25s ease-in-out;
+}
+
+/* Reset básico */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.galeno-body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.galeno-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ==========================================================
+   HEADER / BARRA SUPERIOR
+   ========================================================== */
+.galeno-header {
+    height: var(--header-height);
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.galeno-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+.app-brand-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.accent-text {
+    color: var(--primary-color);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-action {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.icon-action:hover {
+    color: var(--primary-color);
+}
+
+.avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #e0f2fe;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* ==========================================================
+   LAYOUT Y CONTAINER
+   ========================================================== */
+.galeno-container {
+    display: flex;
+    flex: 1;
+}
+
+/* SIDEBAR */
+.galeno-sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-color);
+    padding: 1.5rem 0.75rem;
+    flex-shrink: 0;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.925rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.sidebar-nav a i {
+    font-size: 1.1rem;
+}
+
+.sidebar-nav li.active a,
+.sidebar-nav a:hover {
+    background-color: #f0f9ff;
+    color: var(--primary-color);
+}
+
+.sidebar-nav li.active a {
+    font-weight: 600;
+}
+
+/* CONTENIDO PRINCIPAL */
+.galeno-content {
+    flex: 1;
+    padding: 1.75rem;
+    max-width: 1400px;
+}
+
+.content-card {
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 1.75rem;
+    min-height: calc(100vh - var(--header-height) - 120px);
+}
+
+/* ==========================================================
+   FOOTER
+   ========================================================== */
+.galeno-footer {
+    background-color: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    text-align: center;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================
+   RESPONSIVIDAD (Media Queries)
+   ========================================================== */
+@media (max-width: 900px) {
+    .galeno-container {
+        flex-direction: column;
+    }
+
+    .galeno-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem;
+    }
+
+    .sidebar-nav ul {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .sidebar-nav a {
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+
+    .galeno-content {
+        padding: 1rem;
+    }
+}
