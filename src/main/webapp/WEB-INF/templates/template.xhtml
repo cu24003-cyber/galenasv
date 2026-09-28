@@ -5,13 +5,12 @@
       xmlns:h="jakarta.faces.html"
       xmlns:ui="jakarta.faces.facelets"
       xmlns:p="http://primefaces.org/ui">
->
 <f:view locale="#{idiomaBean.locale}">
     <h:head>
         <f:facet name="first">
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title><ui:insert name="title">GalenoSV - Sistema Médico</ui:insert></title>
+            <title><ui:insert name="pageTitle">#{msg['app.tituloSistema']}</ui:insert></title>
         </f:facet>
 
         <!-- Tipografía Inter para un aspecto moderno y limpio -->
@@ -22,6 +21,7 @@
         <!-- Estilos de PrimeFaces Icons y Estilos Personalizados -->
         <h:outputStylesheet library="primefaces" name="primeicons/primeicons.css" />
         <h:outputStylesheet library="css" name="layout.css" />
+        <h:outputScript library="primefaces" name="locales/locale-#{idiomaBean.idioma}.js" />
     </h:head>
 
     <h:body class="galeno-body">
@@ -33,7 +33,7 @@
                     <ui:insert name="logo">
                         <h:graphicImage library="images"
                                         name="GalenoSV_logo_transparente.svg"
-                                        alt="GalenoSV Logo"
+                                        alt="#{msg['app.logo']}"
                                         styleClass="galeno-logo" />
                     </ui:insert>
                     <ui:insert name="title">
@@ -42,14 +42,24 @@
                 </div>
 
                 <div class="header-right">
+                    <h:form id="frmIdioma">
+                        <h:outputLabel for="idioma" value="#{msg['idioma.label']}" />
+                        <h:selectOneMenu id="idioma" value="#{idiomaBean.idioma}" onchange="this.form.submit()">
+                            <f:selectItem itemValue="es" itemLabel="Español" />
+                            <f:selectItem itemValue="en" itemLabel="English" />
+                            <f:selectItem itemValue="fr" itemLabel="Français" />
+                            <f:selectItem itemValue="pt" itemLabel="Português" />
+                            <f:selectItem itemValue="zh" itemLabel="中文" />
+                        </h:selectOneMenu>
+                    </h:form>
                     <ui:insert name="config-menu">
                         <!-- Ejemplo de Menú de Configuración / Perfil -->
                         <div class="user-profile-badge">
-                            <i class="pi pi-bell icon-action" title="Notificaciones"></i>
+                            <i class="pi pi-bell icon-action" title="#{msg['app.notificaciones']}"></i>
                             <div class="avatar-circle">
                                 <i class="pi pi-user"></i>
                             </div>
-                            <span class="user-name">Dr. Usuario</span>
+                            <span class="user-name">#{msg['app.usuario']}</span>
                         </div>
                     </ui:insert>
                 </div>
@@ -61,13 +71,13 @@
                 <!-- Menú Lateral (Sidebar) -->
                 <aside class="galeno-sidebar">
                     <ui:insert name="menusidebar">
-                        <nav class="sidebar-nav">
+                        <nav class="sidebar-nav" aria-label="#{msg['app.menu']}">
                             <ul>
-                                <li class="active"><a href="#"><i class="pi pi-home"></i> <span>Inicio</span></a></li>
-                                <li><a href="#"><i class="pi pi-calendar"></i> <span>Agenda / Citas</span></a></li>
-                                <li><a href="#"><i class="pi pi-users"></i> <span>Pacientes</span></a></li>
-                                <li><a href="#"><i class="pi pi-folder"></i> <span>Expedientes</span></a></li>
-                                <li><a href="#"><i class="pi pi-cog"></i> <span>Configuración</span></a></li>
+                                <li class="active"><a href="#"><i class="pi pi-home"></i> <span>#{msg['menu.inicio']}</span></a></li>
+                                <li><a href="#"><i class="pi pi-calendar"></i> <span>#{msg['menu.agenda']}</span></a></li>
+                                <li><a href="#"><i class="pi pi-users"></i> <span>#{msg['menu.pacientes']}</span></a></li>
+                                <li><a href="#"><i class="pi pi-folder"></i> <span>#{msg['menu.expedientes']}</span></a></li>
+                                <li><a href="#"><i class="pi pi-cog"></i> <span>#{msg['menu.configuracion']}</span></a></li>
                             </ul>
                         </nav>
                     </ui:insert>
@@ -77,8 +87,8 @@
                 <main class="galeno-content">
                     <div class="content-card">
                         <ui:insert name="content">
-                            <h2>Bienvenido a GalenoSV</h2>
-                            <p>Seleccione una opción del menú para comenzar.</p>
+                            <h2>#{msg['app.bienvenida']}</h2>
+                            <p>#{msg['app.instruccion']}</p>
                         </ui:insert>
                     </div>
                 </main>
@@ -88,7 +98,7 @@
             <!-- Pie de Página (Footer) -->
             <footer class="galeno-footer">
                 <ui:insert name="footer">
-                    <span>GalenoSV - Todos los derechos reservados</span>
+                    <span>#{msg['app.footer']}</span>
                 </ui:insert>
             </footer>
 

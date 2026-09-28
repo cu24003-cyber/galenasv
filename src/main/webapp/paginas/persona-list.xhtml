@@ -73,7 +73,7 @@
                         <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
                             requiredMessage="#{msg['persona.requerido.apellidos']}" />
 
-                        <p:outputLabel for="birthDate" value="Fecha de nacimiento" />
+                        <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
                         <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}" showIcon="true" showOnFocus="false"
                                       monthNavigator="true" yearNavigator="true" showWeek="true"/>
 
