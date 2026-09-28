@@ -10,19 +10,36 @@
 
         <h:form id="frmPersonaList">
             <!-- Botón movido arriba para mejor usabilidad -->
-            <p:commandButton
-                    id="btnNuevaPersona"
-                    value="#{msg['boton.nuevaPersona']}"
-                    icon="pi pi-plus"
-                    update=":frmPersonaForm"
-                    oncomplete="PF('dlgPersona').show()"
-                    action="#{personaModel.nuevo}"
-                    process="@this"
-                    styleClass="ui-button-success"
-                    style="margin-bottom: 10px;"/>
-
+            <div class="toolbarPersona">
+                <p:toolbar id="toolbar-persona">
+                    <f:facet name="left">
+                        <p:commandButton
+                                id="btnNuevaPersona"
+                                value="#{msg['boton.nuevaPersona']}"
+                                icon="pi pi-plus"
+                                update=":frmPersonaForm"
+                                oncomplete="PF('dlgPersona').show()"
+                                action="#{personaModel.nuevo}"
+                                process="@this"
+                                styleClass="ui-button-success"
+                                style="margin-bottom: 10px;"/>
+                    </f:facet>
+                    <f:facet name="right">
+                        <div style="margin-bottom: 10px;">
+                                <p:outputLabel for="buscarNombre" value="#{msg['persona.buscar.nombre']}" />
+                                <p:inputText id="buscarNombre" value="#{personaModel.nombreBusqueda}"
+                                             placeholder="#{msg['persona.buscar.placeholder']}">
+                                    <p:ajax event="input" process="@this" listener="#{personaModel.cargarPersonas}"
+                                            update="tblPersonas :messages" />
+                                </p:inputText>
+                        </div>
+                    </f:facet>
+                </p:toolbar>
+                <div style="height:36px"></div>
+                <p:sticky target="toolbar-persona" stickyTopAt=".layout-topbar"/>
+            </div>
             <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
-                paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                first="#{personaModel.primeraFila}" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                 <p:column headerText="#{msg['persona.columna.nombres']}">
                     <h:outputText value="#{p.nombres}" />
                 </p:column>

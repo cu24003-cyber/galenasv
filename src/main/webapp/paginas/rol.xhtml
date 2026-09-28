@@ -9,6 +9,7 @@
             <p:commandButton id="btnNuevoRol" value="#{msg['rol.nuevo']}" icon="pi pi-plus"
                 action="#{rolModel.newRol}" process="@this" update=":frmRol :messages" resetValues="true"
                 oncomplete="if (!args.validationFailed) PF('dlgRol').show()" />
+
             <p:dataTable id="tblRoles" var="rol" value="#{rolModel.roles}" rows="10" paginator="true"
                 paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                 <p:column headerText="#{msg['rol.nombre']}"><h:outputText value="#{rol.nombre}" /></p:column>

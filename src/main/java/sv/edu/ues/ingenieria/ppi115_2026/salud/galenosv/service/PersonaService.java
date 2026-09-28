@@ -7,6 +7,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaReposi
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
 import java.util.UUID;
 import java.util.Date;
+import java.util.List;
+import jakarta.persistence.PersistenceException;
 
 @Stateless
 public class PersonaService extends AbstractService<Persona, UUID> {
@@ -17,6 +19,14 @@ public class PersonaService extends AbstractService<Persona, UUID> {
     @Override
     protected RepositoryInterface<Persona, UUID> getRepository() {
         return personaRepository;
+    }
+
+    public List<Persona> buscarPorNombre(String nombre) {
+        try {
+            return personaRepository.buscarPorNombre(nombre);
+        } catch (PersistenceException e) {
+            throw new ServiceException("error.cargarPersonas", "No se pudo buscar personas por nombre.", e);
+        }
     }
 
     @Override

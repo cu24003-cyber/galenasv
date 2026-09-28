@@ -118,4 +118,23 @@ class PersonaServiceTest {
 
         assertThrows(ServiceException.class, () -> personaService.eliminar(id));
     }
+
+    @Test
+    void buscarPorNombre_devuelveCoincidenciasDelRepositorio() {
+        java.util.List<Persona> personas = java.util.List.of(new Persona());
+        when(personaRepository.buscarPorNombre("Ana")).thenReturn(personas);
+
+        assertSame(personas, personaService.buscarPorNombre("Ana"));
+    }
+
+    @Test
+    void buscarPorNombre_traduceErroresDePersistencia() {
+        when(personaRepository.buscarPorNombre("Ana"))
+                .thenThrow(new PersistenceException("Error BD"));
+
+        ServiceException error = assertThrows(ServiceException.class,
+                () -> personaService.buscarPorNombre("Ana"));
+
+        assertEquals("error.cargarPersonas", error.getMessageKey());
+    }
 }
