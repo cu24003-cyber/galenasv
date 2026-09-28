@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="#{idiomaBean.idioma}"
       xmlns="http://www.w3.org/1999/xhtml"
       xmlns:f="jakarta.faces.core"
       xmlns:h="jakarta.faces.html"
@@ -7,15 +7,16 @@
       xmlns:p="http://primefaces.org/ui"
 >
     <ui:composition template="/WEB-INF/templates/template.xhtml">
+        <ui:define name="pageTitle">#{msg['example.titulo']}</ui:define>
 
                 <ui:define name="title">
-                    EXAMPLE
+                    #{msg['example.titulo']}
                 </ui:define>
                 <ui:define name="menusidebar">
-                    NOTHING HAPENS
+                    #{msg['example.menu']}
                 </ui:define>
                 <ui:define name="content">
-                    <p>este si es contenido de calidad</p>
+                    <p>#{msg['example.contenido']}</p>
                 </ui:define>
 
 

@@ -20,32 +20,32 @@ public abstract class AbstractService<T, ID> {
         try {
             getRepository().create(entidad);
         } catch (EntityExistsException e) {
-            throw new ServiceException("Ya existe un registro con ese identificador.", e);
+            throw new ServiceException("error.duplicado", "Ya existe un registro con ese identificador.", e);
         } catch (PersistenceException e) {
-            throw new ServiceException("No se pudo crear el registro: " + causaLegible(e), e);
+            throw new ServiceException("error.crear", "No se pudo crear el registro: " + causaLegible(e), e);
         }
     }
 
     public void actualizar(T entidad) {
         validar(entidad);
         if (getRepository().find(obtenerId(entidad)) == null) {
-            throw new ServiceException("No existe un registro con ese id para actualizar.");
+            throw new ServiceException("error.noExisteActualizar", "No existe un registro con ese id para actualizar.", null);
         }
         try {
             getRepository().update(entidad);
         } catch (PersistenceException e) {
-            throw new ServiceException("No se pudo actualizar el registro: " + causaLegible(e), e);
+            throw new ServiceException("error.actualizar", "No se pudo actualizar el registro: " + causaLegible(e), e);
         }
     }
 
     public void eliminar(ID id) {
         if (getRepository().find(id) == null) {
-            throw new ServiceException("No existe un registro con ese id para eliminar.");
+            throw new ServiceException("error.noExisteEliminar", "No existe un registro con ese id para eliminar.", null);
         }
         try {
             getRepository().delete(id);
         } catch (PersistenceException e) {
-            throw new ServiceException("No se puede eliminar: el registro esta siendo utilizado por otro dato relacionado.", e);
+            throw new ServiceException("error.relacionado", "No se puede eliminar: el registro esta siendo utilizado por otro dato relacionado.", e);
         }
     }
 

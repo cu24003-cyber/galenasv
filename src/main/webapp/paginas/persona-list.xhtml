@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:f="jakarta.faces.core"
     xmlns:p="http://primefaces.org/ui" xmlns:ui="jakarta.faces.facelets">
-<h:head>
-    <title>Listado de Personas</title>
-</h:head>
+
 <ui:composition template="/WEB-INF/templates/template.xhtml">
+    <ui:define name="pageTitle">#{msg['persona.titulo.lista']}</ui:define>
     <ui:define name="content">
         <!-- Growl para mostrar mensajes de éxito o error sin recargar la página -->
         <p:growl id="messages" showDetail="true" life="3000" />
@@ -13,7 +12,7 @@
             <!-- Botón movido arriba para mejor usabilidad -->
             <p:commandButton
                     id="btnNuevaPersona"
-                    value="Nueva persona"
+                    value="#{msg['boton.nuevaPersona']}"
                     icon="pi pi-plus"
                     update=":frmPersonaForm"
                     oncomplete="PF('dlgPersona').show()"
@@ -23,29 +22,29 @@
                     style="margin-bottom: 10px;"/>
 
             <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
-                paginatorPosition="bottom">
-                <p:column headerText="Nombres">
+                paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                <p:column headerText="#{msg['persona.columna.nombres']}">
                     <h:outputText value="#{p.nombres}" />
                 </p:column>
-                <p:column headerText="Apellidos">
+                <p:column headerText="#{msg['persona.columna.apellidos']}">
                     <h:outputText value="#{p.apellidos}" />
                 </p:column>
-                <p:column headerText="Fecha de nacimiento">
+                <p:column headerText="#{msg['persona.columna.fechaNacimiento']}">
                     <h:outputText value="#{p.fechaNacimiento}">
                         <f:convertDateTime pattern="dd/MM/yyyy" />
                     </h:outputText>
                 </p:column>
-                <p:column headerText="Acciones" style="width: 150px; text-align: center;">
+                <p:column headerText="#{msg['persona.columna.acciones']}" style="width: 150px; text-align: center;">
                     <!-- process="@this" para que solo se procese el botón y no envíe todo el formulario -->
-                    <p:commandButton icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
+                    <p:commandButton title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}" icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
                         actionListener="#{personaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
                         style="margin-right: 5px;" />
 
                     <!-- Solo actualiza la tabla y los mensajes, no todo el form -->
-                    <p:commandButton icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
+                    <p:commandButton title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}" icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
                         update=":frmPersonaList:tblPersonas :messages" process="@this"
                         styleClass="rounded-button ui-button-danger">
-                        <p:confirm header="Confirmación" message="¿Está seguro de eliminar esta persona?"
+                        <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['persona.confirmar.mensaje']}"
                             icon="pi pi-exclamation-triangle" />
                     </p:commandButton>
                 </p:column>
@@ -53,39 +52,39 @@
 
             <!-- Diálogo global de confirmación para eliminar -->
             <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
-                <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
-                <p:commandButton value="Sí" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
+                <p:commandButton value="#{msg['boton.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+                <p:commandButton value="#{msg['boton.si']}" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
             </p:confirmDialog>
         </h:form>
 
         <!-- El diálogo debe ir fuera del formulario principal, y contener su propio formulario -->
         <!-- Se agregó closable="false" para quitar la X y width="450" para que no se vea tan pequeño -->
-        <p:dialog header="Detalle de Persona" widgetVar="dlgPersona" modal="true" showEffect="fade" hideEffect="fade"
+        <p:dialog header="#{msg['persona.dialogo.titulo']}" widgetVar="dlgPersona" modal="true" showEffect="fade" hideEffect="fade"
             resizable="false" closable="false" width="450">
             <h:form id="frmPersonaForm">
                 <!-- ui-fluid hace que los inputs ocupen todo el ancho disponible -->
                 <p:outputPanel id="personaDetalle" rendered="#{personaModel.seleccionada != null}" styleClass="ui-fluid">
                     <p:panelGrid columns="2" columnClasses="label,value" style="width: 100%; border: none;">
-                        <p:outputLabel for="nombres" value="Nombres" />
+                        <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
                         <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}" required="true"
-                            requiredMessage="El nombre es obligatorio" />
+                            requiredMessage="#{msg['persona.requerido.nombres']}" />
 
-                        <p:outputLabel for="apellidos" value="Apellidos" />
+                        <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
                         <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
-                            requiredMessage="El apellido es obligatorio" />
+                            requiredMessage="#{msg['persona.requerido.apellidos']}" />
 
-                        <p:outputLabel for="fechaNac" value="Fecha de nacimiento" />
+                        <p:outputLabel for="fechaNac" value="#{msg['persona.campo.fechaNacimiento']}" />
                         <!-- Se recomienda usar p:datePicker en lugar de p:calendar si usas PrimeFaces moderno -->
-                        <p:calendar id="fechaNac" value="#{personaModel.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
-                            showIcon="true" required="true" requiredMessage="La fecha es obligatoria" />
+                        <p:calendar locale="#{idiomaBean.locale}" id="fechaNac" value="#{personaModel.seleccionada.fechaNacimiento}" pattern="dd/MM/yyyy"
+                            converterMessage="#{msg['persona.fecha.invalida']}" showIcon="true" required="true" requiredMessage="#{msg['persona.requerido.fecha']}" />
                     </p:panelGrid>
                 </p:outputPanel>
 
                 <!-- Botones colocados en un contenedor normal, ya que f:facet no puede ir dentro de h:form -->
                 <div style="text-align: right; margin-top: 15px;">
-                    <p:commandButton value="Cancelar" icon="pi pi-times" onclick="PF('dlgPersona').hide()" type="button"
+                    <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times" onclick="PF('dlgPersona').hide()" type="button"
                         styleClass="ui-button-secondary" style="margin-right: .5rem" />
-                    <p:commandButton value="Guardar" icon="pi pi-check" actionListener="#{personaModel.guardar()}"
+                    <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check" actionListener="#{personaModel.guardar()}"
                         update=":frmPersonaList:tblPersonas :messages @form"
                         oncomplete="if (!args.validationFailed) PF('dlgPersona').hide()" />
                 </div>

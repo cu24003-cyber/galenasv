@@ -35,10 +35,10 @@ public class PersonaModel implements Serializable {
     public void cargarPersonas() {
         try {
             personas = personaService.listarTodos();
-        } catch (ServiceException e) {
+        } catch (ServiceException | jakarta.ejb.EJBException e) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Error al cargar personas", e.getMessage()));
+                            Mensajes.texto("error.cargarPersonas"), Mensajes.detalle(e)));
         }
     }
 
@@ -57,8 +57,8 @@ public class PersonaModel implements Serializable {
             context.validationFailed();
             context.addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_WARN,
-                            "Sin selección",
-                            "Selecciona una persona o crea una nueva."));
+                            Mensajes.texto("persona.sinSeleccion"),
+                            Mensajes.texto("persona.seleccionar")));
             return;
         }
 
@@ -68,16 +68,34 @@ public class PersonaModel implements Serializable {
             } else {
                 personaService.actualizar(seleccionada);
             }
-        } catch (ServiceException e) {
+        } catch (ServiceException | jakarta.ejb.EJBException e) {
             context.validationFailed();
             context.addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Error al guardar", e.getMessage()));
+                            Mensajes.texto("error.guardar"), Mensajes.detalle(e)));
             return;
         }
 
         seleccionada = null;
         cargarPersonas();
+    }
+
+    public void eliminar(Persona persona) {
+        if (persona == null || persona.getIdPersona() == null) {
+            return;
+        }
+        try {
+            personaService.eliminar(persona.getIdPersona());
+            if (seleccionada != null && persona.getIdPersona().equals(seleccionada.getIdPersona())) {
+                seleccionada = null;
+            }
+            cargarPersonas();
+        } catch (ServiceException | jakarta.ejb.EJBException e) {
+            FacesContext context = FacesContext.getCurrentInstance();
+            context.validationFailed();
+            context.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    Mensajes.texto("error.eliminar"), Mensajes.detalle(e)));
+        }
     }
 
     public List<Persona> getPersonas() {
