@@ -36,8 +36,10 @@ public abstract class AbstractModel<T, ID> implements Serializable {
     protected void cargarRegistros() {
         try {
             registros = getService().listarTodos();
-        } catch (ServiceException e) {
-            agregarMensaje(FacesMessage.SEVERITY_ERROR, "Error al cargar registros", e.getMessage());
+        } catch (ServiceException | jakarta.ejb.EJBException e) {
+            registros = java.util.Collections.emptyList();
+            agregarMensaje(FacesMessage.SEVERITY_ERROR,
+                    Mensajes.texto("error.general"), Mensajes.detalle(e));
         }
     }
 
@@ -62,6 +64,7 @@ public abstract class AbstractModel<T, ID> implements Serializable {
             } else {
                 getService().actualizar(seleccionada);
             }
+            cargarRegistros();
             seleccionada = null;
             cargarRegistros();
         } catch (ServiceException e) {
@@ -74,8 +77,8 @@ public abstract class AbstractModel<T, ID> implements Serializable {
         try {
             getService().eliminar(obtenerId(entidad));
             cargarRegistros();
-        } catch (ServiceException e) {
-            agregarMensaje(FacesMessage.SEVERITY_ERROR, "Error al eliminar", e.getMessage());
+        } catch (ServiceException | jakarta.ejb.EJBException e) {
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.eliminar"), Mensajes.detalle(e));
         }
     }
 

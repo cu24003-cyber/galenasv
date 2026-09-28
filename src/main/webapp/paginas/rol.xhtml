@@ -1,38 +1,59 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:f="jakarta.faces.core"
-      xmlns:h="jakarta.faces.html"
-      xmlns:ui="jakarta.faces.facelets"
-      xmlns:p="http://primefaces.org/ui"
->
-    <ui:composition template="/WEB-INF/templates/template.xhtml">
-        <ui:define name="title">
-            <h3>Roles</h3>
-        </ui:define>
-        <ui:define name="congig-menu">
-            Here will be a configuration menu
-        </ui:define>
-        <ui:define name="willmwillenusidebar">
-            here will be a side bar
-        </ui:define>
-        <ui:define name="content">
-           <h:form id="frmRol-list">
-               <p:commandButton
-                       id="btnNuevoRol"
-                       value="Nuevo Rol"
-                       icon="pi pi-plus"
-                       update="frmRol"
-                       oncomplete="PF(dlgRol).show()"
-                       action="#{rolModel.newRol()}"
-                       process="@this"
-                       styleClass="ui-button-success"
-                       style="margin-bottom: 10px;"
-               />
-           </h:form>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/WEB-INF/templates/template.xhtml">
+    <ui:define name="pageTitle">#{msg['rol.titulo']}</ui:define>
+    <ui:define name="title"><h3>#{msg['rol.titulo']}</h3></ui:define>
+    <ui:define name="content">
+        <h:form id="frmRol-list">
+            <p:commandButton id="btnNuevoRol" value="#{msg['rol.nuevo']}" icon="pi pi-plus"
+                action="#{rolModel.newRol}" process="@this" update=":frmRol :messages" resetValues="true"
+                oncomplete="if (!args.validationFailed) PF('dlgRol').show()" />
+            <p:dataTable id="tblRoles" var="rol" value="#{rolModel.roles}" rows="10" paginator="true"
+                paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                <p:column headerText="#{msg['rol.nombre']}"><h:outputText value="#{rol.nombre}" /></p:column>
+                <p:column headerText="#{msg['rol.activo']}">
+                    <h:outputText value="#{rol.activo ? msg['boton.si'] : msg['boton.no']}" />
+                </p:column>
+                <p:column headerText="#{msg['rol.observaciones']}"><h:outputText value="#{rol.observaciones}" /></p:column>
+                <p:column headerText="#{msg['persona.columna.acciones']}">
+                    <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}"
+                        action="#{rolModel.editRol(rol)}" process="@this" update=":frmRol :messages" resetValues="true"
+                        oncomplete="if (!args.validationFailed) PF('dlgRol').show()" />
+                    <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}"
+                        action="#{rolModel.deleteRol(rol)}" process="@this" update="tblRoles :messages">
+                        <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['rol.confirmar.eliminar']}" />
+                    </p:commandButton>
+                </p:column>
+            </p:dataTable>
+            <p:confirmDialog global="true">
+                <p:commandButton value="#{msg['boton.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+                <p:commandButton value="#{msg['boton.si']}" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
+            </p:confirmDialog>
+        </h:form>
+        <p:dialog id="dlgRol" widgetVar="dlgRol" header="#{msg['rol.detalle']}" modal="true"
+            closable="false" resizable="false" width="500" responsive="true">
             <h:form id="frmRol">
-
+                <p:messages id="formMessages" showDetail="false" />
+                <p:outputPanel rendered="#{rolModel.rolSeleccionado != null}">
+                    <p:panelGrid columns="2" layout="grid">
+                        <p:outputLabel for="nombre" value="#{msg['rol.nombre']}" />
+                        <p:inputText id="nombre" value="#{rolModel.rolSeleccionado.nombre}" maxlength="155"
+                            required="true" requiredMessage="#{msg['rol.requerido.nombre']}" />
+                        <p:outputLabel for="activo" value="#{msg['rol.activo']}" />
+                        <p:selectBooleanCheckbox id="activo" value="#{rolModel.rolSeleccionado.activo}" />
+                        <p:outputLabel for="observaciones" value="#{msg['rol.observaciones']}" />
+                        <p:inputTextarea id="observaciones" value="#{rolModel.rolSeleccionado.observaciones}" />
+                    </p:panelGrid>
+                </p:outputPanel>
+                <p:commandButton value="#{msg['boton.cancelar']}" action="#{rolModel.cancelRol}" process="@this"
+                    update="@form :messages" resetValues="true" oncomplete="PF('dlgRol').hide()" />
+                <p:commandButton value="#{msg['boton.guardar']}" action="#{rolModel.saveRol}" process="@form"
+                    update="@form :frmRol-list:tblRoles :messages"
+                    oncomplete="if (!args.validationFailed) PF('dlgRol').hide()" />
             </h:form>
-        </ui:define>
-    </ui:composition>
+        </p:dialog>
+        <p:messages id="messages" showDetail="true" globalOnly="true" />
+    </ui:define>
+</ui:composition>
 </html>
