@@ -7,7 +7,7 @@
     <ui:define name="content">
         <p:growl id="messages" showDetail="true" globalOnly="true" life="3000" />
 
-        <h:form id="frmPersonaList">
+        <h:form id="frmPersonaToolbar">
             <div class="toolbarPersona">
                 <p:toolbar id="toolbar-persona">
                     <f:facet name="left">
@@ -15,8 +15,8 @@
                                 id="btnNuevaPersona"
                                 value="#{msg['boton.nuevaPersona']}"
                                 icon="pi pi-plus"
-                                update="personaFormulario" resetValues="true"
-                                action="#{personaModel.nuevo}"
+                                update=":personaFormulario" resetValues="true"
+                                action="#{registroPersonaModel.nuevo}"
                                 process="@this"
                                 styleClass="ui-button-success"
                                 style="margin-bottom: 10px;"/>
@@ -27,42 +27,132 @@
                                 <p:inputText id="buscarNombre" value="#{personaModel.nombreBusqueda}"
                                              placeholder="#{msg['persona.buscar.placeholder']}">
                                     <p:ajax event="input" process="@this" listener="#{personaModel.cargarPersonas}"
-                                            update="tblPersonas :messages" />
+                                            update=":frmPersonaList:tblPersonas :messages" />
                                 </p:inputText>
                         </div>
                     </f:facet>
                 </p:toolbar>
                 <div style="height:36px"></div>
-                <p:sticky target="toolbar-persona" stickyTopAt=".layout-topbar"/>
+                <p:sticky target="toolbar-persona" stickyTopAt=".galeno-header"/>
             </div>
-            <p:outputPanel id="personaFormulario">
-                <p:panel header="#{msg['persona.dialogo.titulo']}" rendered="#{personaModel.seleccionada != null}"
-                    style="margin-bottom: 1rem;">
-                    <p:messages showDetail="false" />
-                    <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
-                        <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
-                        <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}" required="true"
-                            requiredMessage="#{msg['persona.requerido.nombres']}" />
+        </h:form>
 
-                        <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
-                        <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
-                            requiredMessage="#{msg['persona.requerido.apellidos']}" />
-
-                        <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
-                        <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}" showIcon="true" showOnFocus="false"
-                                      monthNavigator="true" yearNavigator="true" showWeek="true"/>
-
-                    </p:panelGrid>
-                    <div style="text-align: right; margin-top: 1rem;">
-                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{personaModel.cancelar}" process="@this" update="personaFormulario"
-                            resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
+        <p:outputPanel id="personaFormulario" style="margin-bottom: 1rem;">
+            <h:panelGroup layout="block" rendered="#{personaModel.seleccionada != null}">
+                <h3>#{msg['persona.dialogo.titulo']}: #{personaModel.seleccionada.nombres} #{personaModel.seleccionada.apellidos}</h3>
+            </h:panelGroup>
+            <p:tabView id="registroTabs" activeIndex="#{registroPersonaModel.pestana}"
+                       rendered="#{personaModel.seleccionada != null}">
+                <p:tab title="#{msg['entidad.Persona']}">
+                    <h:form id="frmDatosPersona">
+                        <p:messages showDetail="false" />
+                        <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
+                            <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
+                            <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}"
+                                         required="true" maxlength="255">
+                                <f:validateLength maximum="255" />
+                            </p:inputText>
+                            <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
+                            <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}"
+                                         required="true" maxlength="255">
+                                <f:validateLength maximum="255" />
+                            </p:inputText>
+                            <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
+                            <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}"
+                                          showIcon="true" showOnFocus="false" monthNavigator="true" yearNavigator="true" />
+                        </p:panelGrid>
+                        <h:panelGroup layout="block" rendered="#{not registroPersonaModel.personaGuardada}">
+                            <p>#{msg['registro.guardarPersonaPrimero']}</p>
+                        </h:panelGroup>
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
-                            action="#{personaModel.guardar}" process="@this personaFormulario"
-                            update="personaFormulario tblPersonas :messages" />
-                    </div>
-                </p:panel>
-            </p:outputPanel>
+                                         action="#{registroPersonaModel.guardarPersona}" process="@form"
+                                         update=":personaFormulario :frmPersonaList:tblPersonas :messages" />
+                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
+                                         action="#{registroPersonaModel.cancelar}" process="@this"
+                                         update=":personaFormulario" resetValues="true" styleClass="ui-button-secondary" />
+                    </h:form>
+                </p:tab>
+                <p:tab title="#{msg['entidad.Documento']}" disabled="#{not registroPersonaModel.personaGuardada}">
+                    <h:form id="frmDocumento">
+                        <p:messages showDetail="false" />
+                        <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
+                            <p:outputLabel for="tipo" value="#{msg['campo.idTipoDocumento']}" />
+                            <p:autoComplete id="tipo" value="#{registroPersonaModel.documento.idTipoDocumento}"
+                                            completeMethod="#{registroPersonaModel.completarTiposDocumento}"
+                                            var="tipo" itemLabel="#{tipo.nombre}" itemValue="#{tipo}"
+                                            converter="tipoDocumentoConverter" dropdown="true" forceSelection="true"
+                                            required="true" scrollHeight="250">
+                                <p:ajax event="itemSelect" process="@this" update="indicaciones" />
+                                <p:ajax event="clear" process="@this" update="indicaciones" />
+                            </p:autoComplete>
+                            <p:outputLabel for="valor" value="#{msg['campo.valor']}" />
+                            <p:inputText id="valor" value="#{registroPersonaModel.documento.valor}"
+                                         required="true" maxlength="255">
+                                <f:validateLength maximum="255" />
+                            </p:inputText>
+                            <h:outputText value="#{msg['campo.indicaciones']}" />
+                            <h:outputText id="indicaciones" value="#{registroPersonaModel.documento.idTipoDocumento.indicaciones}" />
+                            <p:outputLabel for="ruta" value="#{msg['campo.rutaFisica']}" />
+                            <p:inputText id="ruta" value="#{registroPersonaModel.documento.rutaFisica}" maxlength="255">
+                                <f:validateLength maximum="255" />
+                            </p:inputText>
+                        </p:panelGrid>
+                        <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
+                                         action="#{registroPersonaModel.guardarDocumento}" process="@form"
+                                         update="@form :messages" />
+                        <p:dataTable value="#{registroPersonaModel.documentos}" var="registro" rows="5"
+                                     paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                            <p:column headerText="#{msg['campo.tipo']}">
+                                <h:outputText value="#{registro.idTipoDocumento.nombre}" />
+                            </p:column>
+                            <p:column headerText="#{msg['campo.valor']}">
+                                <h:outputText value="#{registro.valor}" />
+                            </p:column>
+                            <p:column headerText="#{msg['campo.rutaFisica']}">
+                                <h:outputText value="#{registro.rutaFisica}" />
+                            </p:column>
+                        </p:dataTable>
+                    </h:form>
+                </p:tab>
+                <p:tab title="#{msg['entidad.MedioContacto']}" disabled="#{not registroPersonaModel.personaGuardada}">
+                    <h:form id="frmContacto">
+                        <p:messages showDetail="false" />
+                        <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
+                            <p:outputLabel for="tipo" value="#{msg['campo.idTipoMedioContacto']}" />
+                            <p:autoComplete id="tipo" value="#{registroPersonaModel.contacto.idTipoMedioContacto}"
+                                            completeMethod="#{registroPersonaModel.completarTiposContacto}"
+                                            var="tipo" itemLabel="#{tipo.nombre}" itemValue="#{tipo}"
+                                            converter="tipoMedioContactoConverter" dropdown="true" forceSelection="true"
+                                            required="true" scrollHeight="250">
+                                <p:ajax event="itemSelect" process="@this" update="indicaciones" />
+                                <p:ajax event="clear" process="@this" update="indicaciones" />
+                            </p:autoComplete>
+                            <p:outputLabel for="valor" value="#{msg['campo.valor']}" />
+                            <p:inputText id="valor" value="#{registroPersonaModel.contacto.valor}"
+                                         required="true" maxlength="255">
+                                <f:validateLength maximum="255" />
+                            </p:inputText>
+                            <h:outputText value="#{msg['campo.indicaciones']}" />
+                            <h:outputText id="indicaciones" value="#{registroPersonaModel.contacto.idTipoMedioContacto.indicaciones}" />
+                        </p:panelGrid>
+                        <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
+                                         action="#{registroPersonaModel.guardarContacto}" process="@form"
+                                         update="@form :messages" />
+                        <p:dataTable value="#{registroPersonaModel.contactos}" var="registro" rows="5"
+                                     paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                            <p:column headerText="#{msg['campo.tipo']}">
+                                <h:outputText value="#{registro.idTipoMedioContacto.nombre}" />
+                            </p:column>
+                            <p:column headerText="#{msg['campo.valor']}">
+                                <h:outputText value="#{registro.valor}" />
+                            </p:column>
+                        </p:dataTable>
+                    </h:form>
+                </p:tab>
+            </p:tabView>
+        </p:outputPanel>
+
+        <h:form id="frmPersonaList">
             <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
                 first="#{personaModel.primeraFila}" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                 <p:column headerText="#{msg['persona.columna.nombres']}">
@@ -77,8 +167,8 @@
                     </h:outputText>
                 </p:column>
                 <p:column headerText="#{msg['persona.columna.acciones']}" style="width: 150px; text-align: center;">
-                    <p:commandButton title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}" icon="pi pi-pencil" update="personaFormulario" resetValues="true"
-                        actionListener="#{personaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
+                    <p:commandButton title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}" icon="pi pi-pencil" update=":personaFormulario" resetValues="true"
+                        actionListener="#{registroPersonaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
                         style="margin-right: 5px;" />
                     <p:commandButton title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}" icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
                         update=":frmPersonaList:tblPersonas :messages" process="@this"

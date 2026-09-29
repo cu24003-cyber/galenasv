@@ -32,4 +32,7 @@ public class DocumentoService extends AbstractService<Documento, UUID> {
         super.crear(entidad);
     }
 
+    public java.util.List<Documento> listarPorPersona(UUID idPersona) {
+        return documentoRepository.listarPorPersona(idPersona);
+    }
 }

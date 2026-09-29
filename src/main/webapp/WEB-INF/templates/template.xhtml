@@ -20,11 +20,12 @@
 
         <!-- Estilos de PrimeFaces Icons y Estilos Personalizados -->
         <h:outputStylesheet library="primefaces" name="primeicons/primeicons.css" />
-        <h:outputStylesheet library="css" name="layout.css" />
+        <!-- Incrementar rev al cambiar el CSS para invalidar copias en caché. -->
+        <link rel="stylesheet" href="#{resource['css:layout.css']}&amp;rev=20260929-2" />
         <h:outputScript library="primefaces" name="locales/locale-#{idiomaBean.idioma}.js" />
     </h:head>
 
-    <h:body class="galeno-body">
+    <h:body styleClass="galeno-body" style="color-scheme: #{temaBean.oscuro ? 'dark' : 'light'}">
         <div class="galeno-wrapper">
 
             <!-- Barra Superior (Header) -->
@@ -51,6 +52,22 @@
                             <f:selectItem itemValue="pt" itemLabel="Português" />
                             <f:selectItem itemValue="zh" itemLabel="中文" />
                         </h:selectOneMenu>
+                    </h:form>
+                    <h:form id="frmTema">
+                        <p:commandButton id="apariencia" type="button" icon="pi pi-palette"
+                                         title="#{msg['tema.apariencia']}"
+                                         ariaLabel="#{msg['tema.apariencia']}"
+                                         styleClass="ui-button-rounded ui-button-flat" />
+                        <p:overlayPanel id="menuTema" for="apariencia" dismissable="true"
+                                        appendTo="@form" my="right top" at="right bottom">
+                            <div class="theme-toggle-row">
+                                <p:outputLabel for="oscuro" value="#{msg['tema.oscuro']}" />
+                                <p:toggleSwitch id="oscuro" value="#{temaBean.oscuro}"
+                                                ariaLabel="#{msg['tema.oscuro']}">
+                                    <p:ajax process="@this" listener="#{temaBean.aplicarTema}" />
+                                </p:toggleSwitch>
+                            </div>
+                        </p:overlayPanel>
                     </h:form>
                     <ui:insert name="config-menu">
                         <!-- Ejemplo de Menú de Configuración / Perfil -->
@@ -91,6 +108,16 @@
                                 <li>
                                     <h:link outcome="/paginas/persona-list.xhtml">
                                         <i class="pi pi-users"></i> <span>#{msg['entidad.Persona']}</span>
+                                    </h:link>
+                                </li>
+                                <li>
+                                    <h:link outcome="/paginas/tipoDocumento.xhtml">
+                                        <i class="pi pi-file"></i> <span>#{msg['entidad.TipoDocumento']}</span>
+                                    </h:link>
+                                </li>
+                                <li>
+                                    <h:link outcome="/paginas/tipoMedioContacto.xhtml">
+                                        <i class="pi pi-phone"></i> <span>#{msg['entidad.TipoMedioContacto']}</span>
                                     </h:link>
                                 </li>
                             </ul>

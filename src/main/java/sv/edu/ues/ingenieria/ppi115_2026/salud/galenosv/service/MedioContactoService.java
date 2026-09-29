@@ -32,4 +32,7 @@ public class MedioContactoService extends AbstractService<MedioContacto, UUID> {
         super.crear(entidad);
     }
 
+    public java.util.List<MedioContacto> listarPorPersona(UUID idPersona) {
+        return medioContactoRepository.listarPorPersona(idPersona);
+    }
 }

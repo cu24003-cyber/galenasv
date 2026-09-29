@@ -1,15 +1,14 @@
 /* ==========================================================
-   VARIABLES DE TEMA - PALETA CLÍNICA MODERNA
+   VARIABLES COMPARTIDAS CON VELA BLUE / SAGA BLUE
    ========================================================== */
 :root {
-    --primary-color: #0284c7;       /* Azul Médico */
-    --primary-hover: #0369a1;
-    --accent-color: #0d9488;        /* Menta / Turquesa */
-    --bg-main: #f8fafc;             /* Fondo gris/azul muy claro */
-    --bg-surface: #ffffff;          /* Fondo blanco de tarjetas */
-    --text-primary: #0f172a;        /* Oscuro de alto contraste */
-    --text-muted: #64748b;          /* Gris para texto secundario */
-    --border-color: #e2e8f0;        /* Borde sutil */
+    --galeno-primary: var(--primary-color, #90caf9);
+    --bg-main: var(--surface-ground, #17212f);
+    --bg-surface: var(--surface-card, #1f2d40);
+    --text-primary: var(--text-color, rgba(255, 255, 255, 0.87));
+    --text-muted: var(--text-color-secondary, rgba(255, 255, 255, 0.60));
+    --border-color: var(--surface-border, #304562);
+    --bg-highlight: color-mix(in srgb, var(--galeno-primary) 16%, transparent);
 
     --header-height: 65px;
     --sidebar-width: 240px;
@@ -79,7 +78,7 @@ body.galeno-body {
 }
 
 .accent-text {
-    color: var(--primary-color);
+    color: var(--galeno-primary);
 }
 
 .header-right {
@@ -101,15 +100,15 @@ body.galeno-body {
 }
 
 .icon-action:hover {
-    color: var(--primary-color);
+    color: var(--galeno-primary);
 }
 
 .avatar-circle {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background-color: #e0f2fe;
-    color: var(--primary-color);
+    background-color: var(--bg-highlight);
+    color: var(--galeno-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -165,8 +164,8 @@ body.galeno-body {
 
 .sidebar-nav li.active a,
 .sidebar-nav a:hover {
-    background-color: #f0f9ff;
-    color: var(--primary-color);
+    background-color: var(--bg-highlight);
+    color: var(--galeno-primary);
 }
 
 .sidebar-nav li.active a {
@@ -228,5 +227,37 @@ body.galeno-body {
 
     .galeno-content {
         padding: 1rem;
+    }
+}
+
+/* Preferencias de apariencia en la barra superior. */
+.header-right {
+    gap: 1rem;
+}
+
+.theme-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.sidebar-nav a:focus-visible {
+    outline: 2px solid var(--galeno-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+    .galeno-header {
+        height: auto;
+        min-height: var(--header-height);
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .header-right {
+        flex-wrap: wrap;
+        gap: 0.75rem;
     }
 }

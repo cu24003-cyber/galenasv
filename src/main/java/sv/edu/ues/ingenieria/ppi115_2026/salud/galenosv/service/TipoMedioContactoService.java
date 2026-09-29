@@ -1,6 +1,7 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
+import jakarta.ejb.LocalBean;
 import jakarta.inject.Inject;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.TipoMedioContactoRepository;
@@ -8,7 +9,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoMedioContac
 import java.util.UUID;
 
 
-@Stateless
+@Stateless(name = "TipoMedioContactoService")
+@LocalBean
 public class TipoMedioContactoService extends AbstractService<TipoMedioContacto, UUID> {
 
     @Inject

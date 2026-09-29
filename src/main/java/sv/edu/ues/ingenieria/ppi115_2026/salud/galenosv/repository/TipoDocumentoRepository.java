@@ -1,10 +1,12 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository;
 
 import jakarta.ejb.Stateless;
+import jakarta.ejb.LocalBean;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoDocumento;
 import java.util.UUID;
 
-@Stateless
+@Stateless(name = "TipoDocumentoRepository")
+@LocalBean
 public class TipoDocumentoRepository extends AbstractRepository<TipoDocumento, UUID> {
 
     public TipoDocumentoRepository() {

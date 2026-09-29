@@ -35,6 +35,13 @@
         </dependency>
 
 
+        <!-- Temas adicionales para PrimeFaces, incluido VelaBlue. -->
+        <dependency>
+            <groupId>org.primefaces</groupId>
+            <artifactId>primefaces-themes</artifactId>
+            <version>16.0.0</version>
+        </dependency>
+
         <!-- Testing JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
