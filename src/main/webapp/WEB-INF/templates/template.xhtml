@@ -78,6 +78,21 @@
                                 <li><a href="#"><i class="pi pi-users"></i> <span>#{msg['menu.pacientes']}</span></a></li>
                                 <li><a href="#"><i class="pi pi-folder"></i> <span>#{msg['menu.expedientes']}</span></a></li>
                                 <li><a href="#"><i class="pi pi-cog"></i> <span>#{msg['menu.configuracion']}</span></a></li>
+                                <li>
+                                    <h:link outcome="/paginas/clinica.xhtml">
+                                        <i class="pi pi-building"></i> <span>#{msg['entidad.Clinica']}</span>
+                                    </h:link>
+                                </li>
+                                <li>
+                                    <h:link outcome="/paginas/rol.xhtml">
+                                        <i class="pi pi-id-card"></i> <span>#{msg['rol.titulo']}</span>
+                                    </h:link>
+                                </li>
+                                <li>
+                                    <h:link outcome="/paginas/persona-list.xhtml">
+                                        <i class="pi pi-users"></i> <span>#{msg['entidad.Persona']}</span>
+                                    </h:link>
+                                </li>
                             </ul>
                         </nav>
                     </ui:insert>

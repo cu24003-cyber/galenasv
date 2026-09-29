@@ -40,6 +40,26 @@ class PersonaModelTest {
     }
 
     @Test
+    void cancelarEdicionDescartaCambiosSinAlterarLaFila() {
+        Persona original = new Persona(UUID.randomUUID());
+        original.setNombres("Ana");
+        original.setFechaNacimiento(new java.util.Date(1000));
+        original.setFechaCreacion(new java.util.Date(2000));
+        model.editar(original);
+        assertNotSame(original, model.getSeleccionada());
+        assertEquals(original.getFechaCreacion(), model.getSeleccionada().getFechaCreacion());
+        model.getSeleccionada().setNombres("Otro nombre");
+        model.getSeleccionada().getFechaNacimiento().setTime(3000);
+
+        model.cancelar();
+
+        assertNull(model.getSeleccionada());
+        assertEquals("Ana", original.getNombres());
+        assertEquals(1000, original.getFechaNacimiento().getTime());
+        verifyNoInteractions(personaService);
+    }
+
+    @Test
     void init_cargaRegistrosDisponiblesParaLaVistaExistente() {
         List<Persona> personas = List.of(new Persona());
         when(personaService.listarTodos()).thenReturn(personas);

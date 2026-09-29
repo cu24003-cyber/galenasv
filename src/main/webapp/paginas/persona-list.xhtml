@@ -5,11 +5,9 @@
 <ui:composition template="/WEB-INF/templates/template.xhtml">
     <ui:define name="pageTitle">#{msg['persona.titulo.lista']}</ui:define>
     <ui:define name="content">
-        <!-- Growl para mostrar mensajes de éxito o error sin recargar la página -->
-        <p:growl id="messages" showDetail="true" life="3000" />
+        <p:growl id="messages" showDetail="true" globalOnly="true" life="3000" />
 
         <h:form id="frmPersonaList">
-            <!-- Botón movido arriba para mejor usabilidad -->
             <div class="toolbarPersona">
                 <p:toolbar id="toolbar-persona">
                     <f:facet name="left">
@@ -17,8 +15,7 @@
                                 id="btnNuevaPersona"
                                 value="#{msg['boton.nuevaPersona']}"
                                 icon="pi pi-plus"
-                                update=":frmPersonaForm"
-                                oncomplete="PF('dlgPersona').show()"
+                                update="personaFormulario" resetValues="true"
                                 action="#{personaModel.nuevo}"
                                 process="@this"
                                 styleClass="ui-button-success"
@@ -38,6 +35,34 @@
                 <div style="height:36px"></div>
                 <p:sticky target="toolbar-persona" stickyTopAt=".layout-topbar"/>
             </div>
+            <p:outputPanel id="personaFormulario">
+                <p:panel header="#{msg['persona.dialogo.titulo']}" rendered="#{personaModel.seleccionada != null}"
+                    style="margin-bottom: 1rem;">
+                    <p:messages showDetail="false" />
+                    <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
+                        <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
+                        <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}" required="true"
+                            requiredMessage="#{msg['persona.requerido.nombres']}" />
+
+                        <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
+                        <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
+                            requiredMessage="#{msg['persona.requerido.apellidos']}" />
+
+                        <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
+                        <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}" showIcon="true" showOnFocus="false"
+                                      monthNavigator="true" yearNavigator="true" showWeek="true"/>
+
+                    </p:panelGrid>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
+                            action="#{personaModel.cancelar}" process="@this" update="personaFormulario"
+                            resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
+                        <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
+                            action="#{personaModel.guardar}" process="@this personaFormulario"
+                            update="personaFormulario tblPersonas :messages" />
+                    </div>
+                </p:panel>
+            </p:outputPanel>
             <p:dataTable var="p" value="#{personaModel.personas}" id="tblPersonas" paginator="true" rows="10"
                 first="#{personaModel.primeraFila}" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                 <p:column headerText="#{msg['persona.columna.nombres']}">
@@ -52,12 +77,9 @@
                     </h:outputText>
                 </p:column>
                 <p:column headerText="#{msg['persona.columna.acciones']}" style="width: 150px; text-align: center;">
-                    <!-- process="@this" para que solo se procese el botón y no envíe todo el formulario -->
-                    <p:commandButton title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}" icon="pi pi-pencil" update=":frmPersonaForm" oncomplete="PF('dlgPersona').show()"
+                    <p:commandButton title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}" icon="pi pi-pencil" update="personaFormulario" resetValues="true"
                         actionListener="#{personaModel.editar(p)}" process="@this" styleClass="rounded-button ui-button-info"
                         style="margin-right: 5px;" />
-
-                    <!-- Solo actualiza la tabla y los mensajes, no todo el form -->
                     <p:commandButton title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}" icon="pi pi-trash" actionListener="#{personaModel.eliminar(p)}"
                         update=":frmPersonaList:tblPersonas :messages" process="@this"
                         styleClass="rounded-button ui-button-danger">
@@ -66,47 +88,12 @@
                     </p:commandButton>
                 </p:column>
             </p:dataTable>
-
-            <!-- Diálogo global de confirmación para eliminar -->
             <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
                 <p:commandButton value="#{msg['boton.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
                 <p:commandButton value="#{msg['boton.si']}" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
             </p:confirmDialog>
         </h:form>
 
-        <!-- El diálogo debe ir fuera del formulario principal, y contener su propio formulario -->
-        <!-- Se agregó closable="false" para quitar la X y width="450" para que no se vea tan pequeño -->
-        <p:dialog header="#{msg['persona.dialogo.titulo']}" widgetVar="dlgPersona" modal="true" showEffect="fade" hideEffect="fade"
-            resizable="false" closable="false" width="450">
-            <h:form id="frmPersonaForm">
-                <!-- ui-fluid hace que los inputs ocupen todo el ancho disponible -->
-                <p:outputPanel id="personaDetalle" rendered="#{personaModel.seleccionada != null}" styleClass="ui-fluid">
-                    <p:panelGrid columns="2" columnClasses="label,value" style="width: 100%; border: none;">
-                        <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
-                        <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}" required="true"
-                            requiredMessage="#{msg['persona.requerido.nombres']}" />
-
-                        <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
-                        <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}" required="true"
-                            requiredMessage="#{msg['persona.requerido.apellidos']}" />
-
-                        <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
-                        <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}" showIcon="true" showOnFocus="false"
-                                      monthNavigator="true" yearNavigator="true" showWeek="true"/>
-
-                    </p:panelGrid>
-                </p:outputPanel>
-
-                <!-- Botones colocados en un contenedor normal, ya que f:facet no puede ir dentro de h:form -->
-                <div style="text-align: right; margin-top: 15px;">
-                    <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times" onclick="PF('dlgPersona').hide()" type="button"
-                        styleClass="ui-button-secondary" style="margin-right: .5rem" />
-                    <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check" actionListener="#{personaModel.guardar()}"
-                        update=":frmPersonaList:tblPersonas :messages @form"
-                        oncomplete="if (!args.validationFailed) PF('dlgPersona').hide()" />
-                </div>
-            </h:form>
-        </p:dialog>
     </ui:define>
 </ui:composition>
 </html>

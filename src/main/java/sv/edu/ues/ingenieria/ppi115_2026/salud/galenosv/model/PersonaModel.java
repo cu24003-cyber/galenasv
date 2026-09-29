@@ -39,6 +39,23 @@ public class PersonaModel extends AbstractModel<Persona, UUID> {
     }
 
     @Override
+    public void editar(Persona entidad) {
+        Persona copia = new Persona();
+        copia.setIdPersona(entidad.getIdPersona());
+        copia.setNombres(entidad.getNombres());
+        copia.setApellidos(entidad.getApellidos());
+        copia.setFechaNacimiento(entidad.getFechaNacimiento() == null ? null
+                : new java.util.Date(entidad.getFechaNacimiento().getTime()));
+        copia.setFechaCreacion(entidad.getFechaCreacion() == null ? null
+                : new java.util.Date(entidad.getFechaCreacion().getTime()));
+        seleccionada = copia;
+    }
+
+    public void cancelar() {
+        seleccionada = null;
+    }
+
+    @Override
     protected void cargarRegistros() {
         primeraFila = 0;
         if (nombreBusqueda == null || nombreBusqueda.isBlank()) {

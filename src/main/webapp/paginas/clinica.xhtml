@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html" xmlns:p="http://primefaces.org/ui" xmlns:ui="jakarta.faces.facelets">
+<ui:composition template="/WEB-INF/templates/template.xhtml">
+    <ui:define name="pageTitle">#{msg['entidad.Clinica']}</ui:define>
+    <ui:define name="content">
+        <p:growl id="messages" showDetail="true" globalOnly="true" life="3000" />
+        <h:form id="frmClinica">
+            <p:toolbar id="toolbar-clinica" style="margin-bottom: 1rem;">
+                <f:facet name="left">
+                    <p:commandButton id="btnNuevaClinica" value="#{msg['boton.nuevaClinica']}" icon="pi pi-plus"
+                        action="#{clinicaModel.nuevo}" process="@this" update="clinicaFormulario"
+                        resetValues="true" styleClass="ui-button-success" />
+                </f:facet>
+                <f:facet name="right">
+                    <p:outputLabel for="buscarNombre" value="#{msg['persona.buscar.nombre']}" />
+                    <p:inputText id="buscarNombre" value="#{clinicaModel.searchName}"
+                        placeholder="#{msg['persona.buscar.placeholder']}">
+                        <p:ajax event="input" delay="300" process="@this" listener="#{clinicaModel.cargarClinicas}"
+                            update="tblClinicas :messages" />
+                    </p:inputText>
+                </f:facet>
+            </p:toolbar>
+
+            <p:outputPanel id="clinicaFormulario">
+                <p:panel header="#{msg['registro.detalle']}" rendered="#{clinicaModel.seleccionada != null}"
+                    style="margin-bottom: 1rem;">
+                    <p:messages showDetail="false" />
+                    <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
+                        <p:outputLabel for="nombre" value="#{msg['campo.nombre']}" />
+                        <p:inputText id="nombre" value="#{clinicaModel.seleccionada.nombre}" required="true"
+                            requiredMessage="#{msg['clinica.requerido.nombre']}" />
+                        <p:outputLabel for="activo" value="#{msg['campo.activo']}" />
+                        <p:selectBooleanCheckbox id="activo" value="#{clinicaModel.seleccionada.activo}" />
+                        <p:outputLabel for="tipo" value="#{msg['campo.tipo']}" />
+                        <p:inputText id="tipo" value="#{clinicaModel.seleccionada.tipo}" maxlength="20" />
+                        <p:outputLabel for="comentarios" value="#{msg['campo.comentarios']}" />
+                        <p:inputTextarea id="comentarios" value="#{clinicaModel.seleccionada.comentarios}" rows="3" />
+                    </p:panelGrid>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
+                            action="#{clinicaModel.cancelar}" process="@this" update="clinicaFormulario"
+                            resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
+                        <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
+                            action="#{clinicaModel.guardar}" process="@this clinicaFormulario"
+                            update="clinicaFormulario tblClinicas :messages" />
+                    </div>
+                </p:panel>
+            </p:outputPanel>
+
+            <p:dataTable id="tblClinicas" var="clinica" value="#{clinicaModel.clinicas}" rows="10"
+                paginator="true" paginatorPosition="bottom" first="#{clinicaModel.primeraFila}"
+                emptyMessage="#{msg['tabla.vacia']}">
+                <p:column headerText="#{msg['campo.nombre']}">
+                    <h:outputText value="#{clinica.nombre}" />
+                </p:column>
+                <p:column headerText="#{msg['campo.activo']}">
+                    <h:outputText value="#{clinica.activo ? msg['boton.si'] : msg['boton.no']}" />
+                </p:column>
+                <p:column headerText="#{msg['campo.tipo']}">
+                    <h:outputText value="#{clinica.tipo}" />
+                </p:column>
+                <p:column headerText="#{msg['campo.comentarios']}">
+                    <h:outputText value="#{clinica.comentarios}" />
+                </p:column>
+                <p:column headerText="#{msg['persona.columna.acciones']}" style="width: 150px; text-align: center;">
+                    <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}"
+                        action="#{clinicaModel.editar(clinica)}" process="@this" update="clinicaFormulario"
+                        resetValues="true" styleClass="rounded-button ui-button-info" style="margin-right: 5px;" />
+                    <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}"
+                        action="#{clinicaModel.eliminar(clinica)}" process="@this"
+                        update="tblClinicas clinicaFormulario :messages" styleClass="rounded-button ui-button-danger">
+                        <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['registro.confirmarEliminar']}"
+                            icon="pi pi-exclamation-triangle" />
+                    </p:commandButton>
+                </p:column>
+            </p:dataTable>
+            <p:confirmDialog global="true" responsive="true" width="350">
+                <p:commandButton value="#{msg['boton.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+                <p:commandButton value="#{msg['boton.si']}" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
+            </p:confirmDialog>
+        </h:form>
+    </ui:define>
+</ui:composition>
+</html>
