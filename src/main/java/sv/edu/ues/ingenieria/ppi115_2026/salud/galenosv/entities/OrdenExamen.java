@@ -6,7 +6,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Basic;
@@ -21,8 +21,6 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -41,9 +39,8 @@ public class OrdenExamen implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_orden_examen")
     private UUID idOrdenExamen;
-    @Column(name = "fecha_creacion")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaCreacion;
+    @Column(name = "fecha_creacion", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaCreacion;
     @Column(name = "indicaciones")
     private String indicaciones;
     @OneToMany(mappedBy = "idOrdenExamen", fetch = FetchType.LAZY)
@@ -55,7 +52,7 @@ public class OrdenExamen implements Serializable {
     @PrePersist
     protected void prePersist() {
         if (fechaCreacion == null) {
-            fechaCreacion = new Date();
+            fechaCreacion = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         }
     }
 
@@ -74,11 +71,11 @@ public class OrdenExamen implements Serializable {
         this.idOrdenExamen = idOrdenExamen;
     }
 
-    public Date getFechaCreacion() {
+    public OffsetDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(Date fechaCreacion) {
+    public void setFechaCreacion(OffsetDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 

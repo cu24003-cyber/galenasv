@@ -137,4 +137,29 @@ class PersonaServiceTest {
 
         assertEquals("error.cargarPersonas", error.getMessageKey());
     }
+
+    @Test
+    void rechazaNacimientoFuturoAlCrearYActualizar() {
+        Persona persona = new Persona(UUID.randomUUID());
+        persona.setFechaNacimiento(fechaEnDias(1));
+        assertThrows(ServiceException.class, () -> personaService.crear(persona));
+        assertThrows(ServiceException.class, () -> personaService.actualizar(persona));
+        verifyNoInteractions(personaRepository);
+    }
+
+    @Test
+    void permiteNacimientoHoyYRechazaCreacionFutura() {
+        Persona persona = new Persona();
+        persona.setFechaNacimiento(fechaEnDias(0));
+        personaService.crear(persona);
+        verify(personaRepository).create(persona);
+        persona.setFechaCreacion(fechaEnDias(1));
+        assertThrows(ServiceException.class, () -> personaService.actualizar(persona));
+        verify(personaRepository, never()).update(any());
+    }
+
+    private Date fechaEnDias(int dias) {
+        java.time.ZoneId zona = java.time.ZoneId.of("America/El_Salvador");
+        return Date.from(java.time.LocalDate.now(zona).plusDays(dias).atStartOfDay(zona).toInstant());
+    }
 }

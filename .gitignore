@@ -47,3 +47,6 @@ src/main/liberty/config/server.xml
 *.swo
 *~
 /nbproject/
+#agentes de IA
+.agents
+.codex

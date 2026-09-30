@@ -6,7 +6,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Basic;
@@ -21,8 +21,6 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -42,12 +40,10 @@ public class ConsultaProcedimientoPaso implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_consulta_procedimiento_paso")
     private UUID idConsultaProcedimientoPaso;
-    @Column(name = "fecha_inicio")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaInicio;
-    @Column(name = "fecha_fin")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaFin;
+    @Column(name = "fecha_inicio", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaInicio;
+    @Column(name = "fecha_fin", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaFin;
     @Column(name = "estado" , length = 20)
     private String estado;
     @JoinColumn(name = "id_consulta_procedimiento", referencedColumnName = "id_consulta_procedimiento")
@@ -62,9 +58,16 @@ public class ConsultaProcedimientoPaso implements Serializable {
     @PrePersist
     protected void prePersist() {
         if (fechaInicio == null) {
-            fechaInicio = new Date();
+            fechaInicio = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         }
     }
+
+    @JoinColumn(name = "id_procedimiento_paso", referencedColumnName = "id_procedimiento_paso")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ProcedimientoPaso idProcedimientoPaso;
+
+    public ProcedimientoPaso getIdProcedimientoPaso() { return idProcedimientoPaso; }
+    public void setIdProcedimientoPaso(ProcedimientoPaso paso) { this.idProcedimientoPaso = paso; }
 
     public ConsultaProcedimientoPaso() {
     }
@@ -81,19 +84,19 @@ public class ConsultaProcedimientoPaso implements Serializable {
         this.idConsultaProcedimientoPaso =  idConsultaProcedimientoPaso;
     }
 
-    public Date getFechaInicio() {
+    public OffsetDateTime getFechaInicio() {
         return fechaInicio;
     }
 
-    public void setFechaInicio(Date fechaInicio) {
+    public void setFechaInicio(OffsetDateTime fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
-    public Date getFechaFin() {
+    public OffsetDateTime getFechaFin() {
         return fechaFin;
     }
 
-    public void setFechaFin(Date fechaFin) {
+    public void setFechaFin(OffsetDateTime fechaFin) {
         this.fechaFin = fechaFin;
     }
 

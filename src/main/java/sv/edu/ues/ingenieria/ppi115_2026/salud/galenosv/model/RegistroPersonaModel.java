@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.regex.Pattern;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.validation.FormatoExpresion;
 import java.util.regex.PatternSyntaxException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.*;
@@ -28,6 +28,13 @@ public class RegistroPersonaModel implements Serializable {
     @EJB private TipoDocumentoService tipoDocumentoService;
     @EJB private TipoMedioContactoService tipoMedioContactoService;
 
+    @EJB private RegistroPersonaService registroService;
+    @EJB private RolService rolService;
+    @EJB private ClinicaService clinicaService;
+    private Rol rol;
+    private Clinica clinica;
+    private UUID asignacionId;
+    private List<PersonaRol> asignaciones = List.of();
     private UUID personaGuardada;
     private Documento documento = new Documento();
     private MedioContacto contacto = new MedioContacto();
@@ -45,6 +52,8 @@ public class RegistroPersonaModel implements Serializable {
         personaModel.editar(persona);
         personaGuardada = persona.getIdPersona();
         try {
+            asignaciones = registroService.listarPorPersona(personaGuardada);
+            if (!asignaciones.isEmpty()) seleccionarAsignacion(asignaciones.get(0));
             documentos = documentoService.listarPorPersona(personaGuardada);
             contactos = medioContactoService.listarPorPersona(personaGuardada);
         } catch (ServiceException | EJBException e) {
@@ -59,6 +68,10 @@ public class RegistroPersonaModel implements Serializable {
 
     private void limpiar() {
         personaGuardada = null;
+        rol = null;
+        clinica = null;
+        asignacionId = null;
+        asignaciones = List.of();
         documento = new Documento();
         contacto = new MedioContacto();
         documentos = List.of();
@@ -77,17 +90,18 @@ public class RegistroPersonaModel implements Serializable {
         try {
             persona.setNombres(persona.getNombres().trim());
             persona.setApellidos(persona.getApellidos().trim());
-            if (nueva) {
-                personaService.crear(persona);
-            } else {
-                personaService.actualizar(persona);
-            }
+            asignacionId = registroService.guardar(persona, rol, clinica, asignacionId);
             personaGuardada = persona.getIdPersona();
         } catch (ServiceException | EJBException e) {
             // El servicio asigna el UUID antes del INSERT; un fallo no habilita las relaciones.
             if (nueva) persona.setIdPersona(null);
-            error("error.guardar");
+            error(e instanceof ServiceException se ? se.getMessageKey() : "error.guardar");
             return;
+        }
+        try {
+            asignaciones = registroService.listarPorPersona(personaGuardada);
+        } catch (ServiceException | EJBException e) {
+            error("error.general");
         }
         personaModel.cargarPersonas();
         exito();
@@ -192,7 +206,7 @@ public class RegistroPersonaModel implements Serializable {
         // "." es el valor predeterminado del catálogo, sin un formato específico.
         if (expresion == null || expresion.isBlank() || ".".equals(expresion)) return true;
         try {
-            if (Pattern.matches(expresion, valor.trim())) return true;
+            if (FormatoExpresion.coincide(valor, expresion)) return true;
             error("registro.formatoInvalido");
         } catch (PatternSyntaxException e) {
             error("registro.patronInvalido");
@@ -209,6 +223,54 @@ public class RegistroPersonaModel implements Serializable {
     private void exito() {
         FacesContext.getCurrentInstance().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO, Mensajes.texto("registro.guardado"), null));
+    }
+
+    public String getMascaraDocumento() {
+        return FormatoExpresion.mascara(documento.getIdTipoDocumento() == null ? null
+                : documento.getIdTipoDocumento().getExpresionRegular());
+    }
+
+    public String getMascaraContacto() {
+        return FormatoExpresion.mascara(contacto.getIdTipoMedioContacto() == null ? null
+                : contacto.getIdTipoMedioContacto().getExpresionRegular());
+    }
+
+    public void cancelarDocumento() { documento = new Documento(); }
+    public void cancelarContacto() { contacto = new MedioContacto(); }
+
+    public void cambiarTipoDocumento() { documento.setValor(null); }
+    public void cambiarTipoContacto() { contacto.setValor(null); }
+    public void limpiarTipoDocumento() {
+        documento.setIdTipoDocumento(null);
+        cambiarTipoDocumento();
+    }
+    public void limpiarTipoContacto() {
+        contacto.setIdTipoMedioContacto(null);
+        cambiarTipoContacto();
+    }
+
+    public void seleccionarAsignacion(PersonaRol asignacion) {
+        asignacionId = asignacion.getIdPersonaRol();
+        rol = asignacion.getIdRol();
+        clinica = asignacion.getIdClinica();
+    }
+    public List<PersonaRol> getAsignaciones() { return asignaciones; }
+    public Rol getRol() { return rol; }
+    public void setRol(Rol rol) { this.rol = rol; }
+    public Clinica getClinica() { return clinica; }
+    public void setClinica(Clinica clinica) { this.clinica = clinica; }
+    public java.util.Date getHoy() { return new java.util.Date(); }
+    public List<Rol> completarRoles(String query) {
+        try {
+            return rolService.listarTodos().stream()
+                    .filter(r -> Boolean.TRUE.equals(r.getActivo()) && coincide(r.getNombre(), query)).toList();
+        } catch (ServiceException | EJBException e) { error("error.general"); return List.of(); }
+    }
+    public List<Clinica> completarClinicas(String query) {
+        try {
+            return clinicaService.listarTodos().stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getActivo()) && coincide(c.getNombre(), query)).toList();
+        } catch (ServiceException | EJBException e) { error("error.general"); return List.of(); }
     }
 
     public boolean isPersonaGuardada() { return personaGuardada != null; }

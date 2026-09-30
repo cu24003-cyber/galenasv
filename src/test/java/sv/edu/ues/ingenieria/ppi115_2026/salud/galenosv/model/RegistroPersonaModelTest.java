@@ -22,6 +22,9 @@ import static org.mockito.Mockito.*;
 class RegistroPersonaModelTest {
     @Mock PersonaModel personaModel;
     @Mock PersonaService personaService;
+    @Mock RegistroPersonaService registroService;
+    @Mock RolService rolService;
+    @Mock ClinicaService clinicaService;
     @Mock DocumentoService documentoService;
     @Mock MedioContactoService medioContactoService;
     @Mock TipoDocumentoService tipoDocumentoService;
@@ -52,7 +55,7 @@ class RegistroPersonaModelTest {
         persona.setApellidos(" López ");
         when(personaModel.getSeleccionada()).thenReturn(persona);
         doAnswer(invocation -> { persona.setIdPersona(UUID.randomUUID()); return null; })
-                .when(personaService).crear(persona);
+                .when(registroService).guardar(persona, null, null, null);
         model.guardarPersona();
         assertTrue(model.isPersonaGuardada());
         assertEquals("Ana", persona.getNombres());
@@ -70,7 +73,7 @@ class RegistroPersonaModelTest {
         doAnswer(invocation -> {
             persona.setIdPersona(UUID.randomUUID());
             throw new ServiceException("Error");
-        }).when(personaService).crear(persona);
+        }).when(registroService).guardar(persona, null, null, null);
         model.guardarPersona();
         assertNull(persona.getIdPersona());
         assertFalse(model.isPersonaGuardada());
@@ -190,5 +193,47 @@ class RegistroPersonaModelTest {
         assertTrue(model.getDocumentos().isEmpty());
         assertNull(model.getContacto().getValor());
         assertEquals(0, model.getPestana());
+    }
+
+    @Test
+    void cambiarYLimpiarTiposActualizaMascarasYDescartaValoresAnteriores() {
+        TipoDocumento tipo = new TipoDocumento();
+        tipo.setExpresionRegular("[0-9]{8}-[0-9]");
+        model.getDocumento().setIdTipoDocumento(tipo);
+        model.getDocumento().setValor("anterior");
+        assertEquals("99999999-9", model.getMascaraDocumento());
+        model.cambiarTipoDocumento();
+        assertNull(model.getDocumento().getValor());
+        model.limpiarTipoDocumento();
+        assertNull(model.getDocumento().getIdTipoDocumento());
+        assertNull(model.getMascaraDocumento());
+
+        TipoMedioContacto contacto = new TipoMedioContacto();
+        contacto.setExpresionRegular("[0-9]{4}-[0-9]{4}");
+        model.getContacto().setIdTipoMedioContacto(contacto);
+        model.getContacto().setValor("anterior");
+        assertEquals("9999-9999", model.getMascaraContacto());
+        model.cambiarTipoContacto();
+        assertNull(model.getContacto().getValor());
+        model.limpiarTipoContacto();
+        assertNull(model.getContacto().getIdTipoMedioContacto());
+        assertNull(model.getMascaraContacto());
+    }
+
+    @Test
+    void contactoSeValidaConElPatronActualDeBaseAlGuardar() {
+        seleccionarPersona();
+        TipoMedioContacto seleccionado = new TipoMedioContacto(UUID.randomUUID());
+        seleccionado.setExpresionRegular(".");
+        model.getContacto().setIdTipoMedioContacto(seleccionado);
+        model.getContacto().setValor("77777777");
+        TipoMedioContacto actual = new TipoMedioContacto(seleccionado.getIdTipoMedioContacto());
+        actual.setActivo(true);
+        actual.setExpresionRegular("[0-9]{4}-[0-9]{4}");
+        when(tipoMedioContactoService.buscarPorId(actual.getIdTipoMedioContacto())).thenReturn(actual);
+        model.guardarContacto();
+        verify(medioContactoService, never()).crear(any());
+        verify(context).validationFailed();
+        assertEquals("77777777", model.getContacto().getValor());
     }
 }

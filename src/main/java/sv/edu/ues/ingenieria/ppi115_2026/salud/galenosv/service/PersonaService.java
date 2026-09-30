@@ -30,6 +30,18 @@ public class PersonaService extends AbstractService<Persona, UUID> {
     }
 
     @Override
+    protected void validar(Persona entidad) {
+        super.validar(entidad);
+        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/El_Salvador"));
+        for (Date fecha : new Date[] {entidad.getFechaNacimiento(), entidad.getFechaCreacion()}) {
+            if (fecha != null && java.time.Instant.ofEpochMilli(fecha.getTime())
+                    .atZone(java.time.ZoneId.of("America/El_Salvador")).toLocalDate().isAfter(hoy)) {
+                throw new ServiceException("fecha.futura", "La fecha no puede ser posterior a la fecha actual.", null);
+            }
+        }
+    }
+
+    @Override
     protected UUID obtenerId(Persona entidad) {
         return entidad.getIdPersona();
     }
