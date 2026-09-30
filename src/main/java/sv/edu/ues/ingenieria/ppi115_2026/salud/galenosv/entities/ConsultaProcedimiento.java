@@ -6,7 +6,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Basic;
@@ -20,8 +20,6 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -44,12 +42,10 @@ public class ConsultaProcedimiento implements Serializable {
     @JoinColumn(name = "id_procedimiento", referencedColumnName = "id_procedimiento")
     @ManyToOne(fetch = FetchType.LAZY)
     private Procedimiento idProcedimiento;
-    @Column(name = "fecha_inicio")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaInicio;
-    @Column(name = "fecha_fin")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaFin;
+    @Column(name = "fecha_inicio", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaInicio;
+    @Column(name = "fecha_fin", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaFin;
     @Column(name = "observaciones")
     private String observaciones;
     @OneToMany(mappedBy = "idConsultaProcedimiento", fetch = FetchType.LAZY)
@@ -81,19 +77,19 @@ public class ConsultaProcedimiento implements Serializable {
         this.idProcedimiento = idProcedimiento;
     }
 
-    public Date getFechaInicio() {
+    public OffsetDateTime getFechaInicio() {
         return fechaInicio;
     }
 
-    public void setFechaInicio(Date fechaInicio) {
+    public void setFechaInicio(OffsetDateTime fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
-    public Date getFechaFin() {
+    public OffsetDateTime getFechaFin() {
         return fechaFin;
     }
 
-    public void setFechaFin(Date fechaFin) {
+    public void setFechaFin(OffsetDateTime fechaFin) {
         this.fechaFin = fechaFin;
     }
 

@@ -5,7 +5,7 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Basic;
@@ -19,8 +19,6 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 /**
  *
@@ -40,9 +38,8 @@ public class ProcedimientoPasoExamen implements Serializable {
     @Basic(optional = false)
         @Column(name = "id_procedimiento_paso_examen")
     private UUID idProcedimientoPasoExamen;
-    @Column(name = "fecha_creacion")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaCreacion;
+    @Column(name = "fecha_creacion", columnDefinition = "timestamp with time zone")
+    private OffsetDateTime fechaCreacion;
     @Column(name = "activo")
     private Boolean activo;
     @Column(name = "observaciones")
@@ -60,7 +57,7 @@ public class ProcedimientoPasoExamen implements Serializable {
             activo = Boolean.TRUE;
         }
         if (fechaCreacion == null) {
-            fechaCreacion = new Date();
+            fechaCreacion = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         }
     }
 
@@ -79,11 +76,11 @@ public class ProcedimientoPasoExamen implements Serializable {
         this.idProcedimientoPasoExamen = idProcedimientoPasoExamen;
     }
 
-    public Date getFechaCreacion() {
+    public OffsetDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(Date fechaCreacion) {
+    public void setFechaCreacion(OffsetDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 

@@ -8,7 +8,8 @@
         <p:messages id="messages" />
         <h:form id="frmPacientes">
             <p:dataTable id="tblPacientes" value="#{pacienteModel.pacientes}" var="persona"
-                         rows="10" paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                         selection="#{pacienteModel.seleccionado}" rowKey="#{persona.idPersona}" selectionMode="single" rows="10" paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                <p:ajax event="rowSelect" listener="#{pacienteModel.seleccionar}" update=":frmPacientes:abrir" />
                 <f:facet name="emptyMessage">
                     <h:panelGroup layout="block" style="padding: 1rem; text-align: center;">
                         <p><h:outputText value="#{msg['paciente.sinResultados']}" /></p>
@@ -31,6 +32,17 @@
                     </h:outputText>
                 </p:column>
             </p:dataTable>
+            <h:panelGroup id="abrir" layout="block">
+                <h:panelGroup rendered="#{not empty pacienteModel.seleccionado}">
+                    <p>Paciente: #{pacienteModel.seleccionado.nombres} #{pacienteModel.seleccionado.apellidos}</p>
+                    <p:outputLabel for="clinicaPaciente" value="Clínica del paciente" />
+                    <p:selectOneMenu id="clinicaPaciente" value="#{pacienteModel.rolId}" required="true">
+                        <f:selectItem itemLabel="Seleccione la clínica" itemValue="" noSelectionOption="true" />
+                        <f:selectItems value="#{pacienteModel.roles}" var="r" itemValue="#{r.idPersonaRol.toString()}" itemLabel="#{r.idClinica.nombre}" />
+                    </p:selectOneMenu>
+                    <p:commandButton value="Abrir consulta" action="#{pacienteModel.abrir}" process="abrir" update=":messages" />
+                </h:panelGroup>
+            </h:panelGroup>
         </h:form>
     </ui:define>
 </ui:composition>

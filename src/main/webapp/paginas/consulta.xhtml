@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/WEB-INF/templates/template.xhtml">
+<ui:define name="pageTitle">Consulta</ui:define><ui:define name="title"><h3>Consulta del paciente</h3></ui:define>
+<ui:define name="menusidebar">
+    <h:panelGroup rendered="#{not empty atencionSesion.consulta}" layout="block" style="padding: 1rem">
+        <h3>Consulta en curso</h3>
+        <p>Complete la atención y pulse Cerrar consulta para regresar a pacientes.</p>
+    </h:panelGroup>
+    <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/paciente-list.xhtml" value="Pacientes"/>
+</ui:define>
+<ui:define name="content">
+<p:messages id="mensajes" />
+<h:panelGroup rendered="#{empty atencionModel.consulta}"><p>Seleccione un paciente para abrir una consulta.</p><p:button value="Pacientes" outcome="/paginas/paciente-list.xhtml" /></h:panelGroup>
+<h:panelGroup rendered="#{not empty atencionModel.consulta}">
+<p><strong>#{atencionModel.consulta.idPersonaRol.idPersona.nombres} #{atencionModel.consulta.idPersonaRol.idPersona.apellidos}</strong> · #{atencionModel.consulta.idPersonaRol.idClinica.nombre}</p>
+<p>Inicio: #{atencionModel.fecha(atencionModel.consulta.fechaInicio)} · Fin: #{atencionModel.fecha(atencionModel.consulta.fechaFin)}</p>
+<p>Guarde los cambios y complete los pasos antes de cerrar la consulta. Para salir de esta página, utilice Cerrar consulta.</p>
+<p:tabView id="tabs">
+<p:tab title="Consulta y procedimientos">
+<h:form id="datos">
+<p:panelGrid columns="2" layout="flex">
+<p:outputLabel for="referencia" value="Referencia externa"/><p:inputText id="referencia" value="#{atencionModel.consulta.referenciaExterna}"/>
+<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.consulta.observaciones}"/>
+</p:panelGrid>
+<p:commandButton value="Guardar consulta" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
+<p:commandButton value="Cerrar consulta" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
+</h:form>
+<h:form id="procedimientos">
+<p:panelGrid columns="2" layout="flex">
+<p:outputLabel for="procedimiento" value="Procedimiento"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
+<p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}"/>
+</p:panelGrid><p:commandButton value="Agregar procedimiento" action="#{atencionModel.agregar}" process="@form" update=":tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
+</h:form>
+<h:form id="ejecucion">
+<p:dataTable value="#{atencionModel.realizados}" var="p" emptyMessage="Agregue un procedimiento.">
+<p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column><p:column headerText="Inicio">#{atencionModel.fecha(p.fechaInicio)}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column><p:column headerText="Observaciones">#{p.observaciones}</p:column>
+</p:dataTable>
+<p:dataTable value="#{atencionModel.pasos}" var="p" emptyMessage="No hay pasos.">
+<p:column headerText="Procedimiento">#{p.idConsultaProcedimiento.idProcedimiento.nombre}</p:column><p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column><p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
+<p:column><p:commandButton value="Completar" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@this" update="@form :mensajes"/></p:column>
+</p:dataTable></h:form>
+</p:tab>
+<p:tab title="Registro de examen"><h:form id="examen">
+<p>El examen se registra en el catálogo y se asocia al paso del procedimiento.</p>
+<p:panelGrid columns="2" layout="flex">
+<p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="nombre" value="Nombre del examen"/><p:inputText id="nombre" value="#{atencionModel.nombreExamen}" required="true"/>
+<p:outputLabel for="tipo" value="Tipo de examen"/><p:autoComplete id="tipo" value="#{atencionModel.tipo}" completeMethod="#{atencionModel.completarTipos}" var="t" itemLabel="#{t.nombre}" itemValue="#{t}" converter="tipoExamenAtencionConverter" forceSelection="true" dropdown="true" required="true"/>
+<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.notasExamen}"/>
+</p:panelGrid><p:commandButton value="Registrar examen" action="#{atencionModel.registrarExamen}" process="@form" update="@form :mensajes"/>
+<p:dataTable value="#{atencionModel.examenes}" var="e" emptyMessage="No hay exámenes asociados."><p:column headerText="Examen">#{e.idExamen.nombre}</p:column><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column></p:dataTable>
+</h:form></p:tab>
+<p:tab title="Orden de examen"><h:form id="orden"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="indicaciones" value="Indicaciones / exámenes solicitados"/><p:inputTextarea id="indicaciones" value="#{atencionModel.indicaciones}" required="true"/>
+</p:panelGrid><p:commandButton value="Registrar orden" action="#{atencionModel.ordenar}" process="@form" update="@form :mensajes"/>
+<p:dataTable value="#{atencionModel.ordenes}" var="o" emptyMessage="No hay órdenes."><p:column headerText="Fecha y hora">#{atencionModel.fecha(o.fechaCreacion)}</p:column><p:column headerText="Paso">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column><p:column headerText="Indicaciones">#{o.indicaciones}</p:column></p:dataTable>
+</h:form></p:tab></p:tabView>
+</h:panelGroup>
+</ui:define></ui:composition></html>
