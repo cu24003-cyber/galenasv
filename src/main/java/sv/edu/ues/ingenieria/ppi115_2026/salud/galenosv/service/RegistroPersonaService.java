@@ -1,0 +1,43 @@
+package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
+
+import jakarta.ejb.EJB;
+import jakarta.ejb.Stateless;
+import java.util.List;
+import java.util.UUID;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaRolRepository;
+
+/** Guarda persona y asignación en una sola transacción. */
+@Stateless
+public class RegistroPersonaService {
+    @EJB private PersonaService personas;
+    @EJB private RolService roles;
+    @EJB private ClinicaService clinicas;
+    @EJB private PersonaRolService asignaciones;
+    @EJB private PersonaRolRepository repositorio;
+
+    public List<PersonaRol> listarPorPersona(UUID persona) { return repositorio.listarPorPersona(persona); }
+    public List<Persona> listarPacientes() { return repositorio.listarPacientes(); }
+
+    public UUID guardar(Persona persona, Rol rol, Clinica clinica, UUID asignacionId) {
+        Rol existente = rol == null ? null : roles.buscarPorId(rol.getIdRol());
+        Clinica sede = clinica == null ? null : clinicas.buscarPorId(clinica.getIdClinica());
+        if (existente == null || !Boolean.TRUE.equals(existente.getActivo())
+                || sede == null || !Boolean.TRUE.equals(sede.getActivo())) {
+            throw new ServiceException("registro.seleccionInvalida", "Seleccione un rol y una clínica activos.", null);
+        }
+        PersonaRol asignacion = asignacionId == null ? new PersonaRol() : asignaciones.buscarPorId(asignacionId);
+        if (asignacion == null || (asignacionId != null
+                && !persona.equals(asignacion.getIdPersona()))) {
+            throw new ServiceException("La asignación no pertenece a la persona.");
+        }
+        if (persona.getIdPersona() == null) personas.crear(persona);
+        else personas.actualizar(persona);
+        asignacion.setIdPersona(persona);
+        asignacion.setIdRol(existente);
+        asignacion.setIdClinica(sede);
+        if (asignacionId == null) asignaciones.crear(asignacion);
+        else asignaciones.actualizar(asignacion);
+        return asignacion.getIdPersonaRol();
+    }
+}

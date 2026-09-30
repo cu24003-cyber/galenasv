@@ -59,8 +59,31 @@
                             </p:inputText>
                             <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
                             <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}"
-                                          showIcon="true" showOnFocus="false" monthNavigator="true" yearNavigator="true" />
+                                          showIcon="true" showOnFocus="false" monthNavigator="true" yearNavigator="true"
+                                          maxdate="#{registroPersonaModel.hoy}" timeZone="America/El_Salvador" />
+                            <p:outputLabel for="rol" value="#{msg['campo.idRol']}" />
+                            <p:autoComplete id="rol" value="#{registroPersonaModel.rol}"
+                                            completeMethod="#{registroPersonaModel.completarRoles}"
+                                            var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
+                                            converter="rolConverter" dropdown="true" forceSelection="true"
+                                            required="true" scrollHeight="250" />
+                            <p:outputLabel for="clinica" value="#{msg['campo.idClinica']}" />
+                            <p:autoComplete id="clinica" value="#{registroPersonaModel.clinica}"
+                                            completeMethod="#{registroPersonaModel.completarClinicas}"
+                                            var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
+                                            converter="clinicaConverter" dropdown="true" forceSelection="true"
+                                            required="true" scrollHeight="250" />
                         </p:panelGrid>
+                        <p:dataTable value="#{registroPersonaModel.asignaciones}" var="asignacion"
+                                     rendered="#{registroPersonaModel.asignaciones.size() gt 1}">
+                            <p:column headerText="#{msg['campo.idRol']}"><h:outputText value="#{asignacion.idRol.nombre}" /></p:column>
+                            <p:column headerText="#{msg['entidad.Clinica']}"><h:outputText value="#{asignacion.idClinica.nombre}" /></p:column>
+                            <p:column>
+                                <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}"
+                                                 action="#{registroPersonaModel.seleccionarAsignacion(asignacion)}"
+                                                 process="@this" update="@form" resetValues="true" />
+                            </p:column>
+                        </p:dataTable>
                         <h:panelGroup layout="block" rendered="#{not registroPersonaModel.personaGuardada}">
                             <p>#{msg['registro.guardarPersonaPrimero']}</p>
                         </h:panelGroup>
@@ -82,14 +105,26 @@
                                             var="tipo" itemLabel="#{tipo.nombre}" itemValue="#{tipo}"
                                             converter="tipoDocumentoConverter" dropdown="true" forceSelection="true"
                                             required="true" scrollHeight="250">
-                                <p:ajax event="itemSelect" process="@this" update="indicaciones" />
-                                <p:ajax event="clear" process="@this" update="indicaciones" />
+                                <p:ajax event="itemSelect" process="@this" update="indicaciones valorPanel"
+                                        listener="#{registroPersonaModel.cambiarTipoDocumento}" resetValues="true" />
+                                <p:ajax event="clear" process="@this" update="@this indicaciones valorPanel" immediate="true"
+                                        listener="#{registroPersonaModel.limpiarTipoDocumento}" resetValues="true" />
                             </p:autoComplete>
                             <p:outputLabel for="valor" value="#{msg['campo.valor']}" />
-                            <p:inputText id="valor" value="#{registroPersonaModel.documento.valor}"
-                                         required="true" maxlength="255">
-                                <f:validateLength maximum="255" />
-                            </p:inputText>
+                            <p:outputPanel id="valorPanel">
+                                <p:inputMask id="valor" value="#{registroPersonaModel.documento.valor}"
+                                             mask="#{registroPersonaModel.mascaraDocumento}"
+                                             autoClear="false" validateMask="false"
+                                             disabled="#{registroPersonaModel.documento.idTipoDocumento == null}"
+                                             required="true" maxlength="255">
+                                    <f:validator validatorId="valorCatalogoValidator" />
+                                    <f:attribute name="expresionRegular"
+                                                 value="#{registroPersonaModel.documento.idTipoDocumento.expresionRegular}" />
+                                    <f:validateLength maximum="255" />
+                                    <p:ajax event="blur" process="@this" update="valorMensaje" />
+                                </p:inputMask>
+                                <p:message id="valorMensaje" for="valor" />
+                            </p:outputPanel>
                             <h:outputText value="#{msg['campo.indicaciones']}" />
                             <h:outputText id="indicaciones" value="#{registroPersonaModel.documento.idTipoDocumento.indicaciones}" />
                             <p:outputLabel for="ruta" value="#{msg['campo.rutaFisica']}" />
@@ -100,6 +135,9 @@
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                                          action="#{registroPersonaModel.guardarDocumento}" process="@form"
                                          update="@form :messages" />
+                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
+                                         action="#{registroPersonaModel.cancelarDocumento}" process="@this"
+                                         update="@form" resetValues="true" styleClass="ui-button-secondary" />
                         <p:dataTable value="#{registroPersonaModel.documentos}" var="registro" rows="5"
                                      paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                             <p:column headerText="#{msg['campo.tipo']}">
@@ -124,20 +162,35 @@
                                             var="tipo" itemLabel="#{tipo.nombre}" itemValue="#{tipo}"
                                             converter="tipoMedioContactoConverter" dropdown="true" forceSelection="true"
                                             required="true" scrollHeight="250">
-                                <p:ajax event="itemSelect" process="@this" update="indicaciones" />
-                                <p:ajax event="clear" process="@this" update="indicaciones" />
+                                <p:ajax event="itemSelect" process="@this" update="indicaciones valorPanel"
+                                        listener="#{registroPersonaModel.cambiarTipoContacto}" resetValues="true" />
+                                <p:ajax event="clear" process="@this" update="@this indicaciones valorPanel" immediate="true"
+                                        listener="#{registroPersonaModel.limpiarTipoContacto}" resetValues="true" />
                             </p:autoComplete>
                             <p:outputLabel for="valor" value="#{msg['campo.valor']}" />
-                            <p:inputText id="valor" value="#{registroPersonaModel.contacto.valor}"
-                                         required="true" maxlength="255">
-                                <f:validateLength maximum="255" />
-                            </p:inputText>
+                            <p:outputPanel id="valorPanel">
+                                <p:inputMask id="valor" value="#{registroPersonaModel.contacto.valor}"
+                                             mask="#{registroPersonaModel.mascaraContacto}"
+                                             autoClear="false" validateMask="false"
+                                             disabled="#{registroPersonaModel.contacto.idTipoMedioContacto == null}"
+                                             required="true" maxlength="255">
+                                    <f:validator validatorId="valorCatalogoValidator" />
+                                    <f:attribute name="expresionRegular"
+                                                 value="#{registroPersonaModel.contacto.idTipoMedioContacto.expresionRegular}" />
+                                    <f:validateLength maximum="255" />
+                                    <p:ajax event="blur" process="@this" update="valorMensaje" />
+                                </p:inputMask>
+                                <p:message id="valorMensaje" for="valor" />
+                            </p:outputPanel>
                             <h:outputText value="#{msg['campo.indicaciones']}" />
                             <h:outputText id="indicaciones" value="#{registroPersonaModel.contacto.idTipoMedioContacto.indicaciones}" />
                         </p:panelGrid>
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                                          action="#{registroPersonaModel.guardarContacto}" process="@form"
                                          update="@form :messages" />
+                        <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
+                                         action="#{registroPersonaModel.cancelarContacto}" process="@this"
+                                         update="@form" resetValues="true" styleClass="ui-button-secondary" />
                         <p:dataTable value="#{registroPersonaModel.contactos}" var="registro" rows="5"
                                      paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                             <p:column headerText="#{msg['campo.tipo']}">
@@ -163,7 +216,7 @@
                 </p:column>
                 <p:column headerText="#{msg['persona.columna.fechaNacimiento']}">
                     <h:outputText value="#{p.fechaNacimiento}">
-                        <f:convertDateTime pattern="dd/MM/yyyy" />
+                        <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/El_Salvador" />
                     </h:outputText>
                 </p:column>
                 <p:column headerText="#{msg['persona.columna.acciones']}" style="width: 150px; text-align: center;">

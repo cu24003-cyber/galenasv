@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/WEB-INF/templates/template.xhtml">
+    <ui:define name="pageTitle">#{msg['menu.pacientes']}</ui:define>
+    <ui:define name="title"><h3>#{msg['menu.pacientes']}</h3></ui:define>
+    <ui:define name="content">
+        <p:messages id="messages" />
+        <h:form id="frmPacientes">
+            <p:dataTable id="tblPacientes" value="#{pacienteModel.pacientes}" var="persona"
+                         rows="10" paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                <f:facet name="emptyMessage">
+                    <h:panelGroup layout="block" style="padding: 1rem; text-align: center;">
+                        <p><h:outputText value="#{msg['paciente.sinResultados']}" /></p>
+                        <p:button id="registrarPaciente" outcome="/paginas/persona-list.xhtml"
+                                  value="#{msg['paciente.registrar']}" icon="pi pi-user-plus"
+                                  styleClass="ui-button-success" />
+                    </h:panelGroup>
+                </f:facet>
+                <p:column headerText="#{msg['persona.columna.nombres']}" filterBy="#{persona.nombres}"
+                          filterMatchMode="contains" sortBy="#{persona.nombres}">
+                    <h:outputText value="#{persona.nombres}" />
+                </p:column>
+                <p:column headerText="#{msg['persona.columna.apellidos']}" filterBy="#{persona.apellidos}"
+                          filterMatchMode="contains" sortBy="#{persona.apellidos}">
+                    <h:outputText value="#{persona.apellidos}" />
+                </p:column>
+                <p:column headerText="#{msg['persona.columna.fechaNacimiento']}" sortBy="#{persona.fechaNacimiento}">
+                    <h:outputText value="#{persona.fechaNacimiento}">
+                        <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/El_Salvador" />
+                    </h:outputText>
+                </p:column>
+            </p:dataTable>
+        </h:form>
+    </ui:define>
+</ui:composition>
+</html>

@@ -2,54 +2,49 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
       xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
-    <ui:define name="pageTitle">#{msg['entidad.TipoMedioContacto']}</ui:define>
-    <ui:define name="title"><h3>#{msg['entidad.TipoMedioContacto']}</h3></ui:define>
+    <ui:define name="pageTitle">#{msg['entidad.TipoExamen']}</ui:define>
+    <ui:define name="title"><h3>#{msg['entidad.TipoExamen']}</h3></ui:define>
     <ui:define name="content">
-        <h:form id="frmTipoMedioContacto">
-            <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoTipoMedioContacto" value="#{msg['registro.nuevo']}" icon="pi pi-plus"
-                action="#{tipoMedioContactoModel.nuevo}" process="@this" update="tipoMedioContactoFormulario :messages" resetValues="true" />
+        <h:form id="frmTipoExamen">
+            <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoTipoExamen" value="#{msg['registro.nuevo']}" icon="pi pi-plus"
+                action="#{tipoExamenModel.nuevo}" process="@this" update="tipoExamenFormulario :messages" resetValues="true" />
 
-            <p:outputPanel id="tipoMedioContactoFormulario">
-                <p:panel header="#{msg['registro.detalle']}" rendered="#{tipoMedioContactoModel.seleccionada != null}"
+            <p:outputPanel id="tipoExamenFormulario">
+                <p:panel header="#{msg['registro.detalle']}" rendered="#{tipoExamenModel.seleccionada != null}"
                     style="margin-bottom: 1rem;">
                     <p:messages id="formMessages" showDetail="false" />
                     <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
                         <p:outputLabel for="nombre" value="#{msg['campo.nombre']}" />
-                        <p:inputText id="nombre" value="#{tipoMedioContactoModel.seleccionada.nombre}" maxlength="155"
+                        <p:inputText id="nombre" value="#{tipoExamenModel.seleccionada.nombre}" maxlength="155"
                             required="true" requiredMessage="#{msg['persona.requerido.nombres']}" />
                         <p:outputLabel for="activo" value="#{msg['campo.activo']}" />
-                        <p:selectBooleanCheckbox id="activo" value="#{tipoMedioContactoModel.seleccionada.activo}" />
-                        <p:outputLabel for="indicaciones" value="#{msg['campo.indicaciones']}" />
-                        <p:inputTextarea id="indicaciones" value="#{tipoMedioContactoModel.seleccionada.indicaciones}" />
-                        <p:outputLabel for="expresionRegular" value="#{msg['campo.expresionRegular']}" />
-                        <p:inputText id="expresionRegular" value="#{tipoMedioContactoModel.seleccionada.expresionRegular}">
-                            <f:validator validatorId="expresionRegularValidator" />
-                        </p:inputText>
+                        <p:selectBooleanCheckbox id="activo" value="#{tipoExamenModel.seleccionada.activo}" />
+                        <p:outputLabel for="observaciones" value="#{msg['campo.observaciones']}" />
+                        <p:inputTextarea id="observaciones" value="#{tipoExamenModel.seleccionada.observaciones}" />
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{tipoMedioContactoModel.cancelar}" process="@this" update="tipoMedioContactoFormulario :messages"
+                            action="#{tipoExamenModel.cancelar}" process="@this" update="tipoExamenFormulario :messages"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
-                            action="#{tipoMedioContactoModel.guardar}" process="@this tipoMedioContactoFormulario"
-                            update="tipoMedioContactoFormulario tblTipoMedioContacto :messages" />
+                            action="#{tipoExamenModel.guardar}" process="@this tipoExamenFormulario"
+                            update="tipoExamenFormulario tblTipoExamen :messages" />
                     </div>
                 </p:panel>
             </p:outputPanel>
 
-            <p:dataTable id="tblTipoMedioContacto" var="registro" value="#{tipoMedioContactoModel.registros}" rows="10" paginator="true"
+            <p:dataTable id="tblTipoExamen" var="registro" value="#{tipoExamenModel.registros}" rows="10" paginator="true"
                 paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                 <p:column headerText="#{msg['campo.nombre']}"><h:outputText value="#{registro.nombre}" /></p:column>
                 <p:column headerText="#{msg['campo.activo']}">
                     <h:outputText value="#{registro.activo ? msg['boton.si'] : msg['boton.no']}" />
                 </p:column>
-                <p:column headerText="#{msg['campo.indicaciones']}"><h:outputText value="#{registro.indicaciones}" /></p:column>
-                <p:column headerText="#{msg['campo.expresionRegular']}"><h:outputText value="#{registro.expresionRegular}" /></p:column>
+                <p:column headerText="#{msg['campo.observaciones']}"><h:outputText value="#{registro.observaciones}" /></p:column>
                 <p:column headerText="#{msg['persona.columna.acciones']}">
                     <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}"
-                        action="#{tipoMedioContactoModel.editar(registro)}" process="@this" update="tipoMedioContactoFormulario :messages" resetValues="true" />
+                        action="#{tipoExamenModel.editar(registro)}" process="@this" update="tipoExamenFormulario :messages" resetValues="true" />
                     <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}"
-                        action="#{tipoMedioContactoModel.eliminar(registro)}" process="@this" update="tblTipoMedioContacto tipoMedioContactoFormulario :messages">
+                        action="#{tipoExamenModel.eliminar(registro)}" process="@this" update="tblTipoExamen tipoExamenFormulario :messages">
                         <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['registro.confirmarEliminar']}" />
                     </p:commandButton>
                 </p:column>

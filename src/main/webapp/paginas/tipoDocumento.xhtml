@@ -22,7 +22,9 @@
                         <p:outputLabel for="indicaciones" value="#{msg['campo.indicaciones']}" />
                         <p:inputTextarea id="indicaciones" value="#{tipoDocumentoModel.seleccionada.indicaciones}" />
                         <p:outputLabel for="expresionRegular" value="#{msg['campo.expresionRegular']}" />
-                        <p:inputText id="expresionRegular" value="#{tipoDocumentoModel.seleccionada.expresionRegular}" />
+                        <p:inputText id="expresionRegular" value="#{tipoDocumentoModel.seleccionada.expresionRegular}">
+                            <f:validator validatorId="expresionRegularValidator" />
+                        </p:inputText>
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
