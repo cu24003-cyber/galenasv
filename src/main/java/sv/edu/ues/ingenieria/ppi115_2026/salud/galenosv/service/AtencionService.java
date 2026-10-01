@@ -15,9 +15,22 @@ public class AtencionService {
     public List<PersonaRol> pacientes(UUID persona) {
         return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idPersona.idPersona=:id AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true", PersonaRol.class).setParameter("id", persona).getResultList();
     }
-    public Consulta abrir(UUID rolId) {
+    public List<PersonaRol> responsables(UUID clinica) {
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica.idClinica=:clinica AND rol.activo=true ORDER BY p.apellidos, p.nombres, rol.nombre", PersonaRol.class)
+                .setParameter("clinica", clinica).getResultList();
+    }
+    private PersonaRol responsable(UUID id, PersonaRol paciente) {
+        PersonaRol rol = id == null ? null : em.find(PersonaRol.class, id);
+        if (rol == null || rol.getIdRol() == null || !Boolean.TRUE.equals(rol.getIdRol().getActivo())
+                || rol.getIdClinica() == null || !rol.getIdClinica().equals(paciente.getIdClinica())) {
+            throw new ServiceException("Seleccione un responsable con rol activo de la clínica de la consulta.");
+        }
+        return rol;
+    }
+    public Consulta abrir(UUID rolId, UUID responsableId) {
         PersonaRol rol=em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
-        if(rol==null || !"paciente".equalsIgnoreCase(rol.getIdRol().getNombre().trim()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw new ServiceException("Seleccione el rol del paciente.");
+        if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || rol.getIdRol().getNombre()==null || !"paciente".equalsIgnoreCase(rol.getIdRol().getNombre().trim()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw new ServiceException("Seleccione el rol del paciente.");
+        responsable(responsableId, rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
         if(!abiertas.isEmpty()) return cargar(abiertas.get(0).getIdConsulta());
         Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(ahora()); em.persist(c); em.flush(); return cargar(c.getIdConsulta());
@@ -37,15 +50,22 @@ public class AtencionService {
         return em.createQuery("SELECT p FROM ConsultaProcedimiento p JOIN FETCH p.idProcedimiento WHERE p.idConsulta.idConsulta=:id ORDER BY p.fechaInicio",ConsultaProcedimiento.class).setParameter("id",id).getResultList();
     }
     public List<ConsultaProcedimientoPaso> pasos(UUID id) {
-        return em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p JOIN FETCH p.idConsultaProcedimiento cp JOIN FETCH cp.idProcedimiento LEFT JOIN FETCH p.idProcedimientoPaso WHERE cp.idConsulta.idConsulta=:id ORDER BY p.fechaInicio, p.idConsultaProcedimientoPaso",ConsultaProcedimientoPaso.class).setParameter("id",id).getResultList();
+        return em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p JOIN FETCH p.idConsultaProcedimiento cp JOIN FETCH cp.idProcedimiento LEFT JOIN FETCH p.idProcedimientoPaso definicion LEFT JOIN FETCH definicion.idRol LEFT JOIN FETCH p.idPersonaRol responsable LEFT JOIN FETCH responsable.idPersona LEFT JOIN FETCH responsable.idRol WHERE cp.idConsulta.idConsulta=:id ORDER BY p.fechaInicio, p.idConsultaProcedimientoPaso",ConsultaProcedimientoPaso.class).setParameter("id",id).getResultList();
     }
-    public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas) {
+    public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
         Consulta c=abierta(consulta); Procedimiento p=em.find(Procedimiento.class,procedimiento);
         if(p==null || !Boolean.TRUE.equals(p.getActivo())) throw new ServiceException("Seleccione un procedimiento activo.");
+        PersonaRol encargado = responsable(responsableId, c.getIdPersonaRol());
         List<ProcedimientoPaso> catalogo=em.createQuery("SELECT p FROM ProcedimientoPaso p WHERE p.idProcedimiento=:p",ProcedimientoPaso.class).setParameter("p",p).getResultList();
         if(catalogo.isEmpty()) throw new ServiceException("Configure los pasos del procedimiento antes de utilizarlo.");
         ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(notas); em.persist(cp);
-        for(ProcedimientoPaso paso:catalogo) { ConsultaProcedimientoPaso ejecucion=new ConsultaProcedimientoPaso(UUID.randomUUID()); ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(paso); ejecucion.setIdPersonaRol(c.getIdPersonaRol()); ejecucion.setFechaInicio(c.getFechaInicio()); ejecucion.setEstado("PENDIENTE"); em.persist(ejecucion); }
+        for(ProcedimientoPaso paso:catalogo) { ConsultaProcedimientoPaso ejecucion=new ConsultaProcedimientoPaso(UUID.randomUUID()); ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(paso); ejecucion.setIdPersonaRol(encargado); ejecucion.setFechaInicio(c.getFechaInicio()); ejecucion.setEstado("PENDIENTE"); em.persist(ejecucion); }
+    }
+    public void asignarResponsable(UUID consulta, UUID pasoId, UUID responsableId) {
+        Consulta c = abierta(consulta);
+        ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        if (paso.getFechaFin() != null) throw new ServiceException("El paso ya está completado.");
+        paso.setIdPersonaRol(responsable(responsableId, c.getIdPersonaRol()));
     }
     public void completar(UUID consulta,UUID pasoId) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);

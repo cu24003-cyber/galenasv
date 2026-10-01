@@ -76,7 +76,11 @@
                             <div class="avatar-circle">
                                 <i class="pi pi-user"></i>
                             </div>
-                            <span class="user-name">#{msg['app.usuario']}</span>
+                            <h:link outcome="/paginas/cambiar-rol.xhtml" styleClass="user-name" title="Cambiar de rol">
+                                <h:outputText rendered="#{empty atencionSesion.rolActivo}" value="Cambiar de rol" />
+                                <h:outputText rendered="#{not empty atencionSesion.rolActivo}"
+                                    value="#{atencionSesion.rolActivo.idPersona.nombres} · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}" />
+                            </h:link>
                         </div>
                     </ui:insert>
                 </div>
@@ -94,6 +98,8 @@
                                 <li><a href="#"><i class="pi pi-calendar"></i> <span>#{msg['menu.agenda']}</span></a></li>
                                 <li><h:link outcome="/paginas/paciente-list.xhtml"><i class="pi pi-users"></i> <span>#{msg['menu.pacientes']}</span></h:link></li>
                                 <li><h:link outcome="/paginas/procedimiento.xhtml"><i class="pi pi-list"/> <span>Procedimientos</span></h:link></li>
+                                <li><h:link outcome="/paginas/examen.xhtml"><i class="pi pi-file"/> <span>#{msg['entidad.Examen']}</span></h:link></li>
+                                <li><h:link outcome="/paginas/cambiar-rol.xhtml"><i class="pi pi-sync"/> <span>Cambiar de rol</span></h:link></li>
                                 <li><a href="#"><i class="pi pi-folder"></i> <span>#{msg['menu.expedientes']}</span></a></li>
                                 <li><a href="#"><i class="pi pi-cog"></i> <span>#{msg['menu.configuracion']}</span></a></li>
                                 <li>

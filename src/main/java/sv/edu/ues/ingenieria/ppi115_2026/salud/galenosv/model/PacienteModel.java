@@ -23,17 +23,23 @@ public class PacienteModel implements Serializable {
     private String rolId;
     private List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol> roles = List.of();
     public void seleccionar() {
-        roles = atencion.pacientes(seleccionado.getIdPersona());
+        roles = sesion.getRolActivo() == null ? List.of() : atencion.pacientes(seleccionado.getIdPersona()).stream()
+                .filter(r -> r.getIdClinica().equals(sesion.getRolActivo().getIdClinica())).toList();
         rolId = roles.size()==1 ? roles.get(0).getIdPersonaRol().toString() : null;
     }
     public String abrir() {
         try {
+            if (sesion.getRolActivo() == null) {
+                return "/paginas/cambiar-rol.xhtml?faces-redirect=true";
+            }
             if (sesion.getConsulta()==null) {
                 if (roles.stream().noneMatch(r->r.getIdPersonaRol().toString().equals(rolId))) throw new ServiceException("Seleccione la clínica del paciente.");
-                sesion.setConsulta(atencion.abrir(java.util.UUID.fromString(rolId)).getIdConsulta());
+                sesion.setConsulta(atencion.abrir(java.util.UUID.fromString(rolId), sesion.getRolActivo().getIdPersonaRol()).getIdConsulta());
             }
             return "/paginas/consulta.xhtml?faces-redirect=true";
-        } catch (ServiceException | EJBException | IllegalArgumentException e) {
+        } catch (ServiceException e) {
+            FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,e.getMessage(),null)); return null;
+        } catch (EJBException | IllegalArgumentException e) {
             FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,"No se pudo abrir la consulta. Seleccione una asignación válida del paciente.",null)); return null;
         }
     }

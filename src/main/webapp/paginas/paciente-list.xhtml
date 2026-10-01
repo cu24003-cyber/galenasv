@@ -6,6 +6,13 @@
     <ui:define name="title"><h3>#{msg['menu.pacientes']}</h3></ui:define>
     <ui:define name="content">
         <p:messages id="messages" />
+        <h:panelGroup rendered="#{empty atencionSesion.rolActivo}" layout="block">
+            <p>Seleccione su persona, rol y clínica antes de abrir una consulta.</p>
+            <p:button value="Cambiar de rol" outcome="/paginas/cambiar-rol.xhtml" icon="pi pi-sync" />
+        </h:panelGroup>
+        <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}">
+            <p>Clínica de atención: <strong>#{atencionSesion.rolActivo.idClinica.nombre}</strong></p>
+        </h:panelGroup>
         <h:form id="frmPacientes">
             <p:dataTable id="tblPacientes" value="#{pacienteModel.pacientes}" var="persona"
                          selection="#{pacienteModel.seleccionado}" rowKey="#{persona.idPersona}" selectionMode="single" rows="10" paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
@@ -33,14 +40,15 @@
                 </p:column>
             </p:dataTable>
             <h:panelGroup id="abrir" layout="block">
-                <h:panelGroup rendered="#{not empty pacienteModel.seleccionado}">
+                <h:panelGroup rendered="#{not empty pacienteModel.seleccionado and not empty atencionSesion.rolActivo}">
                     <p>Paciente: #{pacienteModel.seleccionado.nombres} #{pacienteModel.seleccionado.apellidos}</p>
+                    <h:panelGroup rendered="#{empty pacienteModel.roles}"><p>El paciente no tiene una asignación en la clínica del rol activo.</p></h:panelGroup>
                     <p:outputLabel for="clinicaPaciente" value="Clínica del paciente" />
                     <p:selectOneMenu id="clinicaPaciente" value="#{pacienteModel.rolId}" required="true">
                         <f:selectItem itemLabel="Seleccione la clínica" itemValue="" noSelectionOption="true" />
                         <f:selectItems value="#{pacienteModel.roles}" var="r" itemValue="#{r.idPersonaRol.toString()}" itemLabel="#{r.idClinica.nombre}" />
                     </p:selectOneMenu>
-                    <p:commandButton value="Abrir consulta" action="#{pacienteModel.abrir}" process="abrir" update=":messages" />
+                    <p:commandButton value="Abrir consulta" disabled="#{empty pacienteModel.roles}" action="#{pacienteModel.abrir}" process="abrir" update=":messages" />
                 </h:panelGroup>
             </h:panelGroup>
         </h:form>

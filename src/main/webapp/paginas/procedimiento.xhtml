@@ -3,23 +3,31 @@
 <ui:composition template="/WEB-INF/templates/template.xhtml">
 <ui:define name="pageTitle">Procedimientos</ui:define><ui:define name="title"><h3>Procedimientos y pasos</h3></ui:define><ui:define name="content">
 <p:messages id="mensajes"/>
-<h:form id="catalogo"><p:commandButton value="Nuevo procedimiento" action="#{catalogoProcedimientoModel.nuevo}" process="@this" update=":editor :pasos :examenes"/>
-<p:dataTable value="#{catalogoProcedimientoModel.lista}" var="p" emptyMessage="No hay procedimientos."><p:column headerText="Nombre">#{p.nombre}</p:column><p:column headerText="Activo">#{p.activo ? 'Sí' : 'No'}</p:column><p:column><p:commandButton value="Editar y configurar pasos" action="#{catalogoProcedimientoModel.seleccionar(p)}" process="@this" update=":editor :pasos :examenes"/></p:column></p:dataTable></h:form>
+<h:form id="catalogo"><p:commandButton value="Nuevo procedimiento" action="#{catalogoProcedimientoModel.nuevo}" process="@this" update=":configuracion" resetValues="true"/>
+<p:dataTable value="#{catalogoProcedimientoModel.lista}" var="p" emptyMessage="No hay procedimientos."><p:column headerText="Nombre">#{p.nombre}</p:column><p:column headerText="Activo">#{p.activo ? 'Sí' : 'No'}</p:column><p:column><p:commandButton value="Editar y configurar pasos" action="#{catalogoProcedimientoModel.seleccionar(p)}" process="@this" update=":configuracion" resetValues="true"/></p:column></p:dataTable></h:form>
+<p:tabView id="configuracion">
+<p:tab title="Datos del procedimiento">
 <h:form id="editor"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="Nombre"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.seleccionado.nombre}" required="true" maxlength="155"/>
 <p:outputLabel for="activo" value="Activo"/><p:selectBooleanCheckbox id="activo" value="#{catalogoProcedimientoModel.seleccionado.activo}"/>
 <p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{catalogoProcedimientoModel.seleccionado.observaciones}"/></p:panelGrid>
-<p:commandButton value="Guardar procedimiento" action="#{catalogoProcedimientoModel.guardar}" process="@form" update=":catalogo :pasos :examenes :mensajes"/></h:form>
-<h:form id="pasos"><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
+<p:commandButton value="Guardar procedimiento" action="#{catalogoProcedimientoModel.guardar}" process="@form" update=":catalogo :configuracion:pasos :configuracion:examenes :mensajes"/></h:form>
+</p:tab>
+<p:tab title="Pasos y roles">
+<h:form id="pasos">
+<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>Guarde el procedimiento para configurar sus pasos.</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
 <h3>Pasos de #{catalogoProcedimientoModel.seleccionado.nombre}</h3>
 <p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="Nombre del paso"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.nombrePaso}" required="true" maxlength="155"/>
 <p:outputLabel for="rol" value="Rol responsable"/><p:selectOneMenu id="rol" value="#{catalogoProcedimientoModel.rolId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.roles}" var="r" itemLabel="#{r.nombre}" itemValue="#{r.idRol.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="previo" value="Después del paso"/><p:selectOneMenu id="previo" value="#{catalogoProcedimientoModel.previoId}"><f:selectItem itemLabel="Sin dependencia (paso inicial)" itemValue=""/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="fin" value="Indica fin"/><p:selectBooleanCheckbox id="fin" value="#{catalogoProcedimientoModel.fin}"/></p:panelGrid>
-<p:commandButton value="Agregar paso" action="#{catalogoProcedimientoModel.agregarPaso}" process="@form" update="@form :examenes :mensajes"/>
+<p:commandButton value="Agregar paso" action="#{catalogoProcedimientoModel.agregarPaso}" process="@form" update="@form :configuracion:examenes :mensajes"/>
 <p:dataTable value="#{catalogoProcedimientoModel.pasos}" var="p"><p:column headerText="Paso">#{p.nombre}</p:column><p:column headerText="Rol">#{p.idRol.nombre}</p:column><p:column headerText="Indica fin">#{p.indicaFin ? 'Sí' : 'No'}</p:column></p:dataTable>
 <p:dataTable value="#{catalogoProcedimientoModel.secuencias}" var="s" emptyMessage="Sin dependencias."><p:column headerText="Paso anterior">#{s.idProcedimientoPaso.nombre}</p:column><p:column headerText="Paso siguiente">#{s.idProcedimientoPasoReferencia.nombre}</p:column></p:dataTable>
 </h:panelGroup></h:form>
-<h:form id="examenes"><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
+</p:tab>
+<p:tab title="Exámenes de los pasos">
+<h:form id="examenes">
+<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>Guarde el procedimiento y agregue sus pasos para asociar exámenes.</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
 <h3>Exámenes de los pasos</h3>
 <p:panelGrid columns="2" layout="flex">
 <p:outputLabel for="paso" value="Paso"/><p:selectOneMenu id="paso" value="#{catalogoProcedimientoModel.pasoExamenId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
@@ -27,4 +35,5 @@
 </p:panelGrid><p:commandButton value="Asociar examen al paso" action="#{catalogoProcedimientoModel.asociar}" process="@form" update="@form :mensajes"/>
 <p:dataTable value="#{catalogoProcedimientoModel.asociaciones}" var="e" emptyMessage="Sin exámenes asociados."><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column><p:column headerText="Examen">#{e.idExamen.nombre}</p:column></p:dataTable>
 </h:panelGroup></h:form>
+</p:tab></p:tabView>
 </ui:define></ui:composition></html>

@@ -31,8 +31,8 @@ public class CatalogoProcedimientoModel implements Serializable {
     public void asociar() { ejecutar(()->{servicio.asociar(seleccionado.getIdProcedimiento(),UUID.fromString(pasoExamenId),UUID.fromString(examenId)); cargar();}); }
 
     @PostConstruct public void iniciar() { nuevo(); ejecutar(()->{ lista=servicio.listar(); roles=servicio.roles(); examenes=servicio.examenes(); }); }
-    public void nuevo() { seleccionado=new Procedimiento(); seleccionado.setActivo(true); pasos=List.of(); secuencias=List.of(); }
-    public void seleccionar(Procedimiento p) { seleccionado=new Procedimiento(p.getIdProcedimiento()); seleccionado.setNombre(p.getNombre()); seleccionado.setObservaciones(p.getObservaciones()); seleccionado.setActivo(p.getActivo()); ejecutar(this::cargar); }
+    public void nuevo() { seleccionado=new Procedimiento(); seleccionado.setActivo(true); pasos=List.of(); secuencias=List.of(); asociaciones=List.of(); nombrePaso=null; rolId=null; previoId=null; pasoExamenId=null; examenId=null; fin=false; }
+    public void seleccionar(Procedimiento p) { nuevo(); seleccionado=new Procedimiento(p.getIdProcedimiento()); seleccionado.setNombre(p.getNombre()); seleccionado.setObservaciones(p.getObservaciones()); seleccionado.setActivo(p.getActivo()); ejecutar(this::cargar); }
     private void cargar() { asociaciones=servicio.asociaciones(seleccionado.getIdProcedimiento()); pasos=servicio.pasos(seleccionado.getIdProcedimiento()); secuencias=servicio.secuencias(seleccionado.getIdProcedimiento()); }
     public void guardar() { ejecutar(()->{seleccionado=servicio.guardar(seleccionado); lista=servicio.listar(); cargar();}); }
     public void agregarPaso() { ejecutar(()->{servicio.paso(seleccionado.getIdProcedimiento(),nombrePaso,fin,UUID.fromString(rolId),previoId==null||previoId.isBlank()?null:UUID.fromString(previoId)); nombrePaso=null; previoId=null; fin=false; cargar();}); }

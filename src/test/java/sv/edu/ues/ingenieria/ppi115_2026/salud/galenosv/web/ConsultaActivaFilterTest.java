@@ -36,4 +36,14 @@ class ConsultaActivaFilterTest {
         filtro(sesion).doFilter(req,res,chain);
         assertTrue(salida.toString().contains("<redirect url=\"/galenosv/paginas/consulta.xhtml\"/>")); verifyNoInteractions(chain);
     }
+    @Test void permiteCambiarRolDuranteConsulta() throws Exception {
+        AtencionSesion sesion = new AtencionSesion(); sesion.setConsulta(UUID.randomUUID());
+        for (String ruta : new String[]{"/paginas/cambiar-rol.xhtml", "/paginas/cambiar-rol.jsf"}) {
+            HttpServletRequest req = mock(HttpServletRequest.class); HttpServletResponse res = mock(HttpServletResponse.class);
+            FilterChain chain = mock(FilterChain.class); when(req.getServletPath()).thenReturn(ruta);
+            filtro(sesion).doFilter(req, res, chain);
+            verify(chain).doFilter(req, res); verifyNoInteractions(res);
+        }
+    }
+
 }

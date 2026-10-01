@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
+      xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/WEB-INF/templates/template.xhtml">
+    <ui:define name="pageTitle">Cambiar de rol</ui:define>
+    <ui:define name="title"><h3>Cambiar de rol</h3></ui:define>
+    <ui:define name="content">
+        <p>Seleccione la persona, el rol y la clínica con los que realizará la atención.</p>
+        <p:messages id="mensajes" />
+        <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}" layout="block">
+            <p><strong>Rol actual:</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
+                · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{not empty atencionSesion.consulta}">
+            <p>Durante una consulta puede cambiar de responsable o de rol dentro de la misma clínica. Cierre la consulta para cambiar de clínica.</p>
+        </h:panelGroup>
+        <h:form id="frmRol">
+            <p:outputLabel for="asignacion" value="Persona / rol / clínica" />
+            <p:selectOneMenu id="asignacion" value="#{cambiarRolModel.asignacionId}" required="true"
+                             filter="true" filterMatchMode="contains" style="max-width: 100%">
+                <f:selectItem itemValue="" itemLabel="Seleccione una asignación" noSelectionOption="true" />
+                <f:selectItems value="#{cambiarRolModel.asignaciones}" var="asignacion"
+                    itemValue="#{asignacion.idPersonaRol.toString()}"
+                    itemLabel="#{asignacion.idPersona.nombres} #{asignacion.idPersona.apellidos} / #{asignacion.idRol.nombre} / #{asignacion.idClinica.nombre}" />
+            </p:selectOneMenu>
+            <p:commandButton value="Usar este rol" icon="pi pi-check" action="#{cambiarRolModel.aplicar}"
+                             process="@form" update="@form :mensajes" />
+            <p:button value="Volver a la consulta" outcome="/paginas/consulta.xhtml" rendered="#{not empty atencionSesion.consulta}" />
+        </h:form>
+        <h:panelGroup rendered="#{empty cambiarRolModel.asignaciones}">
+            <p>No hay roles disponibles. Asigne una persona a un rol activo y una clínica desde Personas.</p>
+        </h:panelGroup>
+    </ui:define>
+</ui:composition>
+</html>

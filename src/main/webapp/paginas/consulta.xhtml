@@ -6,6 +6,7 @@
     <h:panelGroup rendered="#{not empty atencionSesion.consulta}" layout="block" style="padding: 1rem">
         <h3>Consulta en curso</h3>
         <p>Complete la atención y pulse Cerrar consulta para regresar a pacientes.</p>
+        <h:link outcome="/paginas/cambiar-rol.xhtml" value="Cambiar de rol" />
     </h:panelGroup>
     <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/paciente-list.xhtml" value="Pacientes"/>
 </ui:define>
@@ -37,7 +38,18 @@
 <p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column><p:column headerText="Inicio">#{atencionModel.fecha(p.fechaInicio)}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column><p:column headerText="Observaciones">#{p.observaciones}</p:column>
 </p:dataTable>
 <p:dataTable value="#{atencionModel.pasos}" var="p" emptyMessage="No hay pasos.">
-<p:column headerText="Procedimiento">#{p.idConsultaProcedimiento.idProcedimiento.nombre}</p:column><p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column><p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
+<p:column headerText="Procedimiento">#{p.idConsultaProcedimiento.idProcedimiento.nombre}</p:column><p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column><p:column headerText="Rol del paso">#{p.idProcedimientoPaso.idRol.nombre}</p:column>
+<p:column headerText="Responsable">
+    <h:outputText rendered="#{not empty p.fechaFin}" value="#{p.idPersonaRol.idPersona.nombres} #{p.idPersonaRol.idPersona.apellidos} / #{p.idPersonaRol.idRol.nombre}" />
+    <p:selectOneMenu id="responsable" value="#{atencionModel.responsableIds[p.idConsultaProcedimientoPaso]}"
+                     rendered="#{empty p.fechaFin}" filter="true" filterMatchMode="contains">
+        <f:selectItem itemLabel="Seleccione responsable" itemValue="" noSelectionOption="true" />
+        <f:selectItems value="#{atencionModel.responsables}" var="r" itemValue="#{r.idPersonaRol.toString()}"
+            itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos} / #{r.idRol.nombre}" />
+        <p:ajax listener="#{atencionModel.asignar(p)}" process="@this" update=":mensajes" />
+    </p:selectOneMenu>
+</p:column>
+<p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
 <p:column><p:commandButton value="Completar" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@this" update="@form :mensajes"/></p:column>
 </p:dataTable></h:form>
 </p:tab>

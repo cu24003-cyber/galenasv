@@ -15,6 +15,8 @@ public class AtencionModel implements Serializable {
     @EJB private AtencionService servicio;
     @Inject private AtencionSesion sesion;
     private Consulta consulta;
+    private List<PersonaRol> responsables = List.of();
+    private Map<UUID, String> responsableIds = new HashMap<>();
     private List<Procedimiento> procedimientos=List.of();
     private List<ConsultaProcedimiento> realizados=List.of();
     private List<ConsultaProcedimientoPaso> pasos=List.of();
@@ -25,7 +27,14 @@ public class AtencionModel implements Serializable {
     @PostConstruct public void iniciar() {
         if(sesion.getConsulta()!=null) ejecutar(()->{consulta=servicio.cargar(sesion.getConsulta()); procedimientos=servicio.procedimientos(); recargar();});
     }
-    private void recargar() { UUID id=consulta.getIdConsulta(); realizados=servicio.realizados(id); pasos=servicio.pasos(id); ordenes=servicio.ordenes(id); examenes=servicio.examenes(id); }
+    private void recargar() { UUID id=consulta.getIdConsulta(); realizados=servicio.realizados(id); pasos=servicio.pasos(id); ordenes=servicio.ordenes(id); examenes=servicio.examenes(id);
+        if (consulta.getIdPersonaRol() != null && consulta.getIdPersonaRol().getIdClinica() != null) {
+            responsables = servicio.responsables(consulta.getIdPersonaRol().getIdClinica().getIdClinica());
+        }
+        responsableIds.clear();
+        for (ConsultaProcedimientoPaso paso : pasos) responsableIds.put(paso.getIdConsultaProcedimientoPaso(),
+                paso.getIdPersonaRol() == null ? null : paso.getIdPersonaRol().getIdPersonaRol().toString());
+    }
     private boolean ejecutar(Runnable r) {
         try { r.run(); return true; }
         catch(ServiceException e) { mensaje(e.getMessage()); }
@@ -34,7 +43,21 @@ public class AtencionModel implements Serializable {
     }
     private void mensaje(String m) { FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,m,null)); FacesContext.getCurrentInstance().validationFailed(); }
     public void guardar() { ejecutar(()->servicio.guardar(consulta.getIdConsulta(),consulta.getReferenciaExterna(),consulta.getObservaciones())); }
-    public void agregar() { ejecutar(()->{servicio.agregarProcedimiento(consulta.getIdConsulta(),UUID.fromString(procedimientoId),notasProcedimiento); recargar();}); }
+    public void agregar() { ejecutar(()->{servicio.agregarProcedimiento(consulta.getIdConsulta(),UUID.fromString(procedimientoId),notasProcedimiento, responsableActivo()); recargar();}); }
+    private UUID responsableActivo() {
+        if (sesion.getRolActivo() == null) throw new ServiceException("Seleccione el rol y la clínica desde Cambiar de rol.");
+        return sesion.getRolActivo().getIdPersonaRol();
+    }
+    public List<PersonaRol> getResponsables() { return responsables; }
+    public Map<UUID, String> getResponsableIds() { return responsableIds; }
+    public void asignar(ConsultaProcedimientoPaso paso) {
+        ejecutar(() -> {
+            String id = responsableIds.get(paso.getIdConsultaProcedimientoPaso());
+            if (id == null || id.isBlank()) throw new ServiceException("Seleccione el responsable del paso.");
+            servicio.asignarResponsable(consulta.getIdConsulta(), paso.getIdConsultaProcedimientoPaso(), UUID.fromString(id));
+            recargar();
+        });
+    }
     public void completar(ConsultaProcedimientoPaso p) { ejecutar(()->{servicio.completar(consulta.getIdConsulta(),p.getIdConsultaProcedimientoPaso()); recargar();}); }
     public List<TipoExamen> completarTipos(String q) { return servicio.tipos(q); }
     public void registrarExamen() { ejecutar(()->{servicio.examen(consulta.getIdConsulta(),UUID.fromString(pasoId),nombreExamen,notasExamen,tipo==null?null:tipo.getIdTipoExamen()); nombreExamen=null; notasExamen=null; tipo=null; recargar();}); }

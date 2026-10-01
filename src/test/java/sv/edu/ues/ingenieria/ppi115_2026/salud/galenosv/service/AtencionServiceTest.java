@@ -35,7 +35,9 @@ class AtencionServiceTest {
         when(em.find(PersonaRol.class,pr.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(pr);
         Consulta c=new Consulta(id); c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00"));
         TypedQuery<Consulta> q=query(Consulta.class,List.of(c)); when(q.getSingleResult()).thenReturn(c);
-        assertSame(c,servicio.abrir(pr.getIdPersonaRol()));
+        Clinica clinica = new Clinica(UUID.randomUUID()); pr.setIdClinica(clinica);
+        PersonaRol doctor = responsable(clinica, "Médico");
+        assertSame(c,servicio.abrir(pr.getIdPersonaRol(), doctor.getIdPersonaRol()));
         assertEquals(OffsetDateTime.parse("2026-09-29T10:15:30-06:00"),c.getFechaInicio()); verify(em,never()).persist(any());
     }
     @Test void noPermiteModificarConsultaCerrada() {
@@ -65,24 +67,26 @@ class AtencionServiceTest {
         assertEquals(c.getFechaFin(),cp.getFechaFin()); assertNotNull(c.getFechaFin().getOffset());
         assertEquals(inicio,c.getFechaInicio()); assertEquals("observación",c.getObservaciones());
     }
-    @Test void procedimientoCopiaInicioYRolPacienteEnTodosLosPasos() {
+    @Test void procedimientoCopiaInicioYAsignaResponsableConCualquierRol() {
         Consulta c=abierta(); UUID procedimiento=UUID.randomUUID();
         Procedimiento p=new Procedimiento(procedimiento); p.setActivo(true);
         when(em.find(Procedimiento.class,procedimiento)).thenReturn(p);
         ProcedimientoPaso paso=new ProcedimientoPaso(UUID.randomUUID());
         query(ProcedimientoPaso.class,List.of(paso));
-        servicio.agregarProcedimiento(id,procedimiento,"notas");
+        Clinica clinica = new Clinica(UUID.randomUUID()); c.getIdPersonaRol().setIdClinica(clinica);
+        PersonaRol enfermera = responsable(clinica, "Enfermería");
+        servicio.agregarProcedimiento(id,procedimiento,"notas", enfermera.getIdPersonaRol());
         ArgumentCaptor<Object> captor=ArgumentCaptor.forClass(Object.class); verify(em,times(2)).persist(captor.capture());
         ConsultaProcedimiento cp=(ConsultaProcedimiento)captor.getAllValues().get(0);
         ConsultaProcedimientoPaso ejecucion=(ConsultaProcedimientoPaso)captor.getAllValues().get(1);
         assertEquals(c.getFechaInicio(),cp.getFechaInicio()); assertNull(cp.getFechaFin());
-        assertEquals(c.getIdPersonaRol(),ejecucion.getIdPersonaRol()); assertEquals(paso,ejecucion.getIdProcedimientoPaso());
+        assertEquals(enfermera,ejecucion.getIdPersonaRol()); assertEquals(paso,ejecucion.getIdProcedimientoPaso());
         assertEquals(c.getFechaInicio(),ejecucion.getFechaInicio()); assertEquals("PENDIENTE",ejecucion.getEstado());
     }
     @Test void rechazaRolQueNoEsPaciente() {
         PersonaRol pr=new PersonaRol(id); Rol rol=new Rol(); rol.setNombre("Médico"); pr.setIdRol(rol);
         when(em.find(PersonaRol.class,id,LockModeType.PESSIMISTIC_WRITE)).thenReturn(pr);
-        assertThrows(ServiceException.class,()->servicio.abrir(id)); verify(em,never()).persist(any());
+        assertThrows(ServiceException.class,()->servicio.abrir(id, UUID.randomUUID())); verify(em,never()).persist(any());
     }
     @Test void respetaDependenciasAntesDeCompletarPaso() {
         Consulta c=abierta(); UUID pasoId=UUID.randomUUID();
@@ -128,4 +132,48 @@ class AtencionServiceTest {
         assertNotNull(captor.getValue().getFechaCreacion().getOffset());
         assertEquals("Hemograma en ayunas",captor.getValue().getIndicaciones());
     }
+    private PersonaRol responsable(Clinica clinica, String nombre) {
+        PersonaRol pr = new PersonaRol(UUID.randomUUID());
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre(nombre); rol.setActivo(true);
+        pr.setIdRol(rol); pr.setIdClinica(clinica);
+        when(em.find(PersonaRol.class, pr.getIdPersonaRol())).thenReturn(pr);
+        return pr;
+    }
+    @Test void aperturaRechazaResponsableDeOtraClinica() {
+        PersonaRol paciente = new PersonaRol(UUID.randomUUID());
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
+        paciente.setIdRol(rol); paciente.setIdClinica(new Clinica(UUID.randomUUID()));
+        when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
+        PersonaRol doctor = responsable(new Clinica(UUID.randomUUID()), "Médico");
+        assertThrows(ServiceException.class, () -> servicio.abrir(paciente.getIdPersonaRol(), doctor.getIdPersonaRol()));
+        verify(em, never()).persist(any());
+    }
+    @Test void asignaPasoAUnRolDistintoDelPaciente() {
+        Consulta c = abierta(); Clinica clinica = new Clinica(UUID.randomUUID()); c.getIdPersonaRol().setIdClinica(clinica);
+        PersonaRol laboratorio = responsable(clinica, "Laboratorio");
+        ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
+        ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp);
+        when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+        servicio.asignarResponsable(id, paso.getIdConsultaProcedimientoPaso(), laboratorio.getIdPersonaRol());
+        assertSame(laboratorio, paso.getIdPersonaRol());
+    }
+    @Test void noReasignaPasosCompletados() {
+        Consulta c = abierta();
+        ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
+        ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp);
+        paso.setFechaFin(OffsetDateTime.now());
+        when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+        assertThrows(ServiceException.class, () -> servicio.asignarResponsable(id, paso.getIdConsultaProcedimientoPaso(), UUID.randomUUID()));
+        assertNull(paso.getIdPersonaRol());
+    }
+    @Test void noReasignaPasosAResponsableDeOtraClinica() {
+        Consulta c = abierta(); c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
+        ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
+        ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp);
+        when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+        PersonaRol doctor = responsable(new Clinica(UUID.randomUUID()), "Médico");
+        assertThrows(ServiceException.class, () -> servicio.asignarResponsable(id, paso.getIdConsultaProcedimientoPaso(), doctor.getIdPersonaRol()));
+        assertNull(paso.getIdPersonaRol());
+    }
+
 }

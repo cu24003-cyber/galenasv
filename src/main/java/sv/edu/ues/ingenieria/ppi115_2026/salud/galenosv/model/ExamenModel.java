@@ -1,9 +1,14 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
 import jakarta.ejb.EJB;
+import jakarta.annotation.PostConstruct;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
-import java.util.UUID;
+import java.util.*;
+import jakarta.ejb.EJBException;
+import jakarta.faces.application.FacesMessage;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ServiceException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Examen;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ExamenService;
 
@@ -16,6 +21,62 @@ public class ExamenModel extends AbstractModel<Examen, UUID> {
     @EJB
     private ExamenService examenService;
 
+    private List<TipoExamen> tipos = List.of();
+    private List<String> tiposIds = new ArrayList<>();
+
+    @Override
+    @PostConstruct
+    public void init() {
+        super.init();
+        try { tipos = examenService.tipos(); }
+        catch (ServiceException | EJBException e) { agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e)); }
+    }
+
+    public List<TipoExamen> getTipos() { return tipos; }
+    public List<String> getTiposIds() { return tiposIds; }
+    public void setTiposIds(List<String> ids) { tiposIds = ids; }
+
+    @Override
+    public void nuevo() { super.nuevo(); tiposIds = new ArrayList<>(); }
+
+    @Override
+    public void editar(Examen entidad) {
+        try {
+            List<String> ids = examenService.tiposAsignados(entidad.getIdExamen()).stream().map(UUID::toString).toList();
+            Examen copia = new Examen(entidad.getIdExamen());
+            copia.setNombre(entidad.getNombre()); copia.setActivo(entidad.getActivo()); copia.setObservaciones(entidad.getObservaciones());
+            seleccionada = copia;
+            tiposIds = new ArrayList<>(ids);
+        } catch (ServiceException | EJBException e) { agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e)); }
+    }
+
+    public void cancelar() { seleccionada = null; tiposIds = new ArrayList<>(); }
+
+    @Override
+    public void guardar() {
+        if (seleccionada == null) { marcarValidacionFallida(); return; }
+        try {
+            examenService.guardarConTipos(seleccionada, tiposIds == null ? List.of() : tiposIds.stream().map(UUID::fromString).toList());
+            cancelar(); cargarRegistros();
+            agregarMensaje(FacesMessage.SEVERITY_INFO, Mensajes.texto("registro.guardado"), null);
+        } catch (ServiceException | EJBException | IllegalArgumentException e) {
+            marcarValidacionFallida();
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.guardar"), e instanceof ServiceException ? e.getMessage() : Mensajes.detalle(e));
+        }
+    }
+
+    @Override
+    public void eliminar(Examen entidad) {
+        try {
+            examenService.eliminarConTipos(entidad.getIdExamen());
+            if (seleccionada != null && entidad.getIdExamen().equals(seleccionada.getIdExamen())) cancelar();
+            cargarRegistros();
+        } catch (ServiceException | EJBException e) {
+            marcarValidacionFallida();
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.eliminar"), e instanceof ServiceException ? e.getMessage() : Mensajes.detalle(e));
+        }
+    }
+
     @Override
     protected ExamenService getService() {
         return examenService;
@@ -23,7 +84,9 @@ public class ExamenModel extends AbstractModel<Examen, UUID> {
 
     @Override
     protected Examen nuevaInstancia() {
-        return new Examen();
+        Examen examen = new Examen();
+        examen.setActivo(true);
+        return examen;
     }
 
     @Override
