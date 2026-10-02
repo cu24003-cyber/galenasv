@@ -11,6 +11,10 @@ import jakarta.inject.Named;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Comparator;
+import java.text.MessageFormat;
+import java.text.Normalizer;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Clinica;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
@@ -49,6 +53,12 @@ public class CambiarRolModel implements Serializable {
                     || !elegida.getIdPersona().getIdPersona().toString().equals(personaId))
                 throw new ServiceException("La persona y el rol deben pertenecer a la clínica seleccionada.");
             sesion.cambiarRol(elegida);
+            FacesContext contexto = FacesContext.getCurrentInstance();
+            if (contexto != null) {
+                contexto.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        MessageFormat.format(Mensajes.texto("clinica.trabajo"), elegida.getIdClinica().getNombre()), null));
+                contexto.getExternalContext().getFlash().setKeepMessages(true);
+            }
             return sesion.getConsulta() == null ? "/paginas/consultas.xhtml?faces-redirect=true"
                     : "/paginas/consulta.xhtml?faces-redirect=true";
         } catch (ServiceException e) { error(e.getMessage()); }
@@ -74,7 +84,20 @@ public class CambiarRolModel implements Serializable {
         return asignaciones.stream().filter(r -> r.getIdClinica().getIdClinica().toString().equals(clinicaId)
                 && r.getIdPersona().getIdPersona().toString().equals(personaId)).toList();
     }
-    public void cambiarClinica() { personaId = null; asignacionId = null; }
+    public void cambiarClinica() {
+        personaId = null; asignacionId = null;
+        List<PersonaRol> medicos = asignaciones.stream().filter(r -> r.getIdClinica().getIdClinica().toString().equals(clinicaId)
+                && esMedico(r)).toList();
+        if (medicos.size() == 1) {
+            personaId = medicos.get(0).getIdPersona().getIdPersona().toString();
+            asignacionId = medicos.get(0).getIdPersonaRol().toString();
+        }
+    }
+    private static boolean esMedico(PersonaRol asignacion) {
+        String nombre = Normalizer.normalize(asignacion.getIdRol().getNombre().trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
+        return Set.of("medico", "medica", "doctor", "doctora").contains(nombre);
+    }
     public void cambiarPersona() {
         List<PersonaRol> roles = getRolesPersona();
         PersonaRol actual = sesion.getRolActivo();

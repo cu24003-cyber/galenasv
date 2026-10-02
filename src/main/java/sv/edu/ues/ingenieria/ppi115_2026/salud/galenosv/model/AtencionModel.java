@@ -42,7 +42,7 @@ public class AtencionModel implements Serializable {
     }
     private boolean ejecutar(Runnable r) {
         try { r.run(); return true; }
-        catch(ServiceException e) { mensaje(e.getMessage()); }
+        catch(ServiceException e) { mensaje(Mensajes.mensaje(e)); }
         catch(EJBException | IllegalArgumentException e) { mensaje("No se pudo guardar. Verifique los datos y la conexión."); }
         return false;
     }

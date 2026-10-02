@@ -63,12 +63,14 @@
                                           maxdate="#{registroPersonaModel.hoy}" timeZone="America/El_Salvador" />
                             <p:outputLabel for="rol" value="#{msg['campo.idRol']}" />
                             <p:autoComplete id="rol" value="#{registroPersonaModel.rol}"
+                                            disabled="#{not empty registroPersonaModel.asignacionId}"
                                             completeMethod="#{registroPersonaModel.completarRoles}"
                                             var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
                                             converter="rolConverter" dropdown="true" forceSelection="true"
                                             scrollHeight="250" />
                             <p:outputLabel for="clinica" value="#{msg['campo.idClinica']}" />
                             <p:autoComplete id="clinica" value="#{registroPersonaModel.clinica}"
+                                            disabled="#{not empty registroPersonaModel.asignacionId}"
                                             completeMethod="#{registroPersonaModel.completarClinicas}"
                                             var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
                                             converter="clinicaConverter" dropdown="true" forceSelection="true"

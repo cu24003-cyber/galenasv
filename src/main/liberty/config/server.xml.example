@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<server description="Servidor Open Liberty para GalenaSV">
+    <featureManager>
+        <feature>webProfile-11.0</feature>
+    </featureManager>
+    <ltpa keysPassword="CAMBIAR_CLAVE_LTPA" />
+    <httpEndpoint httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint" />
+    <dataSource id="postgresDS" jndiName="jdbc/postgres">
+        <jdbcDriver libraryRef="PostgreSQL-Library" />
+        <properties.postgresql databaseName="galenosv" serverName="localhost" portNumber="5432" user="galenosv" password="CAMBIAR_CONTRASENA" />
+    </dataSource>
+    <library id="PostgreSQL-Library">
+        <fileset dir="${server.config.dir}/lib/global" includes="postgresql-*.jar" />
+    </library>
+</server>

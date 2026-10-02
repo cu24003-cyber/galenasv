@@ -41,6 +41,8 @@ public class CatalogoProcedimientoModel implements Serializable {
     public Procedimiento getSeleccionado() { return seleccionado; }
     public List<Procedimiento> getLista() { return lista; }
     public List<ProcedimientoPaso> getPasos() { return pasos; }
+    public boolean isSinPasoFinal() { return seleccionado != null && seleccionado.getIdProcedimiento() != null
+            && pasos.stream().noneMatch(p -> Boolean.TRUE.equals(p.getIndicaFin())); }
     public List<ProcedimientoPasoSecuencia> getSecuencias() { return secuencias; }
     public List<Rol> getRoles() { return roles; }
     public String getNombrePaso() { return nombrePaso; }

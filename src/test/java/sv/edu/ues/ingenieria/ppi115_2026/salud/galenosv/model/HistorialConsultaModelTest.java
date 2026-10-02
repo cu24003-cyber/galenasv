@@ -63,6 +63,19 @@ class HistorialConsultaModelTest {
         model.iniciar(); assertTrue(model.getConsultas().isEmpty()); assertTrue(model.getPacientes().isEmpty());
         verifyNoInteractions(servicio);
     }
+    @Test void busquedaDePacientesConservaLaSeleccionYFiltraPorNombre() {
+        Persona ana=new Persona(UUID.randomUUID()); ana.setNombres("Ana"); ana.setApellidos("López");
+        Persona luis=new Persona(UUID.randomUUID()); luis.setNombres("Luis"); luis.setApellidos("Pérez");
+        PersonaRol primera=new PersonaRol(UUID.randomUUID()); primera.setIdPersona(ana);
+        PersonaRol segunda=new PersonaRol(UUID.randomUUID()); segunda.setIdPersona(luis);
+        Rol medico=new Rol(UUID.randomUUID()); medico.setNombre("Doctor"); medico.setActivo(true);
+        PersonaRol activo=new PersonaRol(UUID.randomUUID()); activo.setIdRol(medico); activo.setIdPersona(new Persona(UUID.randomUUID())); activo.setIdClinica(new Clinica(UUID.randomUUID()));
+        sesion.cambiarRol(activo); when(servicio.pacientesClinica()).thenReturn(List.of(primera,segunda));
+        model.iniciar(); model.setBuscarPaciente("ana");
+        assertEquals(List.of(primera),model.getPacientesFiltrados());
+        model.setPacienteId(segunda.getIdPersonaRol().toString());
+        assertEquals(List.of(primera,segunda),model.getPacientesFiltrados());
+    }
     @Test void cambioDeSesionEnOtraPestanaLimpiaElHistorialYElDetalleAnterior() {
         Clinica clinica = new Clinica(UUID.randomUUID());
         Rol medico = new Rol(UUID.randomUUID()); medico.setActivo(true);

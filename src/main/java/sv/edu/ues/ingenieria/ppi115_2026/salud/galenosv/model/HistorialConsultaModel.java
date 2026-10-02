@@ -10,6 +10,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Inject;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -24,7 +25,8 @@ public class HistorialConsultaModel implements Serializable {
     @EJB private AtencionService servicio;
     @Inject private AtencionSesion sesion;
     private List<PersonaRol> pacientes = List.of();
-    private String pacienteId, referencia, observaciones;
+    private String pacienteId, referencia, observaciones, buscarPaciente;
+    private LocalDate desde, hasta;
     private UUID contextoId;
     private List<Consulta> consultas = List.of();
     private Consulta seleccionada;
@@ -45,7 +47,7 @@ public class HistorialConsultaModel implements Serializable {
     public void verificarContexto() {
         UUID actual = sesion.getRolActivo() == null ? null : sesion.getRolActivo().getIdPersonaRol();
         if (!Objects.equals(contextoId, actual)) {
-            pacienteId = null; referencia = null; observaciones = null;
+            pacienteId = null; referencia = null; observaciones = null; buscarPaciente = null; desde = null; hasta = null;
             iniciar();
         }
     }
@@ -105,6 +107,25 @@ public class HistorialConsultaModel implements Serializable {
     }
     public List<Consulta> getConsultas() { return consultas; }
     public List<PersonaRol> getPacientes() { return pacientes; }
+    public List<PersonaRol> getPacientesFiltrados() {
+        if (buscarPaciente == null || buscarPaciente.isBlank()) return pacientes;
+        String patron = buscarPaciente.trim().toLowerCase(java.util.Locale.ROOT);
+        return pacientes.stream().filter(r -> r.getIdPersonaRol().toString().equals(pacienteId)
+                || (r.getIdPersona().getNombres() + " " + r.getIdPersona().getApellidos())
+                    .toLowerCase(java.util.Locale.ROOT).contains(patron)).toList();
+    }
+    public String getBuscarPaciente() { return buscarPaciente; }
+    public void setBuscarPaciente(String buscarPaciente) { this.buscarPaciente = buscarPaciente; }
+    public LocalDate getDesde() { return desde; }
+    public void setDesde(LocalDate desde) { this.desde = desde; }
+    public LocalDate getHasta() { return hasta; }
+    public void setHasta(LocalDate hasta) { this.hasta = hasta; }
+    public void filtrar() {
+        try { consultas = servicio.historial(desde, hasta); }
+        catch (ServiceException e) { error(Mensajes.mensaje(e)); }
+        catch (EJBException e) { error(Mensajes.texto("consulta.errorFiltro")); }
+    }
+    public void limpiarFiltro() { desde = null; hasta = null; filtrar(); }
     public String getPacienteId() { return pacienteId; }
     public void setPacienteId(String id) { pacienteId = id; }
     public String getReferencia() { return referencia; }

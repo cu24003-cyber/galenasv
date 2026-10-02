@@ -1,6 +1,8 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.Flash;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,13 +37,13 @@ class CambiarRolModelTest {
         when(servicio.listar()).thenReturn(List.of(medico, enfermera, otro)); model.iniciar();
         assertEquals(List.of(primera, segunda), model.getClinicas()); assertTrue(model.getPersonas().isEmpty());
         model.setClinicaId(primera.getIdClinica().toString()); model.cambiarClinica();
-        assertEquals(List.of(ana), model.getPersonas()); assertTrue(model.getRolesPersona().isEmpty());
+        assertEquals(List.of(ana), model.getPersonas()); assertEquals(List.of(medico, enfermera), model.getRolesPersona());
         model.setPersonaId(ana.getIdPersona().toString()); model.cambiarPersona();
         assertEquals(List.of(medico, enfermera), model.getRolesPersona());
         assertEquals(medico.getIdPersonaRol().toString(), model.getAsignacionId());
         model.setAsignacionId(medico.getIdPersonaRol().toString());
         model.setClinicaId(segunda.getIdClinica().toString()); model.cambiarClinica();
-        assertNull(model.getPersonaId()); assertNull(model.getAsignacionId()); assertEquals(List.of(luis), model.getPersonas());
+        assertEquals(luis.getIdPersona().toString(), model.getPersonaId()); assertEquals(otro.getIdPersonaRol().toString(), model.getAsignacionId()); assertEquals(List.of(luis), model.getPersonas());
         model.setPersonaId(luis.getIdPersona().toString()); model.cambiarPersona();
         assertEquals(otro.getIdPersonaRol().toString(), model.getAsignacionId());
     }
@@ -69,7 +71,14 @@ class CambiarRolModelTest {
         model.setClinicaId(elegida.getIdClinica().getIdClinica().toString());
         model.setPersonaId(elegida.getIdPersona().getIdPersona().toString());
         when(servicio.cargar(elegida.getIdPersonaRol())).thenReturn(elegida);
-        assertEquals("/paginas/consultas.xhtml?faces-redirect=true", model.aplicar()); assertSame(elegida, sesion.getRolActivo());
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            ExternalContext externo = mock(ExternalContext.class); Flash flash = mock(Flash.class);
+            when(faces.getExternalContext()).thenReturn(externo); when(externo.getFlash()).thenReturn(flash);
+            assertEquals("/paginas/consultas.xhtml?faces-redirect=true", model.aplicar()); assertSame(elegida, sesion.getRolActivo());
+            verify(flash).setKeepMessages(true);
+        }
     }
     @Test void conservaElRolActualCuandoLaPersonaTieneVariasAsignaciones() {
         Clinica clinica = clinica("Actual"); Persona persona = new Persona(UUID.randomUUID());

@@ -4,6 +4,8 @@ import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
@@ -92,10 +94,22 @@ public class AtencionService {
         comprobarPropietario(c);
         return c;
     }
-    public List<Consulta> historial() {
+    public List<Consulta> historial() { return historial(null, null); }
+    public List<Consulta> historial(LocalDate desde, LocalDate hasta) {
+        if (desde != null && hasta != null && desde.isAfter(hasta))
+            throw ServiceException.localizada("consulta.rangoInvalido", "La fecha Desde debe ser anterior o igual a Hasta.");
         PersonaRol medico = medicoActivo();
-        return em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica ORDER BY c.fechaInicio DESC", Consulta.class)
-                .setParameter("medico", medico).setParameter("clinica", medico.getIdClinica()).getResultList();
+        ZoneId zona = ZoneId.of("America/El_Salvador");
+        OffsetDateTime inicio = desde == null ? null : desde.atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
+        OffsetDateTime finExclusivo = hasta == null ? null : hasta.plusDays(1).atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
+        String jpql = "SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica"
+                + (inicio == null ? "" : " AND c.fechaInicio >= :desde")
+                + (finExclusivo == null ? "" : " AND c.fechaInicio < :hasta") + " ORDER BY c.fechaInicio DESC";
+        TypedQuery<Consulta> consulta = em.createQuery(jpql, Consulta.class)
+                .setParameter("medico", medico).setParameter("clinica", medico.getIdClinica());
+        if (inicio != null) consulta.setParameter("desde", inicio);
+        if (finExclusivo != null) consulta.setParameter("hasta", finExclusivo);
+        return consulta.getResultList();
     }
     private Consulta abierta(UUID id) {
         Consulta c=em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE);
@@ -117,11 +131,33 @@ public class AtencionService {
     public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
         Consulta c=abierta(consulta); Procedimiento p=em.find(Procedimiento.class,procedimiento);
         if(p==null || !Boolean.TRUE.equals(p.getActivo())) throw new ServiceException("Seleccione un procedimiento activo.");
-        PersonaRol encargado = responsable(responsableId, c.getIdPersonaRol());
         List<ProcedimientoPaso> catalogo=em.createQuery("SELECT p FROM ProcedimientoPaso p WHERE p.idProcedimiento=:p",ProcedimientoPaso.class).setParameter("p",p).getResultList();
         if(catalogo.isEmpty()) throw new ServiceException("Configure los pasos del procedimiento antes de utilizarlo.");
+        List<ProcedimientoPasoSecuencia> secuencias=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso.idProcedimiento=:p",ProcedimientoPasoSecuencia.class).setParameter("p",p).getResultList();
+        Set<UUID> destinos = new HashSet<>();
+        for (ProcedimientoPasoSecuencia s : secuencias) destinos.add(s.getIdProcedimientoPasoReferencia().getIdProcedimientoPaso());
+        List<ProcedimientoPaso> iniciales = catalogo.stream().filter(paso -> !destinos.contains(paso.getIdProcedimientoPaso())).toList();
+        if (iniciales.isEmpty()) throw ServiceException.localizada("consulta.procedimientoSinInicial", "El procedimiento no tiene un paso inicial.");
+        Map<UUID, PersonaRol> encargados = new HashMap<>();
+        for (ProcedimientoPaso paso : iniciales) encargados.put(paso.getIdProcedimientoPaso(), responsableAutomatico(c, paso));
         ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(texto(notas,"Las observaciones del procedimiento",255)); em.persist(cp);
-        for(ProcedimientoPaso paso:catalogo) { ConsultaProcedimientoPaso ejecucion=new ConsultaProcedimientoPaso(UUID.randomUUID()); ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(paso); ejecucion.setIdPersonaRol(encargado); ejecucion.setFechaInicio(c.getFechaInicio()); ejecucion.setEstado("PENDIENTE"); em.persist(ejecucion); }
+        for (ProcedimientoPaso paso : iniciales) crearPaso(cp, paso, encargados.get(paso.getIdProcedimientoPaso()), c.getFechaInicio());
+    }
+    private PersonaRol responsableAutomatico(Consulta consulta, ProcedimientoPaso paso) {
+        if (paso.getIdRol() == null || !Boolean.TRUE.equals(paso.getIdRol().getActivo()))
+            throw ServiceException.localizada("consulta.pasoRolInactivo", "El paso " + paso.getNombre() + " no tiene un rol activo.", paso.getNombre());
+        List<PersonaRol> disponibles = em.createQuery("SELECT r FROM PersonaRol r WHERE r.idClinica=:clinica AND r.idRol=:rol AND r.idRol.activo=true ORDER BY r.fechaCreacion, r.idPersonaRol", PersonaRol.class)
+                .setParameter("clinica", consulta.getIdPersonaRol().getIdClinica()).setParameter("rol", paso.getIdRol())
+                .setMaxResults(1).getResultList();
+        if (disponibles.isEmpty()) throw ServiceException.localizada("consulta.sinResponsableAutomatico",
+                "No hay una persona activa con rol " + paso.getIdRol().getNombre() + " en la clínica de la consulta para el paso " + paso.getNombre() + ".",
+                paso.getIdRol().getNombre(), paso.getNombre());
+        return disponibles.get(0);
+    }
+    private void crearPaso(ConsultaProcedimiento cp, ProcedimientoPaso definicion, PersonaRol encargado, OffsetDateTime inicio) {
+        ConsultaProcedimientoPaso ejecucion = new ConsultaProcedimientoPaso(UUID.randomUUID());
+        ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(definicion);
+        ejecucion.setIdPersonaRol(encargado); ejecucion.setFechaInicio(inicio); ejecucion.setEstado("PENDIENTE"); em.persist(ejecucion);
     }
     public void asignarResponsable(UUID consulta, UUID pasoId, UUID responsableId) {
         Consulta c = abierta(consulta);
@@ -138,6 +174,24 @@ public class AtencionService {
             if(pendientes>0) throw new ServiceException("Complete primero los pasos anteriores.");
         }
         paso.setEstado("COMPLETADO"); paso.setFechaFin(ahora());
+        List<ProcedimientoPasoSecuencia> siguientes=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso=:p",ProcedimientoPasoSecuencia.class)
+                .setParameter("p",paso.getIdProcedimientoPaso()).getResultList();
+        for (ProcedimientoPasoSecuencia siguiente : siguientes) {
+            ProcedimientoPaso destino = siguiente.getIdProcedimientoPasoReferencia();
+            List<ConsultaProcedimientoPaso> existentes=em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento=:cp AND p.idProcedimientoPaso=:destino",ConsultaProcedimientoPaso.class)
+                    .setParameter("cp",paso.getIdConsultaProcedimiento()).setParameter("destino",destino).getResultList();
+            if (!existentes.isEmpty()) continue;
+            List<ProcedimientoPasoSecuencia> requisitos=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPasoReferencia=:destino",ProcedimientoPasoSecuencia.class)
+                    .setParameter("destino",destino).getResultList();
+            boolean completos = true;
+            for (ProcedimientoPasoSecuencia requisito : requisitos) {
+                Long total=em.createQuery("SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento=:cp AND p.idProcedimientoPaso=:previo AND p.fechaFin IS NOT NULL",Long.class)
+                        .setParameter("cp",paso.getIdConsultaProcedimiento()).setParameter("previo",requisito.getIdProcedimientoPaso()).getSingleResult();
+                if (total == 0) { completos = false; break; }
+            }
+            if (completos) crearPaso(paso.getIdConsultaProcedimiento(), destino,
+                    responsableAutomatico(paso.getIdConsultaProcedimiento().getIdConsulta(), destino), paso.getFechaFin());
+        }
     }
     private ConsultaProcedimientoPaso pasoPropio(UUID consulta,UUID id) {
         ConsultaProcedimientoPaso p=id==null?null:em.find(ConsultaProcedimientoPaso.class,id);
@@ -191,6 +245,13 @@ public class AtencionService {
         Consulta c=abierta(id);
         List<ConsultaProcedimientoPaso> pasos=pasos(id);
         if(pasos.stream().anyMatch(p->p.getFechaFin()==null)) throw new ServiceException("Complete todos los pasos antes de cerrar la consulta.");
+        for (ConsultaProcedimiento procedimiento : realizados(id)) {
+            boolean termino = pasos.stream().anyMatch(p -> p.getIdConsultaProcedimiento().getIdConsultaProcedimiento().equals(procedimiento.getIdConsultaProcedimiento())
+                    && p.getIdProcedimientoPaso() != null && Boolean.TRUE.equals(p.getIdProcedimientoPaso().getIndicaFin()) && p.getFechaFin() != null);
+            if (!termino) throw ServiceException.localizada("consulta.procedimientoSinFinal",
+                    "El procedimiento " + procedimiento.getIdProcedimiento().getNombre() + " no ha llegado a un paso final.",
+                    procedimiento.getIdProcedimiento().getNombre());
+        }
         String referenciaValidada = texto(referencia,"La referencia",255);
         String notasValidadas = texto(notas,"Las observaciones",255);
         OffsetDateTime fin=ahora(); c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas); c.setFechaFin(fin);

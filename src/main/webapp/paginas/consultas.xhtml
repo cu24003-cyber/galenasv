@@ -17,11 +17,15 @@
             <h:form id="nuevaConsulta">
                 <p:panel header="Crear consulta" style="margin-bottom:1rem">
                     <p:panelGrid columns="2" layout="flex">
+                        <p:outputLabel for="buscarPaciente" value="#{msg['consulta.buscarPaciente']}" />
+                        <p:inputText id="buscarPaciente" value="#{historialConsultaModel.buscarPaciente}">
+                            <p:ajax event="keyup" process="@this" update="paciente" />
+                        </p:inputText>
                         <p:outputLabel for="paciente" value="Paciente de la clínica" />
                         <p:selectOneMenu id="paciente" value="#{historialConsultaModel.pacienteId}" required="true"
                                          requiredMessage="Seleccione un paciente de su clínica." filter="true" filterMatchMode="contains">
                             <f:selectItem itemLabel="Seleccione un paciente" itemValue="" noSelectionOption="true" />
-                            <f:selectItems value="#{historialConsultaModel.pacientes}" var="r" itemValue="#{r.idPersonaRol.toString()}"
+                            <f:selectItems value="#{historialConsultaModel.pacientesFiltrados}" var="r" itemValue="#{r.idPersonaRol.toString()}"
                                            itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos}" />
                         </p:selectOneMenu>
                         <p:outputLabel for="referencia" value="Referencia externa" />
@@ -38,6 +42,14 @@
         </h:panelGroup>
         <h3>Historial de mis consultas</h3>
         <h:form id="historial">
+            <p:panelGrid columns="2" layout="flex">
+                <p:outputLabel for="desde" value="#{msg['consulta.desde']}" />
+                <p:datePicker id="desde" value="#{historialConsultaModel.desde}" pattern="dd/MM/yyyy" showIcon="true" />
+                <p:outputLabel for="hasta" value="#{msg['consulta.hasta']}" />
+                <p:datePicker id="hasta" value="#{historialConsultaModel.hasta}" pattern="dd/MM/yyyy" showIcon="true" />
+            </p:panelGrid>
+            <p:commandButton value="#{msg['consulta.filtrar']}" action="#{historialConsultaModel.filtrar}" process="@form" update="@form :mensajes" />
+            <p:commandButton value="#{msg['consulta.limpiar']}" action="#{historialConsultaModel.limpiarFiltro}" process="@this" update="@form :mensajes" resetValues="true" />
             <p:dataTable value="#{historialConsultaModel.consultas}" var="c" rows="10" paginator="true"
                          paginatorPosition="bottom" emptyMessage="No hay consultas para este médico y clínica.">
                 <p:column headerText="Paciente" filterBy="#{c.idPersonaRol.idPersona.nombres} #{c.idPersonaRol.idPersona.apellidos}" filterMatchMode="contains">

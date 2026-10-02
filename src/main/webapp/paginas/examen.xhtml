@@ -18,7 +18,8 @@
                         <p:inputText id="nombre" value="#{examenModel.seleccionada.nombre}" maxlength="155"
                             required="true" requiredMessage="#{msg['persona.requerido.nombres']}" />
                         <p:outputLabel for="tipos" value="#{msg['entidad.TipoExamen']}" />
-                        <p:selectCheckboxMenu id="tipos" value="#{examenModel.tiposIds}" required="true"
+                        <p:selectCheckboxMenu id="tipos" value="#{examenModel.tiposIds}" required="#{empty examenModel.seleccionada.idExamen}"
+                            disabled="#{not empty examenModel.seleccionada.idExamen}"
                             label="#{msg['entidad.TipoExamen']}" filter="true" filterMatchMode="contains" multiple="true">
                             <f:selectItems value="#{examenModel.tipos}" var="tipo" itemValue="#{tipo.idTipoExamen.toString()}"
                                 itemLabel="#{tipo.nombre}" itemDisabled="#{not tipo.activo and not examenModel.tiposIds.contains(tipo.idTipoExamen.toString())}" />

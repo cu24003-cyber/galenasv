@@ -16,6 +16,9 @@
 <h:form id="pasos">
 <h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>Guarde el procedimiento para configurar sus pasos.</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
 <h3>Pasos de #{catalogoProcedimientoModel.seleccionado.nombre}</h3>
+<h:panelGroup rendered="#{catalogoProcedimientoModel.sinPasoFinal}" layout="block" styleClass="ui-message-warn" style="padding:.7rem;margin:.5rem 0">
+    #{msg['procedimiento.sinPasoFinal']}
+</h:panelGroup>
 <p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="Nombre del paso"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.nombrePaso}" required="true" maxlength="155"/>
 <p:outputLabel for="rol" value="Rol responsable"/><p:selectOneMenu id="rol" value="#{catalogoProcedimientoModel.rolId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.roles}" var="r" itemLabel="#{r.nombre}" itemValue="#{r.idRol.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="previo" value="Después del paso"/><p:selectOneMenu id="previo" value="#{catalogoProcedimientoModel.previoId}"><f:selectItem itemLabel="Sin dependencia (paso inicial)" itemValue=""/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>

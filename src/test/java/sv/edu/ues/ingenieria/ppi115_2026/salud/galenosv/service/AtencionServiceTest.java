@@ -47,6 +47,7 @@ class AtencionServiceTest {
         TypedQuery<T> q=mock(TypedQuery.class);
         when(em.createQuery(anyString(),eq(tipo))).thenReturn(q);
         when(q.setParameter(anyString(),any())).thenReturn(q);
+        when(q.setMaxResults(anyInt())).thenReturn(q);
         when(q.getResultList()).thenReturn(resultado); return q;
     }
     @Test void retomaConsultaExistenteSinCambiarInicio() {
@@ -101,13 +102,14 @@ class AtencionServiceTest {
     @Test void cierreUsaMismoInstanteParaConsultaYProcedimientos() {
         Consulta c=abierta(); OffsetDateTime inicio=c.getFechaInicio();
         ConsultaProcedimientoPaso paso=new ConsultaProcedimientoPaso(); paso.setFechaFin(OffsetDateTime.now());
-        ConsultaProcedimiento cp=new ConsultaProcedimiento(); cp.setFechaInicio(inicio);
+        ProcedimientoPaso definicion = new ProcedimientoPaso(UUID.randomUUID()); definicion.setIndicaFin(true); paso.setIdProcedimientoPaso(definicion);
+        ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setFechaInicio(inicio); paso.setIdConsultaProcedimiento(cp);
         query(ConsultaProcedimientoPaso.class,List.of(paso)); query(ConsultaProcedimiento.class,List.of(cp));
         servicio.cerrar(id,"referencia","observación");
         assertEquals(c.getFechaFin(),cp.getFechaFin()); assertNotNull(c.getFechaFin().getOffset());
         assertEquals(inicio,c.getFechaInicio()); assertEquals("observación",c.getObservaciones());
     }
-    @Test void procedimientoCopiaInicioYAsignaResponsableConCualquierRol() {
+    @Test void procedimientoCopiaInicioYAsignaResponsableDelRolDelPaso() {
         Consulta c=abierta(); UUID procedimiento=UUID.randomUUID();
         Procedimiento p=new Procedimiento(procedimiento); p.setActivo(true);
         when(em.find(Procedimiento.class,procedimiento)).thenReturn(p);
@@ -115,6 +117,9 @@ class AtencionServiceTest {
         query(ProcedimientoPaso.class,List.of(paso));
         Clinica clinica = new Clinica(UUID.randomUUID()); c.getIdPersonaRol().setIdClinica(clinica); medico.setIdClinica(clinica);
         PersonaRol enfermera = responsable(clinica, "Enfermería");
+        paso.setIdRol(enfermera.getIdRol());
+        query(ProcedimientoPasoSecuencia.class,List.of());
+        query(PersonaRol.class,List.of(enfermera));
         servicio.agregarProcedimiento(id,procedimiento,"notas", enfermera.getIdPersonaRol());
         ArgumentCaptor<Object> captor=ArgumentCaptor.forClass(Object.class); verify(em,times(2)).persist(captor.capture());
         ConsultaProcedimiento cp=(ConsultaProcedimiento)captor.getAllValues().get(0);
@@ -122,6 +127,73 @@ class AtencionServiceTest {
         assertEquals(c.getFechaInicio(),cp.getFechaInicio()); assertNull(cp.getFechaFin());
         assertEquals(enfermera,ejecucion.getIdPersonaRol()); assertEquals(paso,ejecucion.getIdProcedimientoPaso());
         assertEquals(c.getFechaInicio(),ejecucion.getFechaInicio()); assertEquals("PENDIENTE",ejecucion.getEstado());
+    }
+    @Test void procedimientoSoloCreaPasoInicialYRechazaAusenciaDeResponsable() {
+        Consulta c=abierta(); Procedimiento p=new Procedimiento(UUID.randomUUID()); p.setActivo(true);
+        when(em.find(Procedimiento.class,p.getIdProcedimiento())).thenReturn(p);
+        ProcedimientoPaso inicial=new ProcedimientoPaso(UUID.randomUUID()), siguiente=new ProcedimientoPaso(UUID.randomUUID());
+        Rol rol=new Rol(UUID.randomUUID()); rol.setNombre("Enfermera"); rol.setActivo(true);
+        inicial.setIdRol(rol); siguiente.setIdRol(rol);
+        ProcedimientoPasoSecuencia secuencia=new ProcedimientoPasoSecuencia(UUID.randomUUID());
+        secuencia.setIdProcedimientoPaso(inicial); secuencia.setIdProcedimientoPasoReferencia(siguiente);
+        query(ProcedimientoPaso.class,List.of(inicial,siguiente)); query(ProcedimientoPasoSecuencia.class,List.of(secuencia));
+        PersonaRol encargada=responsable(c.getIdPersonaRol().getIdClinica(),"Enfermera");
+        query(PersonaRol.class,List.of(encargada));
+        servicio.agregarProcedimiento(id,p.getIdProcedimiento(),null,medico.getIdPersonaRol());
+        ArgumentCaptor<Object> captor=ArgumentCaptor.forClass(Object.class); verify(em,times(2)).persist(captor.capture());
+        assertSame(inicial,((ConsultaProcedimientoPaso)captor.getAllValues().get(1)).getIdProcedimientoPaso());
+        reset(em);
+        when(em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE)).thenReturn(c);
+        when(em.find(PersonaRol.class,medico.getIdPersonaRol())).thenReturn(medico);
+        when(em.find(Procedimiento.class,p.getIdProcedimiento())).thenReturn(p);
+        query(ProcedimientoPaso.class,List.of(inicial,siguiente)); query(ProcedimientoPasoSecuencia.class,List.of(secuencia));
+        query(PersonaRol.class,List.of());
+        assertThrows(ServiceException.class,()->servicio.agregarProcedimiento(id,p.getIdProcedimiento(),null,null));
+        verify(em,never()).persist(any());
+    }
+    @Test void historialConvierteDiasLocalesAIntervaloUtcInclusivo() {
+        TypedQuery<Consulta> consultas=query(Consulta.class,List.of());
+        servicio.historial(java.time.LocalDate.of(2026,10,1),java.time.LocalDate.of(2026,10,2));
+        verify(consultas).setParameter("desde",OffsetDateTime.parse("2026-10-01T06:00:00Z"));
+        verify(consultas).setParameter("hasta",OffsetDateTime.parse("2026-10-03T06:00:00Z"));
+        assertThrows(ServiceException.class,()->servicio.historial(java.time.LocalDate.of(2026,10,3),java.time.LocalDate.of(2026,10,2)));
+    }
+    @Test void completarPasoCreaSuSucesorConElRolCorrespondiente() {
+        Consulta c=abierta(); ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
+        ProcedimientoPaso inicial=new ProcedimientoPaso(UUID.randomUUID()), destino=new ProcedimientoPaso(UUID.randomUUID());
+        Rol enfermeria=new Rol(UUID.randomUUID()); enfermeria.setNombre("Enfermería"); enfermeria.setActivo(true); destino.setIdRol(enfermeria);
+        ConsultaProcedimientoPaso ejecucion=new ConsultaProcedimientoPaso(UUID.randomUUID());
+        ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(inicial);
+        when(em.find(ConsultaProcedimientoPaso.class,ejecucion.getIdConsultaProcedimientoPaso())).thenReturn(ejecucion);
+        ProcedimientoPasoSecuencia s=new ProcedimientoPasoSecuencia(UUID.randomUUID());
+        s.setIdProcedimientoPaso(inicial); s.setIdProcedimientoPasoReferencia(destino);
+        when(em.createQuery(anyString(),eq(ProcedimientoPasoSecuencia.class))).thenAnswer(inv->{
+            @SuppressWarnings("unchecked") TypedQuery<ProcedimientoPasoSecuencia> q=mock(TypedQuery.class);
+            when(q.setParameter(anyString(),any())).thenReturn(q);
+            when(q.getResultList()).thenReturn(((String)inv.getArgument(0)).contains("Referencia=:p") ? List.of() : List.of(s));
+            return q;
+        });
+        query(ConsultaProcedimientoPaso.class,List.of());
+        TypedQuery<Long> cuenta=query(Long.class,List.of()); when(cuenta.getSingleResult()).thenReturn(1L);
+        PersonaRol responsable=responsable(c.getIdPersonaRol().getIdClinica(),"Enfermería");
+        query(PersonaRol.class,List.of(responsable));
+        servicio.completar(id,ejecucion.getIdConsultaProcedimientoPaso());
+        ArgumentCaptor<ConsultaProcedimientoPaso> captor=ArgumentCaptor.forClass(ConsultaProcedimientoPaso.class);
+        verify(em).persist(captor.capture());
+        assertSame(destino,captor.getValue().getIdProcedimientoPaso());
+        assertSame(responsable,captor.getValue().getIdPersonaRol());
+        assertEquals(ejecucion.getFechaFin(),captor.getValue().getFechaInicio());
+    }
+    @Test void cierreRechazaProcedimientoSinPasoFinalAunqueTodosEstanCompletos() {
+        Consulta c=abierta(); ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID());
+        Procedimiento catalogo=new Procedimiento(UUID.randomUUID()); catalogo.setNombre("Sin final"); cp.setIdProcedimiento(catalogo);
+        cp.setIdConsulta(c);
+        ConsultaProcedimientoPaso paso=new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp);
+        ProcedimientoPaso definicion=new ProcedimientoPaso(UUID.randomUUID()); definicion.setIndicaFin(false);
+        paso.setIdProcedimientoPaso(definicion); paso.setFechaFin(OffsetDateTime.now());
+        query(ConsultaProcedimientoPaso.class,List.of(paso)); query(ConsultaProcedimiento.class,List.of(cp));
+        assertThrows(ServiceException.class,()->servicio.cerrar(id,null,null));
+        assertNull(c.getFechaFin());
     }
     @Test void rechazaRolQueNoEsPaciente() {
         PersonaRol pr=new PersonaRol(id); Rol rol=new Rol(); rol.setNombre("Médico"); pr.setIdRol(rol);
