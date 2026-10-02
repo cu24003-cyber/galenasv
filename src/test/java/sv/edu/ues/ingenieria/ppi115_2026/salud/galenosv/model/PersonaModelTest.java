@@ -136,6 +136,26 @@ class PersonaModelTest {
     }
 
     @Test
+    void eliminar_conHistorialConservaLaFilaYMuestraElMotivoTraducido() {
+        Contexto.establecer(facesContext);
+        Persona persona = new Persona(UUID.randomUUID());
+        List<Persona> personas = List.of(persona);
+        when(personaService.listarTodos()).thenReturn(personas);
+        model.init();
+        doThrow(new ServiceException("persona.eliminar.historial", "Diagnóstico interno", null))
+                .when(personaService).eliminar(persona.getIdPersona());
+
+        model.eliminar(persona);
+
+        assertSame(personas, model.getPersonas());
+        verify(personaService, times(1)).listarTodos();
+        verify(facesContext).validationFailed();
+        var mensaje = org.mockito.ArgumentCaptor.forClass(jakarta.faces.application.FacesMessage.class);
+        verify(facesContext).addMessage(isNull(), mensaje.capture());
+        assertEquals(Mensajes.texto("persona.eliminar.historial"), mensaje.getValue().getDetail());
+    }
+
+    @Test
     void cargarPersonas_conErrorConservaLaListaAnterior() {
         Contexto.establecer(facesContext);
         List<Persona> personas = List.of(new Persona());

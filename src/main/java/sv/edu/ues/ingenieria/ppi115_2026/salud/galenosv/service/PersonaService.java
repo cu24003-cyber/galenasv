@@ -5,9 +5,15 @@ import jakarta.inject.Inject;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.PersonaRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Documento;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.MedioContacto;
 import java.util.UUID;
 import java.util.Date;
 import java.util.List;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceException;
 
 @Stateless
@@ -15,6 +21,9 @@ public class PersonaService extends AbstractService<Persona, UUID> {
 
     @Inject
     private PersonaRepository personaRepository;
+
+    @PersistenceContext
+    private EntityManager em;
 
     @Override
     protected RepositoryInterface<Persona, UUID> getRepository() {
@@ -55,6 +64,58 @@ public class PersonaService extends AbstractService<Persona, UUID> {
             entidad.setFechaCreacion(new Date());
         }
         super.crear(entidad);
+    }
+
+    /** Elimina los datos personales en una transacción, conservando el historial clínico. */
+    @Override
+    public void eliminar(UUID id) {
+        if (id == null) {
+            throw new ServiceException("error.noExisteEliminar", "No existe la persona que se desea eliminar.", null);
+        }
+        try {
+            Persona persona = em.find(Persona.class, id, LockModeType.PESSIMISTIC_WRITE);
+            if (persona == null) {
+                throw new ServiceException("error.noExisteEliminar", "No existe la persona que se desea eliminar.", null);
+            }
+
+            // Bloquear también las asignaciones antes de comprobar sus usos clínicos.
+            List<PersonaRol> asignaciones = em.createQuery(
+                    "SELECT pr FROM PersonaRol pr WHERE pr.idPersona = :persona ORDER BY pr.idPersonaRol", PersonaRol.class)
+                    .setParameter("persona", persona)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                    .getResultList();
+            long consultas = em.createQuery(
+                    "SELECT COUNT(c) FROM Consulta c WHERE c.idPersonaRol.idPersona = :persona", Long.class)
+                    .setParameter("persona", persona).getSingleResult();
+            long pasos = em.createQuery(
+                    "SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idPersonaRol.idPersona = :persona", Long.class)
+                    .setParameter("persona", persona).getSingleResult();
+            if (consultas > 0 || pasos > 0) {
+                throw new ServiceException("persona.eliminar.historial",
+                        "No se puede eliminar la persona porque tiene consultas o pasos clínicos registrados.", null);
+            }
+
+            for (Documento documento : em.createQuery(
+                    "SELECT d FROM Documento d WHERE d.idPersona = :persona", Documento.class)
+                    .setParameter("persona", persona).getResultList()) {
+                em.remove(documento);
+            }
+            for (MedioContacto contacto : em.createQuery(
+                    "SELECT m FROM MedioContacto m WHERE m.idPersona = :persona", MedioContacto.class)
+                    .setParameter("persona", persona).getResultList()) {
+                em.remove(contacto);
+            }
+            for (PersonaRol asignacion : asignaciones) {
+                em.remove(asignacion);
+            }
+            // Resolver las claves foráneas antes del DELETE de persona.
+            em.flush();
+            em.remove(persona);
+            em.flush();
+        } catch (PersistenceException e) {
+            // Traducir dentro de este EJB antes de que el contenedor envuelva la excepción.
+            throw new ServiceException("persona.eliminar.error", "No se pudo eliminar la persona.", e);
+        }
     }
 
 }
