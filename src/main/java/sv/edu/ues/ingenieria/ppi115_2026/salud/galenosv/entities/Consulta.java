@@ -53,6 +53,9 @@ public class Consulta implements Serializable {
     @JoinColumn(name = "id_persona_rol", referencedColumnName = "id_persona_rol")
     @ManyToOne(fetch = FetchType.LAZY)
     private PersonaRol idPersonaRol;
+    @JoinColumn(name = "id_medico_rol", referencedColumnName = "id_persona_rol")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private PersonaRol idMedicoRol;
     @OneToMany(mappedBy = "idConsulta", fetch = FetchType.LAZY)
     private Collection<ConsultaProcedimiento> consultaProcedimientoCollection;
 
@@ -117,6 +120,9 @@ public class Consulta implements Serializable {
     public void setIdPersonaRol(PersonaRol idPersonaRol) {
         this.idPersonaRol = idPersonaRol;
     }
+
+    public PersonaRol getIdMedicoRol() { return idMedicoRol; }
+    public void setIdMedicoRol(PersonaRol idMedicoRol) { this.idMedicoRol = idMedicoRol; }
 
     public Collection<ConsultaProcedimiento> getConsultaProcedimientoCollection() {
         return consultaProcedimientoCollection;

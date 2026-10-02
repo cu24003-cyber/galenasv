@@ -94,14 +94,11 @@
                     <ui:insert name="menusidebar">
                         <nav class="sidebar-nav" aria-label="#{msg['app.menu']}">
                             <ul>
-                                <li class="active"><a href="#"><i class="pi pi-home"></i> <span>#{msg['menu.inicio']}</span></a></li>
-                                <li><a href="#"><i class="pi pi-calendar"></i> <span>#{msg['menu.agenda']}</span></a></li>
                                 <li><h:link outcome="/paginas/paciente-list.xhtml"><i class="pi pi-users"></i> <span>#{msg['menu.pacientes']}</span></h:link></li>
+                                <li><h:link outcome="/paginas/historial-consultas.xhtml"><i class="pi pi-folder-open"></i> <span>Mis consultas</span></h:link></li>
                                 <li><h:link outcome="/paginas/procedimiento.xhtml"><i class="pi pi-list"/> <span>Procedimientos</span></h:link></li>
                                 <li><h:link outcome="/paginas/examen.xhtml"><i class="pi pi-file"/> <span>#{msg['entidad.Examen']}</span></h:link></li>
                                 <li><h:link outcome="/paginas/cambiar-rol.xhtml"><i class="pi pi-sync"/> <span>Cambiar de rol</span></h:link></li>
-                                <li><a href="#"><i class="pi pi-folder"></i> <span>#{msg['menu.expedientes']}</span></a></li>
-                                <li><a href="#"><i class="pi pi-cog"></i> <span>#{msg['menu.configuracion']}</span></a></li>
                                 <li>
                                     <h:link outcome="/paginas/clinica.xhtml">
                                         <i class="pi pi-building"></i> <span>#{msg['entidad.Clinica']}</span>

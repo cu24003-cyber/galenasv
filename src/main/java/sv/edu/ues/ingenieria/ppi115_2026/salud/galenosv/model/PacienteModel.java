@@ -23,7 +23,7 @@ public class PacienteModel implements Serializable {
     private String rolId;
     private List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol> roles = List.of();
     public void seleccionar() {
-        roles = sesion.getRolActivo() == null ? List.of() : atencion.pacientes(seleccionado.getIdPersona()).stream()
+        roles = sesion.getRolActivo() == null || seleccionado == null ? List.of() : atencion.pacientes(seleccionado.getIdPersona()).stream()
                 .filter(r -> r.getIdClinica().equals(sesion.getRolActivo().getIdClinica())).toList();
         rolId = roles.size()==1 ? roles.get(0).getIdPersonaRol().toString() : null;
     }
@@ -33,7 +33,7 @@ public class PacienteModel implements Serializable {
                 return "/paginas/cambiar-rol.xhtml?faces-redirect=true";
             }
             if (sesion.getConsulta()==null) {
-                if (roles.stream().noneMatch(r->r.getIdPersonaRol().toString().equals(rolId))) throw new ServiceException("Seleccione la clínica del paciente.");
+                if (seleccionado == null || rolId == null || roles.stream().noneMatch(r->r.getIdPersonaRol().toString().equals(rolId))) throw new ServiceException("Seleccione un paciente de esta clínica.");
                 sesion.setConsulta(atencion.abrir(java.util.UUID.fromString(rolId), sesion.getRolActivo().getIdPersonaRol()).getIdConsulta());
             }
             return "/paginas/consulta.xhtml?faces-redirect=true";

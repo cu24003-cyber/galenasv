@@ -28,13 +28,14 @@ class AtencionSesionTest {
         assertNull(segunda.getRolActivo());
     }
 
-    @Test void cambioDeRolMantieneLaConsultaEnLaMismaClinica() {
+    @Test void impideCambiarIdentidadDuranteConsulta() {
         AtencionSesion sesion = new AtencionSesion(); Clinica clinica = new Clinica(UUID.randomUUID());
-        sesion.cambiarRol(asignacion(clinica, "Médico")); UUID consulta = UUID.randomUUID(); sesion.setConsulta(consulta);
-        PersonaRol enfermera = asignacion(clinica, "Enfermería"); sesion.cambiarRol(enfermera);
-        assertSame(enfermera, sesion.getRolActivo()); assertEquals(consulta, sesion.getConsulta());
+        PersonaRol medico = asignacion(clinica, "Médico"); sesion.cambiarRol(medico);
+        UUID consulta = UUID.randomUUID(); sesion.setConsulta(consulta);
+        PersonaRol enfermera = asignacion(clinica, "Enfermería");
+        assertThrows(ServiceException.class, () -> sesion.cambiarRol(enfermera));
         assertThrows(ServiceException.class, () -> sesion.cambiarRol(asignacion(new Clinica(UUID.randomUUID()), "Médico")));
-        assertSame(enfermera, sesion.getRolActivo()); assertEquals(consulta, sesion.getConsulta());
+        assertSame(medico, sesion.getRolActivo()); assertEquals(consulta, sesion.getConsulta());
     }
 
     @Test void permiteOtraClinicaTrasCerrarConsultaYRechazaRolesInactivos() {

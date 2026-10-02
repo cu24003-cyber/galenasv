@@ -21,8 +21,8 @@ public class AtencionSesion implements Serializable {
                 || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) {
             throw new ServiceException("Seleccione una asignación con un rol activo y una clínica.");
         }
-        if (consulta != null && (rolActivo == null || !rolActivo.getIdClinica().equals(rol.getIdClinica()))) {
-            throw new ServiceException("Cierre la consulta antes de cambiar de clínica.");
+        if (consulta != null && (rolActivo == null || !rolActivo.getIdPersonaRol().equals(rol.getIdPersonaRol()))) {
+            throw new ServiceException("Cierre la consulta antes de cambiar de médico o rol.");
         }
         rolActivo = rol;
     }

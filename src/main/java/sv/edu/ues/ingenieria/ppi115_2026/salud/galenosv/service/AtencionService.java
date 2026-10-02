@@ -1,17 +1,24 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model.AtencionSesion;
 
 /** Operaciones de atención: cada acción se confirma en una sola transacción. */
 @Stateless
 public class AtencionService {
     @PersistenceContext EntityManager em;
+    @Inject AtencionSesion sesion;
     static OffsetDateTime ahora() { return OffsetDateTime.now(ZoneOffset.UTC); }
+    private static String texto(String valor, String campo, int maximo) {
+        if (valor != null && valor.length() > maximo) throw new ServiceException(campo + " admite hasta " + maximo + " caracteres.");
+        return valor == null ? null : valor.trim();
+    }
     public List<PersonaRol> pacientes(UUID persona) {
         return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idPersona.idPersona=:id AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true", PersonaRol.class).setParameter("id", persona).getResultList();
     }
@@ -27,29 +34,64 @@ public class AtencionService {
         }
         return rol;
     }
+    private PersonaRol medicoActivo() {
+        PersonaRol actual = sesion == null ? null : sesion.getRolActivo();
+        if (actual == null || actual.getIdPersonaRol() == null) throw new ServiceException("Seleccione su rol médico y clínica.");
+        PersonaRol medico = em.find(PersonaRol.class, actual.getIdPersonaRol());
+        String nombreRol = medico == null || medico.getIdRol() == null ? "" : medico.getIdRol().getNombre();
+        String rolNormalizado = nombreRol == null ? "" : java.text.Normalizer.normalize(nombreRol.trim(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
+        if (medico == null || medico.getIdRol() == null || medico.getIdClinica() == null
+                || !Boolean.TRUE.equals(medico.getIdRol().getActivo())
+                || !Set.of("medico", "medica", "doctor", "doctora").contains(rolNormalizado)) {
+            throw new ServiceException("Solo un médico con rol activo puede consultar expedientes clínicos.");
+        }
+        return medico;
+    }
+    private void comprobarPropietario(Consulta consulta) {
+        PersonaRol medico = medicoActivo();
+        if (consulta == null || consulta.getIdMedicoRol() == null
+                || !medico.getIdPersonaRol().equals(consulta.getIdMedicoRol().getIdPersonaRol())
+                || consulta.getIdPersonaRol() == null || consulta.getIdPersonaRol().getIdClinica() == null
+                || !medico.getIdClinica().getIdClinica().equals(consulta.getIdPersonaRol().getIdClinica().getIdClinica())) {
+            throw new ServiceException("Esta consulta pertenece a otro médico o clínica.");
+        }
+    }
     public Consulta abrir(UUID rolId, UUID responsableId) {
+        PersonaRol medico = medicoActivo();
+        if (!medico.getIdPersonaRol().equals(responsableId)) throw new ServiceException("El médico activo debe abrir su propia consulta.");
         PersonaRol rol=em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
         if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || rol.getIdRol().getNombre()==null || !"paciente".equalsIgnoreCase(rol.getIdRol().getNombre().trim()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw new ServiceException("Seleccione el rol del paciente.");
         responsable(responsableId, rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
-        if(!abiertas.isEmpty()) return cargar(abiertas.get(0).getIdConsulta());
-        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(ahora()); em.persist(c); em.flush(); return cargar(c.getIdConsulta());
+        if(!abiertas.isEmpty()) { comprobarPropietario(abiertas.get(0)); return cargar(abiertas.get(0).getIdConsulta()); }
+        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setIdMedicoRol(medico); c.setFechaInicio(ahora()); em.persist(c); em.flush(); return cargar(c.getIdConsulta());
     }
     public Consulta cargar(UUID id) {
-        return em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();
+        Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica LEFT JOIN FETCH c.idMedicoRol m LEFT JOIN FETCH m.idPersona WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();
+        comprobarPropietario(c);
+        return c;
+    }
+    public List<Consulta> historial() {
+        PersonaRol medico = medicoActivo();
+        return em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica ORDER BY c.fechaInicio DESC", Consulta.class)
+                .setParameter("medico", medico).setParameter("clinica", medico.getIdClinica()).getResultList();
     }
     private Consulta abierta(UUID id) {
         Consulta c=em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE);
-        if(c==null || c.getFechaFin()!=null) throw new ServiceException("La consulta ya está cerrada."); return c;
+        comprobarPropietario(c);
+        if(c.getFechaFin()!=null) throw new ServiceException("La consulta ya está cerrada."); return c;
     }
     public void guardar(UUID id,String referencia,String observaciones) {
-        Consulta c=abierta(id); c.setReferenciaExterna(referencia); c.setObservaciones(observaciones);
+        Consulta c=abierta(id); c.setReferenciaExterna(texto(referencia,"La referencia",255)); c.setObservaciones(texto(observaciones,"Las observaciones",255));
     }
     public List<Procedimiento> procedimientos() { return em.createQuery("SELECT p FROM Procedimiento p WHERE p.activo=true ORDER BY p.nombre",Procedimiento.class).getResultList(); }
     public List<ConsultaProcedimiento> realizados(UUID id) {
+        cargar(id);
         return em.createQuery("SELECT p FROM ConsultaProcedimiento p JOIN FETCH p.idProcedimiento WHERE p.idConsulta.idConsulta=:id ORDER BY p.fechaInicio",ConsultaProcedimiento.class).setParameter("id",id).getResultList();
     }
     public List<ConsultaProcedimientoPaso> pasos(UUID id) {
+        cargar(id);
         return em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p JOIN FETCH p.idConsultaProcedimiento cp JOIN FETCH cp.idProcedimiento LEFT JOIN FETCH p.idProcedimientoPaso definicion LEFT JOIN FETCH definicion.idRol LEFT JOIN FETCH p.idPersonaRol responsable LEFT JOIN FETCH responsable.idPersona LEFT JOIN FETCH responsable.idRol WHERE cp.idConsulta.idConsulta=:id ORDER BY p.fechaInicio, p.idConsultaProcedimientoPaso",ConsultaProcedimientoPaso.class).setParameter("id",id).getResultList();
     }
     public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
@@ -58,7 +100,7 @@ public class AtencionService {
         PersonaRol encargado = responsable(responsableId, c.getIdPersonaRol());
         List<ProcedimientoPaso> catalogo=em.createQuery("SELECT p FROM ProcedimientoPaso p WHERE p.idProcedimiento=:p",ProcedimientoPaso.class).setParameter("p",p).getResultList();
         if(catalogo.isEmpty()) throw new ServiceException("Configure los pasos del procedimiento antes de utilizarlo.");
-        ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(notas); em.persist(cp);
+        ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(texto(notas,"Las observaciones del procedimiento",255)); em.persist(cp);
         for(ProcedimientoPaso paso:catalogo) { ConsultaProcedimientoPaso ejecucion=new ConsultaProcedimientoPaso(UUID.randomUUID()); ejecucion.setIdConsultaProcedimiento(cp); ejecucion.setIdProcedimientoPaso(paso); ejecucion.setIdPersonaRol(encargado); ejecucion.setFechaInicio(c.getFechaInicio()); ejecucion.setEstado("PENDIENTE"); em.persist(ejecucion); }
     }
     public void asignarResponsable(UUID consulta, UUID pasoId, UUID responsableId) {
@@ -81,30 +123,57 @@ public class AtencionService {
         ConsultaProcedimientoPaso p=id==null?null:em.find(ConsultaProcedimientoPaso.class,id);
         if(p==null || !consulta.equals(p.getIdConsultaProcedimiento().getIdConsulta().getIdConsulta())) throw new ServiceException("Seleccione un paso de esta consulta."); return p;
     }
-    public List<TipoExamen> tipos(String texto) { return em.createQuery("SELECT t FROM TipoExamen t WHERE t.activo=true AND LOWER(t.nombre) LIKE :q ORDER BY t.nombre",TipoExamen.class).setParameter("q","%"+texto.toLowerCase(Locale.ROOT)+"%").setMaxResults(30).getResultList(); }
+    public List<TipoExamen> tipos(String texto) { return em.createQuery("SELECT t FROM TipoExamen t WHERE t.activo=true AND LOWER(t.nombre) LIKE :q ORDER BY t.nombre",TipoExamen.class).setParameter("q","%"+(texto == null ? "" : texto.toLowerCase(Locale.ROOT))+"%").setMaxResults(30).getResultList(); }
     public void examen(UUID consulta,UUID pasoId,String nombre,String notas,UUID tipoId) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);
         TipoExamen tipo=tipoId==null?null:em.find(TipoExamen.class,tipoId);
-        if(nombre==null || nombre.isBlank() || tipo==null || !Boolean.TRUE.equals(tipo.getActivo())) throw new ServiceException("Indique nombre y tipo de examen activo.");
+        if(nombre==null || nombre.isBlank() || nombre.trim().length()>155 || tipo==null || !Boolean.TRUE.equals(tipo.getActivo())) throw new ServiceException("Indique un nombre de hasta 155 caracteres y un tipo de examen activo.");
+        if(paso.getFechaFin()!=null) throw new ServiceException("No se pueden registrar exámenes en un paso completado.");
         if(paso.getIdProcedimientoPaso()==null) throw new ServiceException("El paso no tiene definición de catálogo.");
-        Examen e=new Examen(UUID.randomUUID()); e.setNombre(nombre.trim()); e.setActivo(true); e.setObservaciones(notas); em.persist(e);
+        Examen e=new Examen(UUID.randomUUID()); e.setNombre(nombre.trim()); e.setActivo(true); e.setObservaciones(texto(notas,"Las observaciones del examen",255)); em.persist(e);
         ExamenTipoExamen et=new ExamenTipoExamen(UUID.randomUUID()); et.setIdExamen(e); et.setIdTipoExamen(tipo); et.setFechaCreacion(ahora()); em.persist(et);
         ProcedimientoPasoExamen pe=new ProcedimientoPasoExamen(UUID.randomUUID()); pe.setIdExamen(e); pe.setIdProcedimientoPaso(paso.getIdProcedimientoPaso()); pe.setActivo(true); pe.setFechaCreacion(ahora()); em.persist(pe);
     }
     public List<ProcedimientoPasoExamen> examenes(UUID consulta) {
+        cargar(consulta);
         return em.createQuery("SELECT DISTINCT e FROM ProcedimientoPasoExamen e JOIN FETCH e.idExamen JOIN FETCH e.idProcedimientoPaso WHERE e.idProcedimientoPaso IN (SELECT p.idProcedimientoPaso FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id)",ProcedimientoPasoExamen.class).setParameter("id",consulta).getResultList();
     }
     public void ordenar(UUID consulta,UUID paso,String indicaciones) {
         abierta(consulta); ConsultaProcedimientoPaso p=pasoPropio(consulta,paso);
-        if(indicaciones==null || indicaciones.isBlank()) throw new ServiceException("Ingrese las indicaciones de la orden.");
-        OrdenExamen o=new OrdenExamen(UUID.randomUUID()); o.setIdConsultaProcedimientoPaso(p); o.setIndicaciones(indicaciones); o.setFechaCreacion(ahora()); em.persist(o);
+        if(indicaciones==null || indicaciones.isBlank() || indicaciones.trim().length()>255) throw new ServiceException("Ingrese indicaciones de hasta 255 caracteres.");
+        if(p.getFechaFin()!=null) throw new ServiceException("No se pueden crear órdenes en un paso completado.");
+        OrdenExamen o=new OrdenExamen(UUID.randomUUID()); o.setIdConsultaProcedimientoPaso(p); o.setIndicaciones(indicaciones.trim()); o.setFechaCreacion(ahora()); em.persist(o);
     }
-    public List<OrdenExamen> ordenes(UUID consulta) { return em.createQuery("SELECT o FROM OrdenExamen o JOIN FETCH o.idConsultaProcedimientoPaso p LEFT JOIN FETCH p.idProcedimientoPaso WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id ORDER BY o.fechaCreacion",OrdenExamen.class).setParameter("id",consulta).getResultList(); }
+    public List<OrdenExamen> ordenes(UUID consulta) { cargar(consulta); return em.createQuery("SELECT o FROM OrdenExamen o JOIN FETCH o.idConsultaProcedimientoPaso p LEFT JOIN FETCH p.idProcedimientoPaso WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id ORDER BY o.fechaCreacion",OrdenExamen.class).setParameter("id",consulta).getResultList(); }
+    public List<ExamenResultado> resultados(UUID consulta) {
+        cargar(consulta);
+        return em.createQuery("SELECT r FROM ExamenResultado r JOIN FETCH r.idOrdenExamen o JOIN FETCH o.idConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id ORDER BY r.fechaCreacion DESC", ExamenResultado.class)
+                .setParameter("id", consulta).getResultList();
+    }
+    public void registrarResultado(UUID consulta, UUID ordenId, String resultado, String interpretacion) {
+        cargar(consulta);
+        OrdenExamen orden = ordenId == null ? null : em.find(OrdenExamen.class, ordenId);
+        if (orden == null || orden.getIdConsultaProcedimientoPaso() == null
+                || !consulta.equals(orden.getIdConsultaProcedimientoPaso().getIdConsultaProcedimiento().getIdConsulta().getIdConsulta())) {
+            throw new ServiceException("Seleccione una orden de esta consulta.");
+        }
+        if (resultado == null || resultado.isBlank() || resultado.trim().length() > 255
+                || (interpretacion != null && interpretacion.length() > 255)) {
+            throw new ServiceException("Ingrese un resultado de hasta 255 caracteres; la interpretación también admite 255.");
+        }
+        ExamenResultado registro = new ExamenResultado(UUID.randomUUID());
+        registro.setIdOrdenExamen(orden);
+        registro.setResultado(resultado.trim());
+        registro.setInterpretacion(interpretacion == null ? null : interpretacion.trim());
+        em.persist(registro);
+    }
     public void cerrar(UUID id,String referencia,String notas) {
         Consulta c=abierta(id);
         List<ConsultaProcedimientoPaso> pasos=pasos(id);
         if(pasos.stream().anyMatch(p->p.getFechaFin()==null)) throw new ServiceException("Complete todos los pasos antes de cerrar la consulta.");
-        OffsetDateTime fin=ahora(); c.setReferenciaExterna(referencia); c.setObservaciones(notas); c.setFechaFin(fin);
+        String referenciaValidada = texto(referencia,"La referencia",255);
+        String notasValidadas = texto(notas,"Las observaciones",255);
+        OffsetDateTime fin=ahora(); c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas); c.setFechaFin(fin);
         for(ConsultaProcedimiento p:realizados(id)) p.setFechaFin(fin);
     }
 }

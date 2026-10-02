@@ -22,12 +22,17 @@ public class AtencionModel implements Serializable {
     private List<ConsultaProcedimientoPaso> pasos=List.of();
     private List<OrdenExamen> ordenes=List.of();
     private List<ProcedimientoPasoExamen> examenes=List.of();
+    private List<ExamenResultado> resultados=List.of();
     private String procedimientoId, notasProcedimiento, pasoId, nombreExamen, notasExamen, indicaciones;
+    private String ordenId, resultado, interpretacion;
     private TipoExamen tipo;
     @PostConstruct public void iniciar() {
-        if(sesion.getConsulta()!=null) ejecutar(()->{consulta=servicio.cargar(sesion.getConsulta()); procedimientos=servicio.procedimientos(); recargar();});
+        if(sesion.getConsulta()!=null && !ejecutar(()->{consulta=servicio.cargar(sesion.getConsulta()); procedimientos=servicio.procedimientos(); recargar();})) {
+            consulta = null;
+            sesion.setConsulta(null);
+        }
     }
-    private void recargar() { UUID id=consulta.getIdConsulta(); realizados=servicio.realizados(id); pasos=servicio.pasos(id); ordenes=servicio.ordenes(id); examenes=servicio.examenes(id);
+    private void recargar() { UUID id=consulta.getIdConsulta(); realizados=servicio.realizados(id); pasos=servicio.pasos(id); ordenes=servicio.ordenes(id); examenes=servicio.examenes(id); resultados=servicio.resultados(id);
         if (consulta.getIdPersonaRol() != null && consulta.getIdPersonaRol().getIdClinica() != null) {
             responsables = servicio.responsables(consulta.getIdPersonaRol().getIdClinica().getIdClinica());
         }
@@ -62,6 +67,7 @@ public class AtencionModel implements Serializable {
     public List<TipoExamen> completarTipos(String q) { return servicio.tipos(q); }
     public void registrarExamen() { ejecutar(()->{servicio.examen(consulta.getIdConsulta(),UUID.fromString(pasoId),nombreExamen,notasExamen,tipo==null?null:tipo.getIdTipoExamen()); nombreExamen=null; notasExamen=null; tipo=null; recargar();}); }
     public void ordenar() { ejecutar(()->{servicio.ordenar(consulta.getIdConsulta(),UUID.fromString(pasoId),indicaciones); indicaciones=null; recargar();}); }
+    public void registrarResultado() { ejecutar(()->{servicio.registrarResultado(consulta.getIdConsulta(), UUID.fromString(ordenId), resultado, interpretacion); resultado=null; interpretacion=null; recargar();}); }
     public String cerrar() {
         boolean cerrada = ejecutar(() -> servicio.cerrar(consulta.getIdConsulta(),
                 consulta.getReferenciaExterna(), consulta.getObservaciones()));
@@ -72,12 +78,14 @@ public class AtencionModel implements Serializable {
         return "/paginas/paciente-list.xhtml?faces-redirect=true";
     }
     public String fecha(java.time.OffsetDateTime f) { return f==null?"Pendiente":f.atZoneSameInstant(java.time.ZoneId.of("America/El_Salvador")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss XXX")); }
+    public String fechaResultado(java.util.Date f) { return f==null?"Pendiente":fecha(f.toInstant().atOffset(java.time.ZoneOffset.UTC)); }
     public Consulta getConsulta() { return consulta; }
     public List<Procedimiento> getProcedimientos() { return procedimientos; }
     public List<ConsultaProcedimiento> getRealizados() { return realizados; }
     public List<ConsultaProcedimientoPaso> getPasos() { return pasos; }
     public List<OrdenExamen> getOrdenes() { return ordenes; }
     public List<ProcedimientoPasoExamen> getExamenes() { return examenes; }
+    public List<ExamenResultado> getResultados() { return resultados; }
     public TipoExamen getTipo() { return tipo; }
     public void setTipo(TipoExamen v) { tipo=v; }
     public String getProcedimientoId() { return procedimientoId; }
@@ -92,4 +100,10 @@ public class AtencionModel implements Serializable {
     public void setNotasExamen(String v) { notasExamen=v; }
     public String getIndicaciones() { return indicaciones; }
     public void setIndicaciones(String v) { indicaciones=v; }
+    public String getOrdenId() { return ordenId; }
+    public void setOrdenId(String v) { ordenId=v; }
+    public String getResultado() { return resultado; }
+    public void setResultado(String v) { resultado=v; }
+    public String getInterpretacion() { return interpretacion; }
+    public void setInterpretacion(String v) { interpretacion=v; }
 }

@@ -12,7 +12,7 @@
                 · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
         </h:panelGroup>
         <h:panelGroup rendered="#{not empty atencionSesion.consulta}">
-            <p>Durante una consulta puede cambiar de responsable o de rol dentro de la misma clínica. Cierre la consulta para cambiar de clínica.</p>
+            <p>Cierre la consulta antes de cambiar de médico, rol o clínica.</p>
         </h:panelGroup>
         <h:form id="frmRol">
             <p:outputLabel for="asignacion" value="Persona / rol / clínica" />

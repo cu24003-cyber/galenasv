@@ -3,7 +3,6 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.model;
 import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
 import jakarta.faces.application.FacesMessage;
-import java.util.Collections;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.ServiceException;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
@@ -65,7 +64,6 @@ public class PersonaModel extends AbstractModel<Persona, UUID> {
         try {
             registros = personaService.buscarPorNombre(nombreBusqueda);
         } catch (ServiceException | EJBException e) {
-            registros = Collections.emptyList();
             agregarMensaje(FacesMessage.SEVERITY_ERROR,
                     Mensajes.texto("error.cargarPersonas"), Mensajes.detalle(e));
         }

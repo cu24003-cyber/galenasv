@@ -21,17 +21,17 @@
 <p:tab title="Consulta y procedimientos">
 <h:form id="datos">
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="referencia" value="Referencia externa"/><p:inputText id="referencia" value="#{atencionModel.consulta.referenciaExterna}"/>
-<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.consulta.observaciones}"/>
+<p:outputLabel for="referencia" value="Referencia externa"/><p:inputText id="referencia" value="#{atencionModel.consulta.referenciaExterna}" maxlength="255"/>
+<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.consulta.observaciones}" maxlength="255"/>
 </p:panelGrid>
-<p:commandButton value="Guardar consulta" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
-<p:commandButton value="Cerrar consulta" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
+<p:commandButton value="Guardar consulta" icon="pi pi-save" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
+<p:commandButton value="Cerrar consulta" icon="pi pi-check-circle" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
 </h:form>
 <h:form id="procedimientos">
 <p:panelGrid columns="2" layout="flex">
 <p:outputLabel for="procedimiento" value="Procedimiento"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
-<p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}"/>
-</p:panelGrid><p:commandButton value="Agregar procedimiento" action="#{atencionModel.agregar}" process="@form" update=":tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
+<p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}" maxlength="255"/>
+</p:panelGrid><p:commandButton value="Agregar procedimiento" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
 </h:form>
 <h:form id="ejecucion">
 <p:dataTable value="#{atencionModel.realizados}" var="p" emptyMessage="Agregue un procedimiento.">
@@ -50,21 +50,40 @@
     </p:selectOneMenu>
 </p:column>
 <p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
-<p:column><p:commandButton value="Completar" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@this" update="@form :mensajes"/></p:column>
+<p:column><p:commandButton value="Completar" icon="pi pi-check" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@this" update="@form :mensajes"/></p:column>
 </p:dataTable></h:form>
 </p:tab>
 <p:tab title="Registro de examen"><h:form id="examen">
 <p>El examen se registra en el catálogo y se asocia al paso del procedimiento.</p>
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="nombre" value="Nombre del examen"/><p:inputText id="nombre" value="#{atencionModel.nombreExamen}" required="true"/>
+<p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="nombre" value="Nombre del examen"/><p:inputText id="nombre" value="#{atencionModel.nombreExamen}" required="true" maxlength="155"/>
 <p:outputLabel for="tipo" value="Tipo de examen"/><p:autoComplete id="tipo" value="#{atencionModel.tipo}" completeMethod="#{atencionModel.completarTipos}" var="t" itemLabel="#{t.nombre}" itemValue="#{t}" converter="tipoExamenAtencionConverter" forceSelection="true" dropdown="true" required="true"/>
-<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.notasExamen}"/>
-</p:panelGrid><p:commandButton value="Registrar examen" action="#{atencionModel.registrarExamen}" process="@form" update="@form :mensajes"/>
+<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.notasExamen}" maxlength="255"/>
+</p:panelGrid><p:commandButton value="Registrar examen" icon="pi pi-plus" action="#{atencionModel.registrarExamen}" process="@form" update="@form :mensajes"/>
 <p:dataTable value="#{atencionModel.examenes}" var="e" emptyMessage="No hay exámenes asociados."><p:column headerText="Examen">#{e.idExamen.nombre}</p:column><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column></p:dataTable>
 </h:form></p:tab>
-<p:tab title="Orden de examen"><h:form id="orden"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="indicaciones" value="Indicaciones / exámenes solicitados"/><p:inputTextarea id="indicaciones" value="#{atencionModel.indicaciones}" required="true"/>
-</p:panelGrid><p:commandButton value="Registrar orden" action="#{atencionModel.ordenar}" process="@form" update="@form :mensajes"/>
+<p:tab title="Orden de examen"><h:form id="orden"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="indicaciones" value="Indicaciones / exámenes solicitados"/><p:inputTextarea id="indicaciones" value="#{atencionModel.indicaciones}" required="true" maxlength="255"/>
+</p:panelGrid><p:commandButton value="Registrar orden" icon="pi pi-plus" action="#{atencionModel.ordenar}" process="@form" update="@form :tabs:resultado :mensajes"/>
 <p:dataTable value="#{atencionModel.ordenes}" var="o" emptyMessage="No hay órdenes."><p:column headerText="Fecha y hora">#{atencionModel.fecha(o.fechaCreacion)}</p:column><p:column headerText="Paso">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column><p:column headerText="Indicaciones">#{o.indicaciones}</p:column></p:dataTable>
+</h:form></p:tab>
+<p:tab title="Resultados de examen"><h:form id="resultado">
+<p>Registre los resultados de las órdenes emitidas durante esta consulta.</p>
+<p:panelGrid columns="2" layout="flex">
+<p:outputLabel for="orden" value="Orden"/>
+<p:selectOneMenu id="orden" value="#{atencionModel.ordenId}" required="true">
+<f:selectItem itemLabel="Seleccione una orden" itemValue="" noSelectionOption="true"/>
+<f:selectItems value="#{atencionModel.ordenes}" var="o" itemLabel="#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre} / #{o.indicaciones}" itemValue="#{o.idOrdenExamen.toString()}"/>
+</p:selectOneMenu>
+<p:outputLabel for="valor" value="Resultado"/><p:inputTextarea id="valor" value="#{atencionModel.resultado}" required="true" maxlength="255"/>
+<p:outputLabel for="interpretacion" value="Interpretación"/><p:inputTextarea id="interpretacion" value="#{atencionModel.interpretacion}" maxlength="255"/>
+</p:panelGrid>
+<p:commandButton value="Registrar resultado" icon="pi pi-check" styleClass="ui-button-success" action="#{atencionModel.registrarResultado}" process="@form" resetValues="true" update="@form :mensajes"/>
+<p:dataTable value="#{atencionModel.resultados}" var="r" emptyMessage="No hay resultados.">
+<p:column headerText="Fecha y hora">#{atencionModel.fechaResultado(r.fechaCreacion)}</p:column>
+<p:column headerText="Orden">#{r.idOrdenExamen.indicaciones}</p:column>
+<p:column headerText="Resultado">#{r.resultado}</p:column>
+<p:column headerText="Interpretación">#{r.interpretacion}</p:column>
+</p:dataTable>
 </h:form></p:tab></p:tabView>
 </h:panelGroup>
 </ui:define></ui:composition></html>

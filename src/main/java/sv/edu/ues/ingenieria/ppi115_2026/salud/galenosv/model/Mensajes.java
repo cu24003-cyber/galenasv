@@ -9,7 +9,10 @@ public final class Mensajes {
 
     public static String texto(String clave) {
         FacesContext context = FacesContext.getCurrentInstance();
-        return context.getApplication().getResourceBundle(context, "msg").getString(clave);
+        if (context != null && context.getApplication() != null) {
+            return context.getApplication().getResourceBundle(context, "msg").getString(clave);
+        }
+        return java.util.ResourceBundle.getBundle("i18n.Messages", java.util.Locale.forLanguageTag("es")).getString(clave);
     }
 
     public static String detalle(RuntimeException exception) {

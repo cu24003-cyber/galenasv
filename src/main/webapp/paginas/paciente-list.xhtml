@@ -7,7 +7,7 @@
     <ui:define name="content">
         <p:messages id="messages" />
         <h:panelGroup rendered="#{empty atencionSesion.rolActivo}" layout="block">
-            <p>Seleccione su persona, rol y clínica antes de abrir una consulta.</p>
+            <p>Seleccione su asignación de médico y clínica antes de abrir una consulta.</p>
             <p:button value="Cambiar de rol" outcome="/paginas/cambiar-rol.xhtml" icon="pi pi-sync" />
         </h:panelGroup>
         <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}">
