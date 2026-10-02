@@ -29,7 +29,7 @@ class AtencionModelTest {
     }
 
     @Test void cierreExitosoLiberaSesionYDevuelveNavegacionFaces() {
-        assertEquals("/paginas/paciente-list.xhtml?faces-redirect=true", model.cerrar());
+        assertEquals("/paginas/consultas.xhtml?faces-redirect=true", model.cerrar());
         verify(servicio).cerrar(consulta.getIdConsulta(), "Referencia", "Observaciones");
         assertNull(sesion.getConsulta());
     }

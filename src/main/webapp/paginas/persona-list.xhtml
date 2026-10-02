@@ -66,16 +66,21 @@
                                             completeMethod="#{registroPersonaModel.completarRoles}"
                                             var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
                                             converter="rolConverter" dropdown="true" forceSelection="true"
-                                            required="true" scrollHeight="250" />
+                                            scrollHeight="250" />
                             <p:outputLabel for="clinica" value="#{msg['campo.idClinica']}" />
                             <p:autoComplete id="clinica" value="#{registroPersonaModel.clinica}"
                                             completeMethod="#{registroPersonaModel.completarClinicas}"
                                             var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
                                             converter="clinicaConverter" dropdown="true" forceSelection="true"
-                                            required="true" scrollHeight="250" />
+                                            scrollHeight="250" />
                         </p:panelGrid>
+                        <p>El rol y la clínica son opcionales. Para asignar un rol, seleccione ambos.</p>
+                        <p:commandButton value="Nueva asignación" icon="pi pi-plus"
+                                         rendered="#{registroPersonaModel.personaGuardada}"
+                                         action="#{registroPersonaModel.nuevaAsignacion}" process="@this"
+                                         update="@form" resetValues="true" />
                         <p:dataTable value="#{registroPersonaModel.asignaciones}" var="asignacion"
-                                     rendered="#{registroPersonaModel.asignaciones.size() gt 1}">
+                                     rendered="#{not empty registroPersonaModel.asignaciones}">
                             <p:column headerText="#{msg['campo.idRol']}"><h:outputText value="#{asignacion.idRol.nombre}" /></p:column>
                             <p:column headerText="#{msg['entidad.Clinica']}"><h:outputText value="#{asignacion.idClinica.nombre}" /></p:column>
                             <p:column>

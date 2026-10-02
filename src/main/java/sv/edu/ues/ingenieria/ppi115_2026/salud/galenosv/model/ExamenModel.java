@@ -32,7 +32,11 @@ public class ExamenModel extends AbstractModel<Examen, UUID> {
         catch (ServiceException | EJBException e) { agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e)); }
     }
 
-    public List<TipoExamen> getTipos() { return tipos; }
+    public List<TipoExamen> getTipos() {
+        return tipos.stream().filter(t -> Boolean.TRUE.equals(t.getActivo())
+                || (seleccionada != null && seleccionada.getIdExamen() != null && tiposIds != null
+                    && tiposIds.contains(t.getIdTipoExamen().toString()))).toList();
+    }
     public List<String> getTiposIds() { return tiposIds; }
     public void setTiposIds(List<String> ids) { tiposIds = ids; }
 

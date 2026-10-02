@@ -16,7 +16,6 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.*;
 @ViewScoped
 public class PacienteModel implements Serializable {
     private static final long serialVersionUID = 1L;
-    @EJB private RegistroPersonaService servicio;
     @EJB private AtencionService atencion;
     @jakarta.inject.Inject private AtencionSesion sesion;
     private Persona seleccionado;
@@ -51,7 +50,8 @@ public class PacienteModel implements Serializable {
     private List<Persona> pacientes = List.of();
     @PostConstruct
     public void cargar() {
-        try { pacientes = servicio.listarPacientes(); }
+        if (sesion.getRolActivo() == null) return;
+        try { pacientes = atencion.pacientesClinica().stream().map(r -> r.getIdPersona()).distinct().toList(); }
         catch (ServiceException | EJBException e) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), null));

@@ -13,7 +13,7 @@ public class ContextoRolService {
     @PersistenceContext private EntityManager em;
 
     public List<PersonaRol> listar() {
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica c WHERE rol.activo=true ORDER BY p.apellidos, p.nombres, c.nombre, rol.nombre", PersonaRol.class).getResultList();
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica c WHERE rol.activo=true AND c.activo=true ORDER BY p.apellidos, p.nombres, c.nombre, rol.nombre", PersonaRol.class).getResultList();
     }
 
     public PersonaRol cargar(UUID id) {

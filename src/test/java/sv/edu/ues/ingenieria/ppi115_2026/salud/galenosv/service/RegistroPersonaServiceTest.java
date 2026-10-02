@@ -80,8 +80,36 @@ class RegistroPersonaServiceTest {
     }
 
     @Test
-    void rechazaSeleccionVacia() {
-        assertThrows(ServiceException.class, () -> servicio.guardar(new Persona(), null, null, null));
+    void creaPersonaSinRolNiClinica() {
+        Persona persona = new Persona();
+        assertNull(servicio.guardar(persona, null, null, null));
+        verify(personas).crear(persona);
+        verifyNoInteractions(roles, clinicas, asignaciones);
+    }
+
+    @Test
+    void actualizaPersonaSinRol() {
+        Persona persona = new Persona(UUID.randomUUID());
+        assertNull(servicio.guardar(persona, null, null, null));
+        verify(personas).actualizar(persona);
+        verifyNoInteractions(asignaciones);
+    }
+
+    @Test
+    void omitirRolNoEliminaAsignacionesExistentes() {
+        Persona persona = new Persona(UUID.randomUUID());
+        PersonaRol relacion = new PersonaRol(UUID.randomUUID()); relacion.setIdPersona(persona);
+        when(asignaciones.buscarPorId(relacion.getIdPersonaRol())).thenReturn(relacion);
+        assertEquals(relacion.getIdPersonaRol(), servicio.guardar(persona, null, null, relacion.getIdPersonaRol()));
+        verify(personas).actualizar(persona);
+        verify(asignaciones, never()).actualizar(any());
+        verify(asignaciones, never()).eliminar(any());
+    }
+
+    @Test
+    void rechazaAsignacionParcialAntesDeGuardarPersona() {
+        assertThrows(ServiceException.class, () -> servicio.guardar(new Persona(), new Rol(), null, null));
+        assertThrows(ServiceException.class, () -> servicio.guardar(new Persona(), null, new Clinica(), null));
         verifyNoInteractions(personas, asignaciones);
     }
 }

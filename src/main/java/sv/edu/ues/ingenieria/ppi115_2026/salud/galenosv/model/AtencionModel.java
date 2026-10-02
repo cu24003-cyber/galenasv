@@ -75,7 +75,7 @@ public class AtencionModel implements Serializable {
             return null;
         }
         sesion.setConsulta(null);
-        return "/paginas/paciente-list.xhtml?faces-redirect=true";
+        return "/paginas/consultas.xhtml?faces-redirect=true";
     }
     public String fecha(java.time.OffsetDateTime f) { return f==null?"Pendiente":f.atZoneSameInstant(java.time.ZoneId.of("America/El_Salvador")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss XXX")); }
     public String fechaResultado(java.util.Date f) { return f==null?"Pendiente":fecha(f.toInstant().atOffset(java.time.ZoneOffset.UTC)); }

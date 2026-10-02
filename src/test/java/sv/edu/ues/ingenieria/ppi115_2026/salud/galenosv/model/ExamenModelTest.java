@@ -5,6 +5,7 @@ import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Examen;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -42,5 +43,18 @@ class ExamenModelTest {
         try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class); MockedStatic<Mensajes> mensajes = mockStatic(Mensajes.class)) { model.guardar(); }
         verify(servicio).guardarConTipos(formulario, List.of(tipo)); verify(servicio).listarTodos();
         assertNull(model.getSeleccionada()); assertTrue(model.getTiposIds().isEmpty());
+    }
+    @Test void creacionOcultaTiposInactivosYEdicionConservaSoloLosYaAsignados() throws Exception {
+        TipoExamen activo = new TipoExamen(UUID.randomUUID()); activo.setActivo(true);
+        TipoExamen inactivo = new TipoExamen(UUID.randomUUID()); inactivo.setActivo(false);
+        TipoExamen sinEstado = new TipoExamen(UUID.randomUUID());
+        when(servicio.tipos()).thenReturn(List.of(activo, inactivo, sinEstado));
+        ExamenModel model = modelo(); model.init(); model.nuevo();
+        assertEquals(List.of(activo), model.getTipos());
+        Examen existente = new Examen(UUID.randomUUID());
+        when(servicio.tiposAsignados(existente.getIdExamen())).thenReturn(List.of(inactivo.getIdTipoExamen()));
+        model.editar(existente);
+        assertEquals(List.of(activo, inactivo), model.getTipos());
+        model.nuevo(); assertEquals(List.of(activo), model.getTipos());
     }
 }

@@ -205,6 +205,64 @@ class AtencionServiceTest {
         when(em.find(PersonaRol.class, pr.getIdPersonaRol())).thenReturn(pr);
         return pr;
     }
+    private PersonaRol paciente(Clinica clinica) {
+        PersonaRol paciente = new PersonaRol(UUID.randomUUID());
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
+        paciente.setIdRol(rol); paciente.setIdClinica(clinica);
+        when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
+        return paciente;
+    }
+    @Test void creacionGuardaPacienteAutorFechasYDatosEnLaMismaOperacion() {
+        PersonaRol paciente = paciente(medico.getIdClinica());
+        TypedQuery<Consulta> consultas = query(Consulta.class, List.of());
+        doAnswer(i -> { when(consultas.getSingleResult()).thenReturn(i.getArgument(0)); return null; })
+                .when(em).persist(any(Consulta.class));
+        Consulta creada = servicio.crear(paciente.getIdPersonaRol(), "  REF-01  ", "  Primera atención  ");
+        assertSame(paciente, creada.getIdPersonaRol()); assertSame(medico, creada.getIdMedicoRol());
+        assertNotNull(creada.getIdConsulta()); assertNotNull(creada.getFechaInicio());
+        assertEquals(java.time.ZoneOffset.UTC, creada.getFechaInicio().getOffset()); assertNull(creada.getFechaFin());
+        assertEquals("REF-01", creada.getReferenciaExterna()); assertEquals("Primera atención", creada.getObservaciones());
+        verify(em).persist(creada); verify(em).flush();
+    }
+    @Test void creacionRechazaPacienteDeOtraClinica() {
+        PersonaRol paciente = paciente(new Clinica(UUID.randomUUID()));
+        assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, null));
+        verify(em, never()).persist(any());
+    }
+    @Test void creacionNoDuplicaNiSobrescribeConsultaAbierta() {
+        PersonaRol paciente = paciente(medico.getIdClinica());
+        Consulta existente = new Consulta(id); existente.setIdPersonaRol(paciente); existente.setIdMedicoRol(medico);
+        existente.setObservaciones("Original"); query(Consulta.class, List.of(existente));
+        assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, "Cambio"));
+        assertEquals("Original", existente.getObservaciones()); verify(em, never()).persist(any());
+    }
+    @Test void creacionNoPermiteAbrirOtraConsultaDuranteLaAtencion() {
+        when(sesion.getConsulta()).thenReturn(id);
+        assertThrows(ServiceException.class, () -> servicio.crear(UUID.randomUUID(), null, null));
+        verify(em, never()).persist(any());
+    }
+    @Test void creacionValidaLongitudesAntesDePersistir() {
+        assertThrows(ServiceException.class, () -> servicio.crear(UUID.randomUUID(), "x".repeat(256), null));
+        assertThrows(ServiceException.class, () -> servicio.crear(UUID.randomUUID(), null, "x".repeat(256)));
+        verify(em, never()).persist(any());
+    }
+    @Test void historialYPacientesSeConsultanConElContextoDeLaSesion() {
+        TypedQuery<Consulta> consultas = query(Consulta.class, List.of());
+        TypedQuery<PersonaRol> pacientes = query(PersonaRol.class, List.of());
+        assertTrue(servicio.historial().isEmpty()); assertTrue(servicio.pacientesClinica().isEmpty());
+        verify(consultas).setParameter("medico", medico);
+        verify(consultas).setParameter("clinica", medico.getIdClinica());
+        verify(pacientes).setParameter("clinica", medico.getIdClinica());
+        verify(em).createQuery(contains("WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica"), eq(Consulta.class));
+        verify(em).createQuery(contains("WHERE r.idClinica=:clinica"), eq(PersonaRol.class));
+    }
+    @Test void sinRolMedicoNoExponeHistorialNiPacientes() {
+        when(sesion.getRolActivo()).thenReturn(null);
+        assertThrows(ServiceException.class, servicio::historial);
+        assertThrows(ServiceException.class, servicio::pacientesClinica);
+        assertThrows(ServiceException.class, () -> servicio.crear(UUID.randomUUID(), null, null));
+        verify(em, never()).createQuery(anyString(), any()); verify(em, never()).persist(any());
+    }
     @Test void aperturaRechazaResponsableDeOtraClinica() {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);

@@ -20,7 +20,12 @@ public class AtencionService {
         return valor == null ? null : valor.trim();
     }
     public List<PersonaRol> pacientes(UUID persona) {
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idPersona.idPersona=:id AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true", PersonaRol.class).setParameter("id", persona).getResultList();
+        return pacientesClinica().stream().filter(r -> r.getIdPersona().getIdPersona().equals(persona)).toList();
+    }
+    public List<PersonaRol> pacientesClinica() {
+        PersonaRol medico = medicoActivo();
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
+                .setParameter("clinica", medico.getIdClinica()).getResultList();
     }
     public List<PersonaRol> responsables(UUID clinica) {
         return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica.idClinica=:clinica AND rol.activo=true ORDER BY p.apellidos, p.nombres, rol.nombre", PersonaRol.class)
@@ -58,14 +63,29 @@ public class AtencionService {
         }
     }
     public Consulta abrir(UUID rolId, UUID responsableId) {
+        return iniciarConsulta(rolId, responsableId, null, null, true);
+    }
+    public Consulta crear(UUID pacienteId, String referencia, String observaciones) {
+        if (sesion != null && sesion.getConsulta() != null) throw new ServiceException("Cierre la consulta en curso antes de crear otra.");
+        return iniciarConsulta(pacienteId, null, referencia, observaciones, false);
+    }
+    private Consulta iniciarConsulta(UUID rolId, UUID responsableId, String referencia, String observaciones, boolean retomar) {
         PersonaRol medico = medicoActivo();
-        if (!medico.getIdPersonaRol().equals(responsableId)) throw new ServiceException("El médico activo debe abrir su propia consulta.");
-        PersonaRol rol=em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
+        if (retomar && !medico.getIdPersonaRol().equals(responsableId)) throw new ServiceException("El médico activo debe abrir su propia consulta.");
+        String referenciaValidada = texto(referencia, "La referencia", 255);
+        String notasValidadas = texto(observaciones, "Las observaciones", 255);
+        PersonaRol rol=rolId == null ? null : em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
         if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || rol.getIdRol().getNombre()==null || !"paciente".equalsIgnoreCase(rol.getIdRol().getNombre().trim()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw new ServiceException("Seleccione el rol del paciente.");
-        responsable(responsableId, rol);
+        responsable(medico.getIdPersonaRol(), rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
-        if(!abiertas.isEmpty()) { comprobarPropietario(abiertas.get(0)); return cargar(abiertas.get(0).getIdConsulta()); }
-        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setIdMedicoRol(medico); c.setFechaInicio(ahora()); em.persist(c); em.flush(); return cargar(c.getIdConsulta());
+        if(!abiertas.isEmpty()) {
+            comprobarPropietario(abiertas.get(0));
+            if (!retomar) throw new ServiceException("El paciente ya tiene una consulta en curso. Retómela desde su historial.");
+            return cargar(abiertas.get(0).getIdConsulta());
+        }
+        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setIdMedicoRol(medico); c.setFechaInicio(ahora());
+        c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas);
+        em.persist(c); em.flush(); return cargar(c.getIdConsulta());
     }
     public Consulta cargar(UUID id) {
         Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica LEFT JOIN FETCH c.idMedicoRol m LEFT JOIN FETCH m.idPersona WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();

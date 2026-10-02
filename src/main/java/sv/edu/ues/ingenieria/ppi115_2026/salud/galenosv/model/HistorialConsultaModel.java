@@ -7,17 +7,25 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+import jakarta.inject.Inject;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service.*;
 
 @Named @ViewScoped
 public class HistorialConsultaModel implements Serializable {
+    private static final long serialVersionUID = 1L;
     @EJB private AtencionService servicio;
+    @Inject private AtencionSesion sesion;
+    private List<PersonaRol> pacientes = List.of();
+    private String pacienteId, referencia, observaciones;
+    private UUID contextoId;
     private List<Consulta> consultas = List.of();
     private Consulta seleccionada;
     private List<ConsultaProcedimiento> procedimientos = List.of();
@@ -27,11 +35,22 @@ public class HistorialConsultaModel implements Serializable {
     private String ordenId, resultado, interpretacion;
 
     @PostConstruct public void iniciar() {
-        try { consultas = servicio.historial(); }
+        contextoId = sesion.getRolActivo() == null ? null : sesion.getRolActivo().getIdPersonaRol();
+        consultas = List.of(); pacientes = List.of(); limpiar();
+        if (sesion.getRolActivo() == null) return;
+        try { consultas = servicio.historial(); pacientes = servicio.pacientesClinica(); }
         catch (ServiceException e) { error(e.getMessage()); }
         catch (EJBException e) { error("No se pudo cargar el historial de consultas."); }
     }
+    public void verificarContexto() {
+        UUID actual = sesion.getRolActivo() == null ? null : sesion.getRolActivo().getIdPersonaRol();
+        if (!Objects.equals(contextoId, actual)) {
+            pacienteId = null; referencia = null; observaciones = null;
+            iniciar();
+        }
+    }
     public void seleccionar(Consulta consulta) {
+        limpiar();
         try {
             seleccionada = servicio.cargar(consulta.getIdConsulta());
             procedimientos = servicio.realizados(seleccionada.getIdConsulta());
@@ -40,6 +59,28 @@ public class HistorialConsultaModel implements Serializable {
             resultados = servicio.resultados(seleccionada.getIdConsulta());
         } catch (ServiceException e) { limpiar(); error(e.getMessage()); }
         catch (EJBException e) { limpiar(); error("No se pudo cargar esta consulta."); }
+    }
+    public String crear() {
+        try {
+            if (pacienteId == null || pacienteId.isBlank()) throw new ServiceException("Seleccione un paciente de su clínica.");
+            Consulta nueva = servicio.crear(java.util.UUID.fromString(pacienteId), referencia, observaciones);
+            sesion.setConsulta(nueva.getIdConsulta());
+            return "/paginas/consulta.xhtml?faces-redirect=true";
+        } catch (ServiceException e) { error(e.getMessage()); }
+        catch (EJBException | IllegalArgumentException e) { error("No se pudo crear la consulta. Verifique el paciente y los datos."); }
+        return null;
+    }
+    public String retomar(Consulta consulta) {
+        try {
+            Consulta propia = servicio.cargar(consulta.getIdConsulta());
+            if (propia.getFechaFin() != null) throw new ServiceException("La consulta ya está cerrada.");
+            if (sesion.getConsulta() != null && !sesion.getConsulta().equals(propia.getIdConsulta()))
+                throw new ServiceException("Cierre la consulta en curso antes de retomar otra.");
+            sesion.setConsulta(propia.getIdConsulta());
+            return "/paginas/consulta.xhtml?faces-redirect=true";
+        } catch (ServiceException e) { error(e.getMessage()); }
+        catch (EJBException e) { error("No se pudo retomar esta consulta."); }
+        return null;
     }
     public void registrarResultado() {
         try {
@@ -56,12 +97,20 @@ public class HistorialConsultaModel implements Serializable {
     private void error(String mensaje) {
         FacesContext.getCurrentInstance().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_ERROR, mensaje, null));
+        FacesContext.getCurrentInstance().validationFailed();
     }
     public String fecha(OffsetDateTime valor) {
         return valor == null ? "En curso" : valor.atZoneSameInstant(ZoneId.of("America/El_Salvador"))
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss XXX"));
     }
     public List<Consulta> getConsultas() { return consultas; }
+    public List<PersonaRol> getPacientes() { return pacientes; }
+    public String getPacienteId() { return pacienteId; }
+    public void setPacienteId(String id) { pacienteId = id; }
+    public String getReferencia() { return referencia; }
+    public void setReferencia(String valor) { referencia = valor; }
+    public String getObservaciones() { return observaciones; }
+    public void setObservaciones(String valor) { observaciones = valor; }
     public Consulta getSeleccionada() { return seleccionada; }
     public List<ConsultaProcedimiento> getProcedimientos() { return procedimientos; }
     public List<ConsultaProcedimientoPaso> getPasos() { return pasos; }

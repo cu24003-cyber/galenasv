@@ -5,14 +5,14 @@
 <ui:define name="menusidebar">
     <h:panelGroup rendered="#{not empty atencionSesion.consulta}" layout="block" style="padding: 1rem">
         <h3>Consulta en curso</h3>
-        <p>Complete la atención y pulse Cerrar consulta para regresar a pacientes.</p>
+        <p>Complete la atención y pulse Cerrar consulta para regresar a Consultas.</p>
         <h:link outcome="/paginas/cambiar-rol.xhtml" value="Cambiar de rol" />
     </h:panelGroup>
-    <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/paciente-list.xhtml" value="Pacientes"/>
+    <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/consultas.xhtml" value="Consultas"/>
 </ui:define>
 <ui:define name="content">
 <p:messages id="mensajes" />
-<h:panelGroup rendered="#{empty atencionModel.consulta}"><p>Seleccione un paciente para abrir una consulta.</p><p:button value="Pacientes" outcome="/paginas/paciente-list.xhtml" /></h:panelGroup>
+<h:panelGroup rendered="#{empty atencionModel.consulta}"><p>Cree una consulta o retome una consulta en curso desde Consultas.</p><p:button value="Consultas" outcome="/paginas/consultas.xhtml" /></h:panelGroup>
 <h:panelGroup rendered="#{not empty atencionModel.consulta}">
 <p><strong>#{atencionModel.consulta.idPersonaRol.idPersona.nombres} #{atencionModel.consulta.idPersonaRol.idPersona.apellidos}</strong> · #{atencionModel.consulta.idPersonaRol.idClinica.nombre}</p>
 <p>Inicio: #{atencionModel.fecha(atencionModel.consulta.fechaInicio)} · Fin: #{atencionModel.fecha(atencionModel.consulta.fechaFin)}</p>
