@@ -13,7 +13,7 @@
         <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}" layout="block">
             <p><strong>Personal en sesión:</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
                 · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
-            <p>El historial muestra únicamente las consultas creadas por usted en esta clínica.</p>
+            <p>El historial muestra las consultas de la clínica activa.</p>
             <h:form id="nuevaConsulta">
                 <p:panel header="Crear consulta" style="margin-bottom:1rem">
                     <p:panelGrid columns="2" layout="flex">
@@ -83,6 +83,7 @@
                     <p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column>
                     <p:column headerText="Estado">#{p.estado}</p:column>
                     <p:column headerText="Responsable">#{p.idPersonaRol.idPersona.nombres} #{p.idPersonaRol.idPersona.apellidos}</p:column>
+                    <p:column headerText="Valor">#{p.valor}</p:column>
                     <p:column headerText="Fin">#{historialConsultaModel.fecha(p.fechaFin)}</p:column>
                 </p:dataTable>
                 <h3>Órdenes de examen</h3>

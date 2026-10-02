@@ -55,13 +55,11 @@ public class AtencionService {
         }
         return medico;
     }
-    private void comprobarPropietario(Consulta consulta) {
+    private void comprobarClinica(Consulta consulta) {
         PersonaRol medico = medicoActivo();
-        if (consulta == null || consulta.getIdMedicoRol() == null
-                || !medico.getIdPersonaRol().equals(consulta.getIdMedicoRol().getIdPersonaRol())
-                || consulta.getIdPersonaRol() == null || consulta.getIdPersonaRol().getIdClinica() == null
+        if (consulta == null || consulta.getIdPersonaRol() == null || consulta.getIdPersonaRol().getIdClinica() == null
                 || !medico.getIdClinica().getIdClinica().equals(consulta.getIdPersonaRol().getIdClinica().getIdClinica())) {
-            throw new ServiceException("Esta consulta pertenece a otro médico o clínica.");
+            throw new ServiceException("Esta consulta pertenece a otra clínica.");
         }
     }
     public Consulta abrir(UUID rolId, UUID responsableId) {
@@ -81,17 +79,17 @@ public class AtencionService {
         responsable(medico.getIdPersonaRol(), rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
         if(!abiertas.isEmpty()) {
-            comprobarPropietario(abiertas.get(0));
+            comprobarClinica(abiertas.get(0));
             if (!retomar) throw new ServiceException("El paciente ya tiene una consulta en curso. Retómela desde su historial.");
             return cargar(abiertas.get(0).getIdConsulta());
         }
-        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setIdMedicoRol(medico); c.setFechaInicio(ahora());
+        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(ahora());
         c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas);
         em.persist(c); em.flush(); return cargar(c.getIdConsulta());
     }
     public Consulta cargar(UUID id) {
-        Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica LEFT JOIN FETCH c.idMedicoRol m LEFT JOIN FETCH m.idPersona WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();
-        comprobarPropietario(c);
+        Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();
+        comprobarClinica(c);
         return c;
     }
     public List<Consulta> historial() { return historial(null, null); }
@@ -102,18 +100,18 @@ public class AtencionService {
         ZoneId zona = ZoneId.of("America/El_Salvador");
         OffsetDateTime inicio = desde == null ? null : desde.atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
         OffsetDateTime finExclusivo = hasta == null ? null : hasta.plusDays(1).atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
-        String jpql = "SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica"
+        String jpql = "SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE paciente.idClinica=:clinica"
                 + (inicio == null ? "" : " AND c.fechaInicio >= :desde")
                 + (finExclusivo == null ? "" : " AND c.fechaInicio < :hasta") + " ORDER BY c.fechaInicio DESC";
         TypedQuery<Consulta> consulta = em.createQuery(jpql, Consulta.class)
-                .setParameter("medico", medico).setParameter("clinica", medico.getIdClinica());
+                .setParameter("clinica", medico.getIdClinica());
         if (inicio != null) consulta.setParameter("desde", inicio);
         if (finExclusivo != null) consulta.setParameter("hasta", finExclusivo);
         return consulta.getResultList();
     }
     private Consulta abierta(UUID id) {
         Consulta c=em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE);
-        comprobarPropietario(c);
+        comprobarClinica(c);
         if(c.getFechaFin()!=null) throw new ServiceException("La consulta ya está cerrada."); return c;
     }
     public void guardar(UUID id,String referencia,String observaciones) {
@@ -166,13 +164,18 @@ public class AtencionService {
         paso.setIdPersonaRol(responsable(responsableId, c.getIdPersonaRol()));
     }
     public void completar(UUID consulta,UUID pasoId) {
+        completar(consulta, pasoId, null);
+    }
+    public void completar(UUID consulta,UUID pasoId,String valor) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);
         if(paso.getFechaFin()!=null) return;
+        if(paso.getIdProcedimientoPaso()==null) throw new ServiceException("El paso histórico no tiene una definición de catálogo.");
         List<ProcedimientoPasoSecuencia> previos=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPasoReferencia=:p",ProcedimientoPasoSecuencia.class).setParameter("p",paso.getIdProcedimientoPaso()).getResultList();
         for(ProcedimientoPasoSecuencia s:previos) {
             Long pendientes=em.createQuery("SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento=:cp AND p.idProcedimientoPaso=:previo AND p.fechaFin IS NULL",Long.class).setParameter("cp",paso.getIdConsultaProcedimiento()).setParameter("previo",s.getIdProcedimientoPaso()).getSingleResult();
             if(pendientes>0) throw new ServiceException("Complete primero los pasos anteriores.");
         }
+        paso.setValor(valor == null || valor.isBlank() ? null : valor.trim());
         paso.setEstado("COMPLETADO"); paso.setFechaFin(ahora());
         List<ProcedimientoPasoSecuencia> siguientes=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso=:p",ProcedimientoPasoSecuencia.class)
                 .setParameter("p",paso.getIdProcedimientoPaso()).getResultList();

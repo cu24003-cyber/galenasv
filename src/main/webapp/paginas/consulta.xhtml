@@ -49,8 +49,12 @@
         <p:ajax listener="#{atencionModel.asignar(p)}" process="@this" update=":mensajes" />
     </p:selectOneMenu>
 </p:column>
+<p:column headerText="Valor">
+    <h:outputText rendered="#{not empty p.fechaFin}" value="#{p.valor}" />
+    <p:inputTextarea rendered="#{empty p.fechaFin}" value="#{p.valor}" rows="2" />
+</p:column>
 <p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
-<p:column><p:commandButton value="Completar" icon="pi pi-check" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@this" update="@form :mensajes"/></p:column>
+<p:column><p:commandButton value="Completar" icon="pi pi-check" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@form" update="@form :mensajes"/></p:column>
 </p:dataTable></h:form>
 </p:tab>
 <p:tab title="Registro de examen"><h:form id="examen">

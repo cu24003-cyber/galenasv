@@ -34,7 +34,7 @@ class AtencionServiceTest {
         Consulta c=new Consulta(id);
         c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00"));
         PersonaRol paciente = new PersonaRol(UUID.randomUUID()); paciente.setIdClinica(medico.getIdClinica());
-        c.setIdPersonaRol(paciente); c.setIdMedicoRol(medico);
+        c.setIdPersonaRol(paciente);
         when(em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE)).thenReturn(c);
         @SuppressWarnings("unchecked") TypedQuery<Consulta> consulta = mock(TypedQuery.class);
         when(em.createQuery(anyString(),eq(Consulta.class))).thenReturn(consulta);
@@ -53,7 +53,7 @@ class AtencionServiceTest {
     @Test void retomaConsultaExistenteSinCambiarInicio() {
         PersonaRol pr=new PersonaRol(UUID.randomUUID()); Rol rol=new Rol(); rol.setNombre("Paciente"); rol.setActivo(true); pr.setIdRol(rol);
         when(em.find(PersonaRol.class,pr.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(pr);
-        Consulta c=new Consulta(id); c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00")); c.setIdPersonaRol(pr); c.setIdMedicoRol(medico);
+        Consulta c=new Consulta(id); c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00")); c.setIdPersonaRol(pr);
         TypedQuery<Consulta> q=query(Consulta.class,List.of(c)); when(q.getSingleResult()).thenReturn(c);
         Clinica clinica = new Clinica(UUID.randomUUID()); pr.setIdClinica(clinica);
         medico.setIdClinica(clinica);
@@ -65,25 +65,25 @@ class AtencionServiceTest {
         assertThrows(ServiceException.class,()->servicio.guardar(id,"cambio","cambio"));
         assertNull(c.getReferenciaExterna());
     }
-    @Test void impideLeerYModificarConsultaDeOtroMedico() {
-        Consulta c = abierta(); c.setIdMedicoRol(new PersonaRol(UUID.randomUUID()));
-        assertThrows(ServiceException.class, () -> servicio.cargar(id));
-        assertThrows(ServiceException.class, () -> servicio.guardar(id, "otro", "otro"));
-        assertNull(c.getReferenciaExterna());
+    @Test void permiteLeerYModificarConsultaDeLaMismaClinica() {
+        Consulta c = abierta();
+        assertSame(c, servicio.cargar(id));
+        servicio.guardar(id, "REF", "notas");
+        assertEquals("REF", c.getReferenciaExterna());
     }
     @Test void impideLeerConsultaDeOtraClinica() {
         Consulta c = abierta(); c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
         assertThrows(ServiceException.class, () -> servicio.cargar(id));
     }
-    @Test void impideAbrirConsultaDeOtroMedico() {
+    @Test void permiteRetomarConsultaAbiertaDeLaMismaClinica() {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         Consulta ajena = new Consulta(id); ajena.setIdPersonaRol(paciente);
-        ajena.setIdMedicoRol(new PersonaRol(UUID.randomUUID()));
-        query(Consulta.class, List.of(ajena));
-        assertThrows(ServiceException.class, () -> servicio.abrir(paciente.getIdPersonaRol(), medico.getIdPersonaRol()));
+        TypedQuery<Consulta> consultas = query(Consulta.class, List.of(ajena));
+        when(consultas.getSingleResult()).thenReturn(ajena);
+        assertSame(ajena, servicio.abrir(paciente.getIdPersonaRol(), medico.getIdPersonaRol()));
         verify(em, never()).persist(any());
     }
     @Test void noPermiteOrdenarPasoDeOtroPaciente() {
@@ -177,12 +177,13 @@ class AtencionServiceTest {
         TypedQuery<Long> cuenta=query(Long.class,List.of()); when(cuenta.getSingleResult()).thenReturn(1L);
         PersonaRol responsable=responsable(c.getIdPersonaRol().getIdClinica(),"Enfermería");
         query(PersonaRol.class,List.of(responsable));
-        servicio.completar(id,ejecucion.getIdConsultaProcedimientoPaso());
+        servicio.completar(id,ejecucion.getIdConsultaProcedimientoPaso()," 125/80 ");
         ArgumentCaptor<ConsultaProcedimientoPaso> captor=ArgumentCaptor.forClass(ConsultaProcedimientoPaso.class);
         verify(em).persist(captor.capture());
         assertSame(destino,captor.getValue().getIdProcedimientoPaso());
         assertSame(responsable,captor.getValue().getIdPersonaRol());
         assertEquals(ejecucion.getFechaFin(),captor.getValue().getFechaInicio());
+        assertEquals("125/80", ejecucion.getValor());
     }
     @Test void cierreRechazaProcedimientoSinPasoFinalAunqueTodosEstanCompletos() {
         Consulta c=abierta(); ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID());
@@ -290,7 +291,7 @@ class AtencionServiceTest {
         doAnswer(i -> { when(consultas.getSingleResult()).thenReturn(i.getArgument(0)); return null; })
                 .when(em).persist(any(Consulta.class));
         Consulta creada = servicio.crear(paciente.getIdPersonaRol(), "  REF-01  ", "  Primera atención  ");
-        assertSame(paciente, creada.getIdPersonaRol()); assertSame(medico, creada.getIdMedicoRol());
+        assertSame(paciente, creada.getIdPersonaRol());
         assertNotNull(creada.getIdConsulta()); assertNotNull(creada.getFechaInicio());
         assertEquals(java.time.ZoneOffset.UTC, creada.getFechaInicio().getOffset()); assertNull(creada.getFechaFin());
         assertEquals("REF-01", creada.getReferenciaExterna()); assertEquals("Primera atención", creada.getObservaciones());
@@ -303,7 +304,7 @@ class AtencionServiceTest {
     }
     @Test void creacionNoDuplicaNiSobrescribeConsultaAbierta() {
         PersonaRol paciente = paciente(medico.getIdClinica());
-        Consulta existente = new Consulta(id); existente.setIdPersonaRol(paciente); existente.setIdMedicoRol(medico);
+        Consulta existente = new Consulta(id); existente.setIdPersonaRol(paciente);
         existente.setObservaciones("Original"); query(Consulta.class, List.of(existente));
         assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, "Cambio"));
         assertEquals("Original", existente.getObservaciones()); verify(em, never()).persist(any());
@@ -322,10 +323,9 @@ class AtencionServiceTest {
         TypedQuery<Consulta> consultas = query(Consulta.class, List.of());
         TypedQuery<PersonaRol> pacientes = query(PersonaRol.class, List.of());
         assertTrue(servicio.historial().isEmpty()); assertTrue(servicio.pacientesClinica().isEmpty());
-        verify(consultas).setParameter("medico", medico);
         verify(consultas).setParameter("clinica", medico.getIdClinica());
         verify(pacientes).setParameter("clinica", medico.getIdClinica());
-        verify(em).createQuery(contains("WHERE c.idMedicoRol=:medico AND paciente.idClinica=:clinica"), eq(Consulta.class));
+        verify(em).createQuery(contains("WHERE paciente.idClinica=:clinica"), eq(Consulta.class));
         verify(em).createQuery(contains("WHERE r.idClinica=:clinica"), eq(PersonaRol.class));
     }
     @Test void sinRolMedicoNoExponeHistorialNiPacientes() {

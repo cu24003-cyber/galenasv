@@ -255,7 +255,6 @@ public class RegistroPersonaModel implements Serializable {
         clinica = asignacion.getIdClinica();
     }
     public void nuevaAsignacion() { asignacionId = null; rol = null; clinica = null; }
-    public UUID getAsignacionId() { return asignacionId; }
     public List<PersonaRol> getAsignaciones() { return asignaciones; }
     public Rol getRol() { return rol; }
     public void setRol(Rol rol) { this.rol = rol; }

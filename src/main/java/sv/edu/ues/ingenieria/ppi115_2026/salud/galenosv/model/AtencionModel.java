@@ -63,7 +63,7 @@ public class AtencionModel implements Serializable {
             recargar();
         });
     }
-    public void completar(ConsultaProcedimientoPaso p) { ejecutar(()->{servicio.completar(consulta.getIdConsulta(),p.getIdConsultaProcedimientoPaso()); recargar();}); }
+    public void completar(ConsultaProcedimientoPaso p) { ejecutar(()->{servicio.completar(consulta.getIdConsulta(),p.getIdConsultaProcedimientoPaso(),p.getValor()); recargar();}); }
     public List<TipoExamen> completarTipos(String q) { return servicio.tipos(q); }
     public void registrarExamen() { ejecutar(()->{servicio.examen(consulta.getIdConsulta(),UUID.fromString(pasoId),nombreExamen,notasExamen,tipo==null?null:tipo.getIdTipoExamen()); nombreExamen=null; notasExamen=null; tipo=null; recargar();}); }
     public void ordenar() { ejecutar(()->{servicio.ordenar(consulta.getIdConsulta(),UUID.fromString(pasoId),indicaciones); indicaciones=null; recargar();}); }

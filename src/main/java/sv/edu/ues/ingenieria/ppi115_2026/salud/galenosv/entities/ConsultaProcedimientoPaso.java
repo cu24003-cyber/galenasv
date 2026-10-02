@@ -46,6 +46,8 @@ public class ConsultaProcedimientoPaso implements Serializable {
     private OffsetDateTime fechaFin;
     @Column(name = "estado" , length = 20)
     private String estado;
+    @Column(name = "valor")
+    private String valor;
     @JoinColumn(name = "id_consulta_procedimiento", referencedColumnName = "id_consulta_procedimiento")
     @ManyToOne(fetch = FetchType.LAZY)
     private ConsultaProcedimiento idConsultaProcedimiento;
@@ -106,6 +108,14 @@ public class ConsultaProcedimientoPaso implements Serializable {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getValor() {
+        return valor;
+    }
+
+    public void setValor(String valor) {
+        this.valor = valor;
     }
 
     public ConsultaProcedimiento getIdConsultaProcedimiento() {
