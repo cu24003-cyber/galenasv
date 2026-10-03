@@ -11,8 +11,12 @@ import static org.mockito.Mockito.*;
 
 class TipoMedioContactoModelTest {
     @Test
-    void cancelarNoModificaElRegistroOriginal() {
+    void cancelarNoModificaElRegistroOriginal() throws Exception {
         TipoMedioContactoModel model = new TipoMedioContactoModel();
+        TipoMedioContactoService service = mock(TipoMedioContactoService.class);
+        var field = TipoMedioContactoModel.class.getDeclaredField("tipoMedioContactoService");
+        field.setAccessible(true);
+        field.set(model, service);
         TipoMedioContacto original = new TipoMedioContacto(UUID.randomUUID());
         original.setNombre("Original");
         original.setIndicaciones("Indicaciones");
@@ -21,7 +25,7 @@ class TipoMedioContactoModelTest {
         model.editar(original);
         assertEquals(original.getExpresionRegular(), model.getSeleccionada().getExpresionRegular());
         model.getSeleccionada().setNombre("Modificado");
-        model.cancelar();
+        try (var contexto = mockStatic(FacesContext.class)) { model.cancelar(); }
         assertNull(model.getSeleccionada());
         assertEquals("Original", original.getNombre());
     }
@@ -50,5 +54,23 @@ class TipoMedioContactoModelTest {
         verify(service, times(2)).crear(registro);
         verify(service, never()).actualizar(any());
         assertNull(model.getSeleccionada());
+    }
+
+    @Test
+    void noAbreEdicionSiElTipoEstaEnUso() throws Exception {
+        TipoMedioContactoModel model = new TipoMedioContactoModel();
+        TipoMedioContactoService service = mock(TipoMedioContactoService.class);
+        var field = TipoMedioContactoModel.class.getDeclaredField("tipoMedioContactoService");
+        field.setAccessible(true);
+        field.set(model, service);
+        TipoMedioContacto original = new TipoMedioContacto(UUID.randomUUID());
+        when(service.estaEnUso(original.getIdTipoMedioContacto())).thenReturn(true);
+        model.nuevo();
+        try (var messages = mockStatic(Mensajes.class);
+             var faces = mockStatic(FacesContext.class)) {
+            model.editar(original);
+            assertNull(model.getSeleccionada());
+            messages.verify(() -> Mensajes.texto("tipoMedioContacto.enUso"));
+        }
     }
 }

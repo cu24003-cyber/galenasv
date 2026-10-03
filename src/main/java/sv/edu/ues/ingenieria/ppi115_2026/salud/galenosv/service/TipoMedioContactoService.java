@@ -34,4 +34,18 @@ public class TipoMedioContactoService extends AbstractService<TipoMedioContacto,
         super.crear(entidad);
     }
 
+    public boolean estaEnUso(UUID id) {
+        return id != null && tipoMedioContactoRepository.estaEnUso(id);
+    }
+
+    @Override
+    public void actualizar(TipoMedioContacto entidad) {
+        validar(entidad);
+        if (estaEnUso(entidad.getIdTipoMedioContacto())) {
+            throw ServiceException.localizada("tipoMedioContacto.enUso",
+                    "No se puede editar un tipo de contacto que ya tiene medios de contacto asociados.");
+        }
+        super.actualizar(entidad);
+    }
+
 }

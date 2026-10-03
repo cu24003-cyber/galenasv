@@ -77,7 +77,7 @@ class ClinicaModelTest {
         Clinica original = new Clinica(UUID.randomUUID(), "Central");
         model.editar(original);
         model.getSeleccionada().setNombre("Modificada");
-        model.cancelar();
+        try (var contexto = mockStatic(FacesContext.class)) { model.cancelar(); }
         assertNull(model.getSeleccionada());
         assertEquals("Central", original.getNombre());
         verifyNoInteractions(service);

@@ -54,14 +54,19 @@ public class ExamenModel extends AbstractModel<Examen, UUID> {
         } catch (ServiceException | EJBException e) { agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e)); }
     }
 
-    public void cancelar() { seleccionada = null; tiposIds = new ArrayList<>(); }
+    public void cancelar() {
+        if (FormularioCancelacion.estaVacio()) cerrarEditor();
+        else nuevo();
+    }
+
+    private void cerrarEditor() { seleccionada = null; tiposIds = new ArrayList<>(); }
 
     @Override
     public void guardar() {
         if (seleccionada == null) { marcarValidacionFallida(); return; }
         try {
             examenService.guardarConTipos(seleccionada, tiposIds == null ? List.of() : tiposIds.stream().map(UUID::fromString).toList());
-            cancelar(); cargarRegistros();
+            cerrarEditor(); cargarRegistros();
             agregarMensaje(FacesMessage.SEVERITY_INFO, Mensajes.texto("registro.guardado"), null);
         } catch (ServiceException | EJBException | IllegalArgumentException e) {
             marcarValidacionFallida();
@@ -73,7 +78,7 @@ public class ExamenModel extends AbstractModel<Examen, UUID> {
     public void eliminar(Examen entidad) {
         try {
             examenService.eliminarConTipos(entidad.getIdExamen());
-            if (seleccionada != null && entidad.getIdExamen().equals(seleccionada.getIdExamen())) cancelar();
+            if (seleccionada != null && entidad.getIdExamen().equals(seleccionada.getIdExamen())) cerrarEditor();
             cargarRegistros();
         } catch (ServiceException | EJBException e) {
             marcarValidacionFallida();

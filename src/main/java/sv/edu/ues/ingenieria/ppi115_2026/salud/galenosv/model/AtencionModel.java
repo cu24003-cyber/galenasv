@@ -26,6 +26,7 @@ public class AtencionModel implements Serializable {
     private String procedimientoId, notasProcedimiento, pasoId, nombreExamen, notasExamen, indicaciones;
     private String ordenId, resultado, interpretacion;
     private TipoExamen tipo;
+    private boolean procedimientoVisible;
     @PostConstruct public void iniciar() {
         if(sesion.getConsulta()!=null && !ejecutar(()->{consulta=servicio.cargar(sesion.getConsulta()); procedimientos=servicio.procedimientos(); recargar();})) {
             consulta = null;
@@ -48,7 +49,14 @@ public class AtencionModel implements Serializable {
     }
     private void mensaje(String m) { FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,m,null)); FacesContext.getCurrentInstance().validationFailed(); }
     public void guardar() { ejecutar(()->servicio.guardar(consulta.getIdConsulta(),consulta.getReferenciaExterna(),consulta.getObservaciones())); }
-    public void agregar() { ejecutar(()->{servicio.agregarProcedimiento(consulta.getIdConsulta(),UUID.fromString(procedimientoId),notasProcedimiento, responsableActivo()); recargar();}); }
+    public void nuevoProcedimiento() { procedimientoId=null; notasProcedimiento=null; procedimientoVisible=true; }
+    public void cancelarProcedimiento() { nuevoProcedimiento(); procedimientoVisible=!FormularioCancelacion.estaVacio(); }
+    public boolean isProcedimientoVisible() { return procedimientoVisible; }
+    public void agregar() {
+        if (ejecutar(()->{servicio.agregarProcedimiento(consulta.getIdConsulta(),UUID.fromString(procedimientoId),notasProcedimiento, responsableActivo()); recargar();})) {
+            procedimientoId=null; notasProcedimiento=null; procedimientoVisible=false;
+        }
+    }
     private UUID responsableActivo() {
         if (sesion.getRolActivo() == null) throw new ServiceException("Seleccione el rol y la clínica desde Cambiar de rol.");
         return sesion.getRolActivo().getIdPersonaRol();

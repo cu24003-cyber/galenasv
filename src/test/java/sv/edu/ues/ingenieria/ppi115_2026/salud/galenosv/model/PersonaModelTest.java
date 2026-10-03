@@ -51,7 +51,7 @@ class PersonaModelTest {
         model.getSeleccionada().setNombres("Otro nombre");
         model.getSeleccionada().getFechaNacimiento().setTime(3000);
 
-        model.cancelar();
+        try (var contexto = mockStatic(FacesContext.class)) { model.cancelar(); }
 
         assertNull(model.getSeleccionada());
         assertEquals("Ana", original.getNombres());

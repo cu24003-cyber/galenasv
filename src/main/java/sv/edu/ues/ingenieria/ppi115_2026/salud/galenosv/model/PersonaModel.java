@@ -51,7 +51,7 @@ public class PersonaModel extends AbstractModel<Persona, UUID> {
     }
 
     public void cancelar() {
-        seleccionada = null;
+        seleccionada = FormularioCancelacion.estaVacio() ? null : nuevaInstancia();
     }
 
     @Override

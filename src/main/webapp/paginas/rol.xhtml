@@ -9,7 +9,7 @@
             <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoRol" value="#{msg['rol.nuevo']}" icon="pi pi-plus"
                 action="#{rolModel.newRol}" process="@this" update="rolFormulario :messages" resetValues="true" />
 
-            <p:outputPanel id="rolFormulario">
+            <p:outputPanel id="rolFormulario" styleClass="galeno-formulario">
                 <p:panel header="#{msg['rol.detalle']}" rendered="#{rolModel.rolSeleccionado != null}"
                     style="margin-bottom: 1rem;">
                     <p:messages id="formMessages" showDetail="false" />
@@ -24,7 +24,7 @@
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{rolModel.cancelRol}" process="@this" update="rolFormulario :messages"
+                            action="#{rolModel.cancelRol}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)" update="rolFormulario :messages"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{rolModel.saveRol}" process="@this rolFormulario"

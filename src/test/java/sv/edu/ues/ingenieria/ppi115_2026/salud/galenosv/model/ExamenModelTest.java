@@ -20,7 +20,7 @@ class ExamenModelTest {
     @Test void cancelarEdicionNoModificaLaFilaOriginal() throws Exception {
         ExamenModel model = modelo(); Examen original = new Examen(UUID.randomUUID()); original.setNombre("Original");
         UUID tipo = UUID.randomUUID(); when(servicio.tiposAsignados(original.getIdExamen())).thenReturn(List.of(tipo));
-        model.editar(original); model.getSeleccionada().setNombre("Modificado"); model.cancelar();
+        model.editar(original); model.getSeleccionada().setNombre("Modificado"); try (var contexto = mockStatic(FacesContext.class)) { model.cancelar(); }
         assertEquals("Original", original.getNombre()); assertNull(model.getSeleccionada()); assertTrue(model.getTiposIds().isEmpty());
     }
     @Test void errorConservaFormularioYTiposParaReintentar() throws Exception {

@@ -38,6 +38,18 @@ public class TipoDocumentoModel extends AbstractModel<TipoDocumento, UUID> {
 
     @Override
     public void editar(TipoDocumento entidad) {
+        seleccionada = null;
+        try {
+            if (tipoDocumentoService.estaEnUso(entidad.getIdTipoDocumento())) {
+                marcarValidacionFallida();
+                agregarMensaje(FacesMessage.SEVERITY_WARN, Mensajes.texto("tipoDocumento.enUso"), null);
+                return;
+            }
+        } catch (ServiceException | EJBException e) {
+            marcarValidacionFallida();
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e));
+            return;
+        }
         TipoDocumento copia = new TipoDocumento(entidad.getIdTipoDocumento());
         copia.setNombre(entidad.getNombre());
         copia.setActivo(entidad.getActivo());
@@ -47,7 +59,7 @@ public class TipoDocumentoModel extends AbstractModel<TipoDocumento, UUID> {
     }
 
     public void cancelar() {
-        seleccionada = null;
+        seleccionada = FormularioCancelacion.estaVacio() ? null : nuevaInstancia();
     }
 
     @Override

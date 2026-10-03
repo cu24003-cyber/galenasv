@@ -9,7 +9,7 @@
             <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoTipoExamen" value="#{msg['registro.nuevo']}" icon="pi pi-plus"
                 action="#{tipoExamenModel.nuevo}" process="@this" update="tipoExamenFormulario :messages" resetValues="true" />
 
-            <p:outputPanel id="tipoExamenFormulario">
+            <p:outputPanel id="tipoExamenFormulario" styleClass="galeno-formulario">
                 <p:panel header="#{msg['registro.detalle']}" rendered="#{tipoExamenModel.seleccionada != null}"
                     style="margin-bottom: 1rem;">
                     <p:messages id="formMessages" showDetail="false" />
@@ -24,7 +24,7 @@
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{tipoExamenModel.cancelar}" process="@this" update="tipoExamenFormulario :messages"
+                            action="#{tipoExamenModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)" update="tipoExamenFormulario :messages"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{tipoExamenModel.guardar}" process="@this tipoExamenFormulario"

@@ -17,15 +17,11 @@
             <h:form id="nuevaConsulta">
                 <p:panel header="Crear consulta" style="margin-bottom:1rem">
                     <p:panelGrid columns="2" layout="flex">
-                        <p:outputLabel for="buscarPaciente" value="#{msg['consulta.buscarPaciente']}" />
-                        <p:inputText id="buscarPaciente" value="#{historialConsultaModel.buscarPaciente}">
-                            <p:ajax event="keyup" process="@this" update="paciente" />
-                        </p:inputText>
                         <p:outputLabel for="paciente" value="Paciente de la clínica" />
                         <p:selectOneMenu id="paciente" value="#{historialConsultaModel.pacienteId}" required="true"
                                          requiredMessage="Seleccione un paciente de su clínica." filter="true" filterMatchMode="contains">
                             <f:selectItem itemLabel="Seleccione un paciente" itemValue="" noSelectionOption="true" />
-                            <f:selectItems value="#{historialConsultaModel.pacientesFiltrados}" var="r" itemValue="#{r.idPersonaRol.toString()}"
+                            <f:selectItems value="#{historialConsultaModel.pacientes}" var="r" itemValue="#{r.idPersonaRol.toString()}"
                                            itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos}" />
                         </p:selectOneMenu>
                         <p:outputLabel for="referencia" value="Referencia externa" />
@@ -44,10 +40,19 @@
         <h:form id="historial">
             <p:panelGrid columns="2" layout="flex">
                 <p:outputLabel for="desde" value="#{msg['consulta.desde']}" />
-                <p:datePicker id="desde" value="#{historialConsultaModel.desde}" pattern="dd/MM/yyyy" showIcon="true" />
+                <p:datePicker id="desde" value="#{historialConsultaModel.desde}" pattern="dd/MM/yyyy" showIcon="true">
+                    <p:ajax event="dateSelect" process="@this" listener="#{historialConsultaModel.cambiarDesde}" update="hasta :mensajes" resetValues="true" />
+                    <p:ajax event="change" process="@this" listener="#{historialConsultaModel.cambiarDesde}" update="hasta :mensajes" resetValues="true" />
+                </p:datePicker>
                 <p:outputLabel for="hasta" value="#{msg['consulta.hasta']}" />
-                <p:datePicker id="hasta" value="#{historialConsultaModel.hasta}" pattern="dd/MM/yyyy" showIcon="true" />
+                <p:datePicker id="hasta" value="#{historialConsultaModel.hasta}" pattern="dd/MM/yyyy" showIcon="true"
+                              mindate="#{historialConsultaModel.desde}">
+                    <f:validator validatorId="rangoConsultaValidator" />
+                    <p:ajax event="dateSelect" process="@this" update="hastaMensaje :mensajes" />
+                    <p:ajax event="change" process="@this" update="hastaMensaje :mensajes" />
+                </p:datePicker>
             </p:panelGrid>
+            <p:message id="hastaMensaje" for="hasta" />
             <p:commandButton value="#{msg['consulta.filtrar']}" action="#{historialConsultaModel.filtrar}" process="@form" update="@form :mensajes" />
             <p:commandButton value="#{msg['consulta.limpiar']}" action="#{historialConsultaModel.limpiarFiltro}" process="@this" update="@form :mensajes" resetValues="true" />
             <p:dataTable value="#{historialConsultaModel.consultas}" var="c" rows="10" paginator="true"
@@ -61,17 +66,20 @@
                 <p:column headerText="Referencia">#{c.referenciaExterna}</p:column>
                 <p:column>
                     <p:commandButton value="Ver detalle" icon="pi pi-eye" action="#{historialConsultaModel.seleccionar(c)}"
-                                     process="@this" update=":detalle :mensajes" />
+                                     process="@this" update=":detalle :mensajes" resetValues="true"
+                                     oncomplete="if (!args.validationFailed) document.getElementById('detalle').scrollIntoView({behavior: 'smooth', block: 'start'});" />
                     <p:commandButton value="Retomar consulta" icon="pi pi-play" action="#{historialConsultaModel.retomar(c)}"
                                      rendered="#{empty c.fechaFin}" process="@this" ajax="false" />
                 </p:column>
             </p:dataTable>
         </h:form>
-        <h:panelGroup id="detalle" layout="block">
+        <h:form id="detalle">
             <p:panel header="Detalle de consulta" rendered="#{not empty historialConsultaModel.seleccionada}" style="margin-top:1rem">
                 <p><strong>Paciente:</strong> #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.nombres} #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.apellidos}</p>
                 <p><strong>Referencia:</strong> #{historialConsultaModel.seleccionada.referenciaExterna}</p>
                 <p><strong>Observaciones:</strong> #{historialConsultaModel.seleccionada.observaciones}</p>
+                <p><strong>Inicio:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaInicio)}
+                    · <strong>Fin:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaFin)}</p>
                 <h3>Procedimientos</h3>
                 <p:dataTable value="#{historialConsultaModel.procedimientos}" var="p" emptyMessage="Sin procedimientos.">
                     <p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column>
@@ -99,7 +107,7 @@
                     <p:column headerText="Interpretación">#{r.interpretacion}</p:column>
                     <p:column headerText="Fecha">#{historialConsultaModel.fechaResultado(r.fechaCreacion)}</p:column>
                 </p:dataTable>
-                <h:form id="nuevoResultado" rendered="#{not empty historialConsultaModel.ordenes}">
+                <h:panelGroup id="nuevoResultado" layout="block" rendered="#{not empty historialConsultaModel.ordenes}">
                     <h3>Registrar resultado de una orden</h3>
                     <p:panelGrid columns="2" layout="flex">
                         <p:outputLabel for="orden" value="Orden" />
@@ -113,10 +121,10 @@
                         <p:inputTextarea id="interpretacion" value="#{historialConsultaModel.interpretacion}" maxlength="255" />
                     </p:panelGrid>
                     <p:commandButton value="Guardar resultado" icon="pi pi-check" styleClass="ui-button-success"
-                                     action="#{historialConsultaModel.registrarResultado}" process="@form" resetValues="true" update=":detalle :mensajes" />
-                </h:form>
+                                     action="#{historialConsultaModel.registrarResultado}" process="@this nuevoResultado" resetValues="true" update=":detalle :mensajes" />
+                </h:panelGroup>
             </p:panel>
-        </h:panelGroup>
+        </h:form>
     </ui:define>
 </ui:composition>
 </html>

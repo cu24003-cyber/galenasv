@@ -1,11 +1,14 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
 import jakarta.persistence.*;
 import java.util.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.*;
 @Stateless
 public class ConfiguracionProcedimientoService {
     @PersistenceContext EntityManager em;
+    @EJB private ProcedimientoService procedimientoService;
+    public void eliminar(UUID id) { procedimientoService.eliminar(id); }
     public List<Procedimiento> listar() { return em.createQuery("SELECT p FROM Procedimiento p ORDER BY p.nombre",Procedimiento.class).getResultList(); }
     public List<Rol> roles() { return em.createQuery("SELECT r FROM Rol r WHERE r.activo=true ORDER BY r.nombre",Rol.class).getResultList(); }
     public List<ProcedimientoPaso> pasos(UUID id) { return em.createQuery("SELECT p FROM ProcedimientoPaso p LEFT JOIN FETCH p.idRol WHERE p.idProcedimiento.idProcedimiento=:id ORDER BY p.nombre",ProcedimientoPaso.class).setParameter("id",id).getResultList(); }

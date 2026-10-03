@@ -39,7 +39,7 @@ class ProcedimientoServiceTest {
     @Test
     void eliminar_noEjecutaDelete_siNoExisteElId() {
         UUID id = UUID.randomUUID();
-        when(procedimientoRepository.find(id)).thenReturn(null);
+        when(procedimientoRepository.bloquear(id)).thenReturn(null);
 
         assertThrows(ServiceException.class, () -> procedimientoService.eliminar(id));
 
@@ -97,9 +97,41 @@ class ProcedimientoServiceTest {
     void eliminar_lanzaServiceException_porErrorDePersistencia() {
         UUID id = UUID.randomUUID();
         Procedimiento e = new Procedimiento();
-        when(procedimientoRepository.find(id)).thenReturn(e);
+        when(procedimientoRepository.bloquear(id)).thenReturn(e);
         doThrow(new PersistenceException("Error BD")).when(procedimientoRepository).delete(id);
 
         assertThrows(ServiceException.class, () -> procedimientoService.eliminar(id));
+    }
+
+    @Test
+    void eliminar_rechazaProcedimientoUsadoSinBorrarConfiguracion() {
+        UUID id = UUID.randomUUID();
+        when(procedimientoRepository.bloquear(id)).thenReturn(new Procedimiento(id));
+        when(procedimientoRepository.registradoEnConsultas(id)).thenReturn(true);
+        ServiceException error = assertThrows(ServiceException.class, () -> procedimientoService.eliminar(id));
+        assertEquals("procedimiento.eliminarEnUso", error.getMessageKey());
+        verify(procedimientoRepository, never()).eliminarConfiguracion(any());
+        verify(procedimientoRepository, never()).delete(any());
+    }
+
+    @Test
+    void eliminar_procedimientoSinUsoBorraConfiguracionAntesDelCatalogo() {
+        UUID id = UUID.randomUUID();
+        when(procedimientoRepository.bloquear(id)).thenReturn(new Procedimiento(id));
+        procedimientoService.eliminar(id);
+        var orden = inOrder(procedimientoRepository);
+        orden.verify(procedimientoRepository).bloquear(id);
+        orden.verify(procedimientoRepository).registradoEnConsultas(id);
+        orden.verify(procedimientoRepository).eliminarConfiguracion(id);
+        orden.verify(procedimientoRepository).delete(id);
+    }
+
+    @Test
+    void eliminar_falloAlBorrarPasosNoEliminaElProcedimiento() {
+        UUID id = UUID.randomUUID();
+        when(procedimientoRepository.bloquear(id)).thenReturn(new Procedimiento(id));
+        doThrow(new PersistenceException("Error BD")).when(procedimientoRepository).eliminarConfiguracion(id);
+        assertThrows(ServiceException.class, () -> procedimientoService.eliminar(id));
+        verify(procedimientoRepository, never()).delete(any());
     }
 }

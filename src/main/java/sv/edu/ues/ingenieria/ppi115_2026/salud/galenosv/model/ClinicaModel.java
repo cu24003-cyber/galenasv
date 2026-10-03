@@ -63,7 +63,7 @@ public class ClinicaModel extends AbstractModel<Clinica, UUID> {
     }
 
     public void cancelar() {
-        seleccionada = null;
+        seleccionada = FormularioCancelacion.estaVacio() ? null : nuevaInstancia();
     }
 
     @Override

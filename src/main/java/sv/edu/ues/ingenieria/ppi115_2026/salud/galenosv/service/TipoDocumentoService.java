@@ -34,4 +34,18 @@ public class TipoDocumentoService extends AbstractService<TipoDocumento, UUID> {
         super.crear(entidad);
     }
 
+    public boolean estaEnUso(UUID id) {
+        return id != null && tipoDocumentoRepository.estaEnUso(id);
+    }
+
+    @Override
+    public void actualizar(TipoDocumento entidad) {
+        validar(entidad);
+        if (estaEnUso(entidad.getIdTipoDocumento())) {
+            throw ServiceException.localizada("tipoDocumento.enUso",
+                    "No se puede editar un tipo de documento que ya tiene documentos asociados.");
+        }
+        super.actualizar(entidad);
+    }
+
 }

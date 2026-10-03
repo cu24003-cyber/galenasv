@@ -94,6 +94,23 @@ class TipoDocumentoServiceTest {
     }
 
     @Test
+    void impideEditarTipoConDocumentosInclusoSiSoloCambiaActivo() {
+        TipoDocumento tipo = new TipoDocumento(UUID.randomUUID()); tipo.setActivo(false);
+        when(tipoDocumentoRepository.estaEnUso(tipo.getIdTipoDocumento())).thenReturn(true);
+        ServiceException error = assertThrows(ServiceException.class, () -> tipoDocumentoService.actualizar(tipo));
+        assertEquals("tipoDocumento.enUso", error.getMessageKey());
+        verify(tipoDocumentoRepository, never()).update(any());
+    }
+
+    @Test
+    void permiteEditarCuandoYaNoHayDocumentosAsociados() {
+        TipoDocumento tipo = new TipoDocumento(UUID.randomUUID());
+        when(tipoDocumentoRepository.find(tipo.getIdTipoDocumento())).thenReturn(tipo);
+        tipoDocumentoService.actualizar(tipo);
+        verify(tipoDocumentoRepository).update(tipo);
+    }
+
+    @Test
     void eliminar_lanzaServiceException_porErrorDePersistencia() {
         UUID id = UUID.randomUUID();
         TipoDocumento e = new TipoDocumento();

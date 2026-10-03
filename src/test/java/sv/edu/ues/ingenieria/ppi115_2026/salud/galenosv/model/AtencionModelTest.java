@@ -47,4 +47,36 @@ class AtencionModelTest {
                     "Complete los pasos pendientes.".equals(m.getSummary())));
         }
     }
+
+    @Test void procedimientoSeAbreSoloAlPedirloYCancelaEnDosPasos() {
+        assertFalse(model.isProcedimientoVisible()); model.nuevoProcedimiento();
+        assertTrue(model.isProcedimientoVisible()); model.setNotasProcedimiento("Borrador");
+        try (var estado = mockStatic(FormularioCancelacion.class)) {
+            estado.when(FormularioCancelacion::estaVacio).thenReturn(false, true);
+            model.cancelarProcedimiento(); assertNull(model.getNotasProcedimiento()); assertTrue(model.isProcedimientoVisible());
+            model.cancelarProcedimiento(); assertFalse(model.isProcedimientoVisible());
+        }
+        assertEquals(consulta.getIdConsulta(), sesion.getConsulta());
+    }
+    @Test void agregarProcedimientoOcultaSoloDespuesDeGuardarlo() {
+        var responsable = new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol(UUID.randomUUID());
+        when(sesion.getRolActivo()).thenReturn(responsable);
+        UUID procedimiento = UUID.randomUUID(); model.nuevoProcedimiento(); model.setProcedimientoId(procedimiento.toString());
+        model.agregar(); assertFalse(model.isProcedimientoVisible()); assertNull(model.getProcedimientoId());
+        verify(servicio).agregarProcedimiento(consulta.getIdConsulta(), procedimiento, null, responsable.getIdPersonaRol());
+        assertEquals(consulta.getIdConsulta(), sesion.getConsulta());
+    }
+    @Test void procedimientoRechazadoConservaFormularioParaCorregir() {
+        var responsable = new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol(UUID.randomUUID());
+        when(sesion.getRolActivo()).thenReturn(responsable);
+        UUID procedimiento = UUID.randomUUID(); model.nuevoProcedimiento(); model.setProcedimientoId(procedimiento.toString());
+        doThrow(new ServiceException("Faltan responsables"))
+                .when(servicio).agregarProcedimiento(consulta.getIdConsulta(), procedimiento, null, responsable.getIdPersonaRol());
+        FacesContext faces = mock(FacesContext.class);
+        try (var contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            model.agregar(); assertTrue(model.isProcedimientoVisible()); assertEquals(procedimiento.toString(), model.getProcedimientoId());
+            verify(faces).validationFailed();
+        }
+    }
 }

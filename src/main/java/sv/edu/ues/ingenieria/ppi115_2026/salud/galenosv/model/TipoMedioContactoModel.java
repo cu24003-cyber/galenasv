@@ -38,6 +38,18 @@ public class TipoMedioContactoModel extends AbstractModel<TipoMedioContacto, UUI
 
     @Override
     public void editar(TipoMedioContacto entidad) {
+        seleccionada = null;
+        try {
+            if (tipoMedioContactoService.estaEnUso(entidad.getIdTipoMedioContacto())) {
+                marcarValidacionFallida();
+                agregarMensaje(FacesMessage.SEVERITY_WARN, Mensajes.texto("tipoMedioContacto.enUso"), null);
+                return;
+            }
+        } catch (ServiceException | EJBException e) {
+            marcarValidacionFallida();
+            agregarMensaje(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), Mensajes.detalle(e));
+            return;
+        }
         TipoMedioContacto copia = new TipoMedioContacto(entidad.getIdTipoMedioContacto());
         copia.setNombre(entidad.getNombre());
         copia.setActivo(entidad.getActivo());
@@ -47,7 +59,7 @@ public class TipoMedioContactoModel extends AbstractModel<TipoMedioContacto, UUI
     }
 
     public void cancelar() {
-        seleccionada = null;
+        seleccionada = FormularioCancelacion.estaVacio() ? null : nuevaInstancia();
     }
 
     @Override

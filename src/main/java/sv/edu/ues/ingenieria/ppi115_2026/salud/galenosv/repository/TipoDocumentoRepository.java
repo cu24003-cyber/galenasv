@@ -12,4 +12,9 @@ public class TipoDocumentoRepository extends AbstractRepository<TipoDocumento, U
     public TipoDocumentoRepository() {
         super(TipoDocumento.class);
     }
+
+    public boolean estaEnUso(UUID id) {
+        return em.createQuery("SELECT COUNT(d) FROM Documento d WHERE d.idTipoDocumento.idTipoDocumento=:id", Long.class)
+                .setParameter("id", id).getSingleResult() > 0;
+    }
 }

@@ -35,4 +35,13 @@ public class MedioContactoService extends AbstractService<MedioContacto, UUID> {
     public java.util.List<MedioContacto> listarPorPersona(UUID idPersona) {
         return medioContactoRepository.listarPorPersona(idPersona);
     }
+
+    public void eliminarDePersona(UUID id, UUID persona) {
+        MedioContacto contacto = id == null ? null : medioContactoRepository.find(id);
+        if (contacto == null || persona == null || contacto.getIdPersona() == null
+                || !persona.equals(contacto.getIdPersona().getIdPersona())) {
+            throw ServiceException.localizada("registro.relacionAjena", "El registro no pertenece a la persona seleccionada.");
+        }
+        super.eliminar(id);
+    }
 }

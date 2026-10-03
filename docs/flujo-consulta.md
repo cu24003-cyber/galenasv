@@ -14,11 +14,19 @@ Las consultas anteriores al parche pueden tener pasos sin `id_procedimiento_paso
 2. En **Personas**, asigne el rol Paciente a una persona de esa clínica.
 3. En **Procedimientos**, configure pasos, responsables, secuencias y un paso final. Los roles responsables deben tener personas asignadas en la misma clínica.
 4. En **Consultas**, seleccione al paciente y cree la consulta. La lista y el historial solo incluyen la clínica activa. Se puede retomar una consulta abierta desde el historial.
-5. Agregue un procedimiento. La aplicación crea los pasos iniciales y habilita los siguientes cuando se completan sus predecesores. Puede cambiar el responsable de un paso pendiente a otra persona con rol activo de la clínica. Al completarlo, puede guardar el campo `valor` del paso.
+5. Pulse **Agregar procedimiento** para abrir el formulario, tanto en el catálogo como dentro de la consulta. Antes de iniciarlo, la aplicación verifica todos sus pasos, incluidos los posteriores: cada rol requerido debe estar activo y tener una persona distinta en la misma clínica. Cuatro roles diferentes requieren al menos cuatro personas que cubran esos roles; una persona con varios roles no cuenta varias veces. Si falta personal, se indica el motivo sin crear el procedimiento ni sus pasos. La aplicación crea los pasos iniciales y habilita los siguientes cuando se completan sus predecesores. Puede cambiar el responsable de un paso pendiente a otra persona con rol activo de la clínica. Al completarlo, puede guardar el campo `valor` del paso.
 6. Registre exámenes, órdenes y resultados desde la consulta. Los resultados también pueden agregarse después del cierre desde el historial.
-7. Complete los pasos finales y cierre la consulta. El historial permite filtrar por fecha de inicio y ver procedimientos, pasos, valores, órdenes y resultados.
+7. Complete los pasos finales y cierre la consulta. El historial permite filtrar por fecha de inicio y ver procedimientos, pasos, valores, órdenes y resultados. **Hasta** debe ser igual o posterior a **Desde**, incluso si se escribe la fecha manualmente; al mover **Desde** después de un **Hasta** elegido, se limpia el límite superior.
 
 Las fechas se almacenan como `timestamp with time zone` y se muestran en la zona `America/El_Salvador`. La sesión HTTP conserva el rol y la consulta en curso. El filtro de navegación evita abandonar accidentalmente una atención abierta.
+
+Un procedimiento solo se puede eliminar del catálogo si nunca se ha registrado en una consulta. La eliminación incluye sus pasos, secuencias y asociaciones con exámenes, conservando los catálogos de roles y exámenes.
+
+En los formularios con **Cancelar**, el primer clic limpia los campos con datos sin guardarlos. Si los campos ya están vacíos, **Cancelar** oculta el editor; el botón para agregar un registro permite abrirlo de nuevo. Las listas de documentos, contactos, pasos y asociaciones permanecen visibles cuando se oculta su editor.
+
+## Personas y documentos
+
+Una persona se puede guardar sin rol, incluso si se ha seleccionado una clínica. La clínica es necesaria cuando se asigna un rol. En la ficha de Personas se pueden eliminar documentos y medios de contacto sin guardar los borradores de otras pestañas. Una persona solo puede tener un DUI, identificado por el nombre `DUI` o `Documento Único de Identidad` del tipo de documento; esta regla también se comprueba al actualizar un documento. Los tipos de documento y de contacto no se pueden editar mientras existan registros que los referencien. Después de eliminar todas esas referencias se pueden modificar.
 
 ## Verificación
 

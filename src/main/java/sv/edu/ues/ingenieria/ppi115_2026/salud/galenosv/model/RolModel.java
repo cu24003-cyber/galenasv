@@ -52,7 +52,10 @@ public class RolModel implements Serializable {
         nuevo = false;
     }
 
-    public void cancelRol() { rolSeleccionado = null; }
+    public void cancelRol() {
+        if (FormularioCancelacion.estaVacio()) rolSeleccionado = null;
+        else newRol();
+    }
 
     public void saveRol() {
         if (rolSeleccionado == null || rolSeleccionado.getNombre() == null

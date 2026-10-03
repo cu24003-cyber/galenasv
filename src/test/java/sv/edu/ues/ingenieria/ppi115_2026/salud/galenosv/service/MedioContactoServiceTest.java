@@ -17,6 +17,17 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MedioContactoServiceTest {
 
+    @Test
+    void eliminaSoloContactoDeLaPersonaSeleccionada() {
+        MedioContacto contacto = new MedioContacto(UUID.randomUUID());
+        contacto.setIdPersona(new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona(UUID.randomUUID()));
+        when(medioContactoRepository.find(contacto.getIdMedioContacto())).thenReturn(contacto);
+        assertThrows(ServiceException.class, () -> medioContactoService.eliminarDePersona(contacto.getIdMedioContacto(), UUID.randomUUID()));
+        verify(medioContactoRepository, never()).delete(any());
+        medioContactoService.eliminarDePersona(contacto.getIdMedioContacto(), contacto.getIdPersona().getIdPersona());
+        verify(medioContactoRepository).delete(contacto.getIdMedioContacto());
+    }
+
     @Mock
     private MedioContactoRepository medioContactoRepository;
 

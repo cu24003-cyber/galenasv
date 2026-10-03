@@ -12,4 +12,9 @@ public class TipoMedioContactoRepository extends AbstractRepository<TipoMedioCon
     public TipoMedioContactoRepository() {
         super(TipoMedioContacto.class);
     }
+
+    public boolean estaEnUso(UUID id) {
+        return em.createQuery("SELECT COUNT(m) FROM MedioContacto m WHERE m.idTipoMedioContacto.idTipoMedioContacto=:id", Long.class)
+                .setParameter("id", id).getSingleResult() > 0;
+    }
 }

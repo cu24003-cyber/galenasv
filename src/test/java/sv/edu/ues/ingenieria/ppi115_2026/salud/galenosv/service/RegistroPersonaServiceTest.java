@@ -107,9 +107,16 @@ class RegistroPersonaServiceTest {
     }
 
     @Test
-    void rechazaAsignacionParcialAntesDeGuardarPersona() {
+    void rechazaRolSinClinicaAntesDeGuardarPersona() {
         assertThrows(ServiceException.class, () -> servicio.guardar(new Persona(), new Rol(), null, null));
-        assertThrows(ServiceException.class, () -> servicio.guardar(new Persona(), null, new Clinica(), null));
         verifyNoInteractions(personas, asignaciones);
+    }
+
+    @Test
+    void permiteCrearSinRolAunqueSeHayaElegidoClinica() {
+        Persona persona = new Persona();
+        assertNull(servicio.guardar(persona, null, new Clinica(UUID.randomUUID()), null));
+        verify(personas).crear(persona);
+        verifyNoInteractions(roles, clinicas, asignaciones);
     }
 }

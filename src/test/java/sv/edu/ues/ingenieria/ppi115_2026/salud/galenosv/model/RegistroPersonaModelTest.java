@@ -236,4 +236,42 @@ class RegistroPersonaModelTest {
         verify(context).validationFailed();
         assertEquals("77777777", model.getContacto().getValor());
     }
+
+    @Test
+    void muestraLaReglaDelDuiYConservaElBorradorCuandoHayDuplicado() {
+        seleccionarPersona(); tipoDocumento(".");
+        Documento borrador = model.getDocumento(); borrador.setValor("12345678-9");
+        doThrow(ServiceException.localizada("documento.duiUnico", "Una persona no puede tener más de un DUI."))
+                .when(documentoService).crear(borrador);
+        model.guardarDocumento();
+        assertSame(borrador, model.getDocumento()); assertNull(borrador.getIdDocumento());
+        var mensaje = org.mockito.ArgumentCaptor.forClass(jakarta.faces.application.FacesMessage.class);
+        verify(context).addMessage(isNull(), mensaje.capture());
+        assertEquals("Una persona no puede tener más de un DUI.", mensaje.getValue().getSummary());
+        verify(context).validationFailed();
+    }
+
+    @Test
+    void eliminarDocumentoRecargaSoloDocumentosSinGuardarBorradores() {
+        Persona persona = new Persona(UUID.randomUUID()); model.editar(persona);
+        Documento documento = new Documento(UUID.randomUUID());
+        model.getDocumento().setValor("borrador"); model.getContacto().setValor("contacto pendiente");
+        when(documentoService.listarPorPersona(persona.getIdPersona())).thenReturn(List.of());
+        model.eliminarDocumento(documento);
+        verify(documentoService).eliminarDePersona(documento.getIdDocumento(), persona.getIdPersona());
+        assertTrue(model.getDocumentos().isEmpty()); assertEquals("borrador", model.getDocumento().getValor());
+        assertEquals("contacto pendiente", model.getContacto().getValor());
+        verify(documentoService, never()).crear(any()); verify(medioContactoService, never()).crear(any());
+    }
+
+    @Test
+    void eliminarContactoRecargaContactosSinGuardarElFormulario() {
+        Persona persona = new Persona(UUID.randomUUID()); model.editar(persona);
+        MedioContacto contacto = new MedioContacto(UUID.randomUUID());
+        when(medioContactoService.listarPorPersona(persona.getIdPersona())).thenReturn(List.of());
+        model.eliminarContacto(contacto);
+        verify(medioContactoService).eliminarDePersona(contacto.getIdMedioContacto(), persona.getIdPersona());
+        assertTrue(model.getContactos().isEmpty());
+        verify(medioContactoService, never()).crear(any());
+    }
 }

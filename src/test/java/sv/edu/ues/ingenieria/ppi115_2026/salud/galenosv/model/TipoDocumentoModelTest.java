@@ -11,8 +11,12 @@ import static org.mockito.Mockito.*;
 
 class TipoDocumentoModelTest {
     @Test
-    void cancelarNoModificaElRegistroOriginal() {
+    void cancelarNoModificaElRegistroOriginal() throws Exception {
         TipoDocumentoModel model = new TipoDocumentoModel();
+        TipoDocumentoService service = mock(TipoDocumentoService.class);
+        var field = TipoDocumentoModel.class.getDeclaredField("tipoDocumentoService");
+        field.setAccessible(true);
+        field.set(model, service);
         TipoDocumento original = new TipoDocumento(UUID.randomUUID());
         original.setNombre("Original");
         original.setIndicaciones("Indicaciones");
@@ -21,7 +25,7 @@ class TipoDocumentoModelTest {
         model.editar(original);
         assertEquals(original.getExpresionRegular(), model.getSeleccionada().getExpresionRegular());
         model.getSeleccionada().setNombre("Modificado");
-        model.cancelar();
+        try (var contexto = mockStatic(FacesContext.class)) { model.cancelar(); }
         assertNull(model.getSeleccionada());
         assertEquals("Original", original.getNombre());
     }
@@ -50,5 +54,23 @@ class TipoDocumentoModelTest {
         verify(service, times(2)).crear(registro);
         verify(service, never()).actualizar(any());
         assertNull(model.getSeleccionada());
+    }
+
+    @Test
+    void noAbreEdicionSiElTipoEstaEnUso() throws Exception {
+        TipoDocumentoModel model = new TipoDocumentoModel();
+        TipoDocumentoService service = mock(TipoDocumentoService.class);
+        var field = TipoDocumentoModel.class.getDeclaredField("tipoDocumentoService");
+        field.setAccessible(true);
+        field.set(model, service);
+        TipoDocumento original = new TipoDocumento(UUID.randomUUID());
+        when(service.estaEnUso(original.getIdTipoDocumento())).thenReturn(true);
+        model.nuevo();
+        try (var messages = mockStatic(Mensajes.class);
+             var faces = mockStatic(FacesContext.class)) {
+            model.editar(original);
+            assertNull(model.getSeleccionada());
+            messages.verify(() -> Mensajes.texto("tipoDocumento.enUso"));
+        }
     }
 }

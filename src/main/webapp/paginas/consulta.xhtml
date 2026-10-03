@@ -27,12 +27,20 @@
 <p:commandButton value="Guardar consulta" icon="pi pi-save" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
 <p:commandButton value="Cerrar consulta" icon="pi pi-check-circle" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
 </h:form>
-<h:form id="procedimientos">
+<p:outputPanel id="formularioProcedimiento">
+<h:form id="nuevoProcedimiento" rendered="#{not atencionModel.procedimientoVisible}">
+<p:commandButton value="Agregar procedimiento" icon="pi pi-plus" action="#{atencionModel.nuevoProcedimiento}"
+    process="@this" update=":tabs:formularioProcedimiento" resetValues="true"/>
+</h:form>
+<h:form id="procedimientos" styleClass="galeno-formulario" rendered="#{atencionModel.procedimientoVisible}">
 <p:panelGrid columns="2" layout="flex">
 <p:outputLabel for="procedimiento" value="Procedimiento"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}" maxlength="255"/>
-</p:panelGrid><p:commandButton value="Agregar procedimiento" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
+</p:panelGrid><p:commandButton value="Agregar a la consulta" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:formularioProcedimiento :tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{atencionModel.cancelarProcedimiento}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+    update=":tabs:formularioProcedimiento" resetValues="true" styleClass="ui-button-secondary"/>
 </h:form>
+</p:outputPanel>
 <h:form id="ejecucion">
 <p:dataTable value="#{atencionModel.realizados}" var="p" emptyMessage="Agregue un procedimiento.">
 <p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column><p:column headerText="Inicio">#{atencionModel.fecha(p.fechaInicio)}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column><p:column headerText="Observaciones">#{p.observaciones}</p:column>

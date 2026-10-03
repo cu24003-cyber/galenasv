@@ -112,7 +112,7 @@ class AtencionServiceTest {
     @Test void procedimientoCopiaInicioYAsignaResponsableDelRolDelPaso() {
         Consulta c=abierta(); UUID procedimiento=UUID.randomUUID();
         Procedimiento p=new Procedimiento(procedimiento); p.setActivo(true);
-        when(em.find(Procedimiento.class,procedimiento)).thenReturn(p);
+        when(em.find(Procedimiento.class,procedimiento,LockModeType.PESSIMISTIC_WRITE)).thenReturn(p);
         ProcedimientoPaso paso=new ProcedimientoPaso(UUID.randomUUID());
         query(ProcedimientoPaso.class,List.of(paso));
         Clinica clinica = new Clinica(UUID.randomUUID()); c.getIdPersonaRol().setIdClinica(clinica); medico.setIdClinica(clinica);
@@ -130,7 +130,7 @@ class AtencionServiceTest {
     }
     @Test void procedimientoSoloCreaPasoInicialYRechazaAusenciaDeResponsable() {
         Consulta c=abierta(); Procedimiento p=new Procedimiento(UUID.randomUUID()); p.setActivo(true);
-        when(em.find(Procedimiento.class,p.getIdProcedimiento())).thenReturn(p);
+        when(em.find(Procedimiento.class,p.getIdProcedimiento(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(p);
         ProcedimientoPaso inicial=new ProcedimientoPaso(UUID.randomUUID()), siguiente=new ProcedimientoPaso(UUID.randomUUID());
         Rol rol=new Rol(UUID.randomUUID()); rol.setNombre("Enfermera"); rol.setActivo(true);
         inicial.setIdRol(rol); siguiente.setIdRol(rol);
@@ -145,7 +145,7 @@ class AtencionServiceTest {
         reset(em);
         when(em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE)).thenReturn(c);
         when(em.find(PersonaRol.class,medico.getIdPersonaRol())).thenReturn(medico);
-        when(em.find(Procedimiento.class,p.getIdProcedimiento())).thenReturn(p);
+        when(em.find(Procedimiento.class,p.getIdProcedimiento(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(p);
         query(ProcedimientoPaso.class,List.of(inicial,siguiente)); query(ProcedimientoPasoSecuencia.class,List.of(secuencia));
         query(PersonaRol.class,List.of());
         assertThrows(ServiceException.class,()->servicio.agregarProcedimiento(id,p.getIdProcedimiento(),null,null));
@@ -273,10 +273,106 @@ class AtencionServiceTest {
     }
     private PersonaRol responsable(Clinica clinica, String nombre) {
         PersonaRol pr = new PersonaRol(UUID.randomUUID());
+        pr.setIdPersona(new Persona(UUID.randomUUID()));
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre(nombre); rol.setActivo(true);
         pr.setIdRol(rol); pr.setIdClinica(clinica);
         when(em.find(PersonaRol.class, pr.getIdPersonaRol())).thenReturn(pr);
         return pr;
+    }
+
+    private Procedimiento catalogo(List<ProcedimientoPaso> pasos) {
+        Procedimiento procedimiento = new Procedimiento(UUID.randomUUID()); procedimiento.setActivo(true);
+        when(em.find(Procedimiento.class, procedimiento.getIdProcedimiento(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(procedimiento);
+        query(ProcedimientoPaso.class, pasos);
+        query(ProcedimientoPasoSecuencia.class, List.of());
+        return procedimiento;
+    }
+
+    private ProcedimientoPaso definicion(PersonaRol persona, String nombre) {
+        ProcedimientoPaso paso = new ProcedimientoPaso(UUID.randomUUID());
+        paso.setNombre(nombre); paso.setIdRol(persona.getIdRol());
+        return paso;
+    }
+
+    private void candidatos(Map<Rol, List<PersonaRol>> personas) {
+        TypedQuery<PersonaRol> consulta = query(PersonaRol.class, List.of());
+        java.util.concurrent.atomic.AtomicReference<Rol> rol = new java.util.concurrent.atomic.AtomicReference<>();
+        when(consulta.setParameter(eq("rol"), any())).thenAnswer(i -> { rol.set(i.getArgument(1)); return consulta; });
+        when(consulta.getResultList()).thenAnswer(i -> personas.getOrDefault(rol.get(), List.of()));
+    }
+
+    @Test void noIniciaSiFaltaResponsableEnUnPasoPosterior() {
+        Consulta consulta = abierta();
+        PersonaRol enfermera = responsable(medico.getIdClinica(), "Enfermería");
+        PersonaRol laboratorio = responsable(medico.getIdClinica(), "Laboratorio");
+        ProcedimientoPaso inicial = definicion(enfermera, "Preparación"), finalPaso = definicion(laboratorio, "Resultado");
+        Procedimiento procedimiento = catalogo(List.of(inicial, finalPaso));
+        ProcedimientoPasoSecuencia secuencia = new ProcedimientoPasoSecuencia(UUID.randomUUID());
+        secuencia.setIdProcedimientoPaso(inicial); secuencia.setIdProcedimientoPasoReferencia(finalPaso);
+        query(ProcedimientoPasoSecuencia.class, List.of(secuencia));
+        candidatos(Map.of(enfermera.getIdRol(), List.of(enfermera)));
+        ServiceException error = assertThrows(ServiceException.class,
+                () -> servicio.agregarProcedimiento(id, procedimiento.getIdProcedimiento(), null, null));
+        assertEquals("consulta.sinResponsableAutomatico", error.getMessageKey());
+        assertArrayEquals(new Object[]{"Laboratorio", "Resultado"}, error.getMessageArguments());
+        verify(em, never()).persist(any());
+        assertNull(consulta.getFechaFin());
+    }
+
+    @Test void cuatroRolesRequierenCuatroPersonasConLosRolesCorrespondientes() {
+        abierta();
+        List<ProcedimientoPaso> pasos = new ArrayList<>();
+        Map<Rol, List<PersonaRol>> personas = new LinkedHashMap<>();
+        for (String rol : List.of("Médico", "Enfermería", "Laboratorio", "Farmacia")) {
+            PersonaRol persona = responsable(medico.getIdClinica(), rol);
+            pasos.add(definicion(persona, rol)); personas.put(persona.getIdRol(), List.of(persona));
+        }
+        Procedimiento procedimiento = catalogo(pasos);
+        candidatos(personas);
+        servicio.agregarProcedimiento(id, procedimiento.getIdProcedimiento(), null, null);
+        ArgumentCaptor<ConsultaProcedimientoPaso> guardados = ArgumentCaptor.forClass(ConsultaProcedimientoPaso.class);
+        verify(em, times(4)).persist(guardados.capture());
+        assertEquals(4, guardados.getAllValues().stream().map(p -> p.getIdPersonaRol().getIdPersona().getIdPersona()).distinct().count());
+        assertTrue(guardados.getAllValues().stream().allMatch(p -> p.getIdProcedimientoPaso().getIdRol().equals(p.getIdPersonaRol().getIdRol())));
+    }
+
+    @Test void unaPersonaConDosRolesNoSustituyeDosPersonasRequeridas() {
+        abierta();
+        PersonaRol primera = responsable(medico.getIdClinica(), "Enfermería");
+        PersonaRol segunda = responsable(medico.getIdClinica(), "Laboratorio");
+        segunda.setIdPersona(primera.getIdPersona());
+        Procedimiento procedimiento = catalogo(List.of(definicion(primera, "Inicio"), definicion(segunda, "Fin")));
+        candidatos(Map.of(primera.getIdRol(), List.of(primera), segunda.getIdRol(), List.of(segunda)));
+        ServiceException error = assertThrows(ServiceException.class,
+                () -> servicio.agregarProcedimiento(id, procedimiento.getIdProcedimiento(), null, null));
+        assertEquals("consulta.personalInsuficiente", error.getMessageKey());
+        verify(em, never()).persist(any());
+    }
+
+    @Test void encuentraPersonalDistintoAunqueDebaReubicarUnaPersonaConVariosRoles() {
+        abierta();
+        PersonaRol ambosEnfermeria = responsable(medico.getIdClinica(), "Enfermería");
+        PersonaRol soloEnfermeria = responsable(medico.getIdClinica(), "Enfermería"); soloEnfermeria.setIdRol(ambosEnfermeria.getIdRol());
+        PersonaRol ambosLaboratorio = responsable(medico.getIdClinica(), "Laboratorio"); ambosLaboratorio.setIdPersona(ambosEnfermeria.getIdPersona());
+        Procedimiento procedimiento = catalogo(List.of(definicion(ambosEnfermeria, "Inicio"), definicion(ambosLaboratorio, "Fin")));
+        candidatos(Map.of(ambosEnfermeria.getIdRol(), List.of(ambosEnfermeria, soloEnfermeria), ambosLaboratorio.getIdRol(), List.of(ambosLaboratorio)));
+        servicio.agregarProcedimiento(id, procedimiento.getIdProcedimiento(), null, null);
+        ArgumentCaptor<ConsultaProcedimientoPaso> guardados = ArgumentCaptor.forClass(ConsultaProcedimientoPaso.class);
+        verify(em, times(2)).persist(guardados.capture());
+        assertSame(soloEnfermeria, guardados.getAllValues().get(0).getIdPersonaRol());
+        assertSame(ambosLaboratorio, guardados.getAllValues().get(1).getIdPersonaRol());
+    }
+
+    @Test void rechazaRolInactivoEnPasoPosteriorAntesDePersistir() {
+        abierta();
+        PersonaRol enfermera = responsable(medico.getIdClinica(), "Enfermería");
+        PersonaRol laboratorio = responsable(medico.getIdClinica(), "Laboratorio"); laboratorio.getIdRol().setActivo(false);
+        Procedimiento procedimiento = catalogo(List.of(definicion(enfermera, "Inicio"), definicion(laboratorio, "Fin")));
+        candidatos(Map.of(enfermera.getIdRol(), List.of(enfermera)));
+        ServiceException error = assertThrows(ServiceException.class,
+                () -> servicio.agregarProcedimiento(id, procedimiento.getIdProcedimiento(), null, null));
+        assertEquals("consulta.pasoRolInactivo", error.getMessageKey());
+        verify(em, never()).persist(any());
     }
     private PersonaRol paciente(Clinica clinica) {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());

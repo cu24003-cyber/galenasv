@@ -2,6 +2,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.RepositoryInterface;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.repository.ProcedimientoRepository;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Procedimiento;
@@ -30,6 +31,23 @@ public class ProcedimientoService extends AbstractService<Procedimiento, UUID> {
             entidad.setIdProcedimiento(UUID.randomUUID());
         }
         super.crear(entidad);
+    }
+
+    @Override
+    public void eliminar(UUID id) {
+        if (id == null || procedimientoRepository.bloquear(id) == null) {
+            throw new ServiceException("error.noExisteEliminar", "El procedimiento no existe.", null);
+        }
+        if (procedimientoRepository.registradoEnConsultas(id)) {
+            throw new ServiceException("procedimiento.eliminarEnUso",
+                    "No se puede eliminar un procedimiento registrado en una consulta.", null);
+        }
+        try {
+            procedimientoRepository.eliminarConfiguracion(id);
+            procedimientoRepository.delete(id);
+        } catch (PersistenceException e) {
+            throw new ServiceException("error.relacionado", "No se pudo eliminar el procedimiento por sus relaciones.", e);
+        }
     }
 
 }

@@ -25,7 +25,7 @@ public class HistorialConsultaModel implements Serializable {
     @EJB private AtencionService servicio;
     @Inject private AtencionSesion sesion;
     private List<PersonaRol> pacientes = List.of();
-    private String pacienteId, referencia, observaciones, buscarPaciente;
+    private String pacienteId, referencia, observaciones;
     private LocalDate desde, hasta;
     private UUID contextoId;
     private List<Consulta> consultas = List.of();
@@ -47,7 +47,7 @@ public class HistorialConsultaModel implements Serializable {
     public void verificarContexto() {
         UUID actual = sesion.getRolActivo() == null ? null : sesion.getRolActivo().getIdPersonaRol();
         if (!Objects.equals(contextoId, actual)) {
-            pacienteId = null; referencia = null; observaciones = null; buscarPaciente = null; desde = null; hasta = null;
+            pacienteId = null; referencia = null; observaciones = null; desde = null; hasta = null;
             iniciar();
         }
     }
@@ -55,12 +55,20 @@ public class HistorialConsultaModel implements Serializable {
         limpiar();
         try {
             seleccionada = servicio.cargar(consulta.getIdConsulta());
+        } catch (ServiceException e) { error(Mensajes.mensaje(e)); return; }
+        catch (EJBException e) { errorDetalle(e); return; }
+        try {
             procedimientos = servicio.realizados(seleccionada.getIdConsulta());
             pasos = servicio.pasos(seleccionada.getIdConsulta());
             ordenes = servicio.ordenes(seleccionada.getIdConsulta());
             resultados = servicio.resultados(seleccionada.getIdConsulta());
-        } catch (ServiceException e) { limpiar(); error(e.getMessage()); }
-        catch (EJBException e) { limpiar(); error("No se pudo cargar esta consulta."); }
+        } catch (ServiceException e) { error(Mensajes.mensaje(e)); }
+        catch (EJBException e) { errorDetalle(e); }
+    }
+    private void errorDetalle(EJBException e) {
+        java.util.logging.Logger.getLogger(HistorialConsultaModel.class.getName())
+                .log(java.util.logging.Level.WARNING, "No se pudo cargar el detalle completo de la consulta", e);
+        error(Mensajes.texto("consulta.errorDetalle"));
     }
     public String crear() {
         try {
@@ -107,20 +115,18 @@ public class HistorialConsultaModel implements Serializable {
     }
     public List<Consulta> getConsultas() { return consultas; }
     public List<PersonaRol> getPacientes() { return pacientes; }
-    public List<PersonaRol> getPacientesFiltrados() {
-        if (buscarPaciente == null || buscarPaciente.isBlank()) return pacientes;
-        String patron = buscarPaciente.trim().toLowerCase(java.util.Locale.ROOT);
-        return pacientes.stream().filter(r -> r.getIdPersonaRol().toString().equals(pacienteId)
-                || (r.getIdPersona().getNombres() + " " + r.getIdPersona().getApellidos())
-                    .toLowerCase(java.util.Locale.ROOT).contains(patron)).toList();
-    }
-    public String getBuscarPaciente() { return buscarPaciente; }
-    public void setBuscarPaciente(String buscarPaciente) { this.buscarPaciente = buscarPaciente; }
     public LocalDate getDesde() { return desde; }
     public void setDesde(LocalDate desde) { this.desde = desde; }
     public LocalDate getHasta() { return hasta; }
     public void setHasta(LocalDate hasta) { this.hasta = hasta; }
+    public void cambiarDesde() {
+        if (desde != null && hasta != null && hasta.isBefore(desde)) hasta = null;
+    }
     public void filtrar() {
+        if (desde != null && hasta != null && hasta.isBefore(desde)) {
+            error(Mensajes.texto("consulta.rangoInvalido"));
+            return;
+        }
         try { consultas = servicio.historial(desde, hasta); }
         catch (ServiceException e) { error(Mensajes.mensaje(e)); }
         catch (EJBException e) { error(Mensajes.texto("consulta.errorFiltro")); }

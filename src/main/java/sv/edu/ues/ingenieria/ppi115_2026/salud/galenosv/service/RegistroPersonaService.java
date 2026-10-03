@@ -20,7 +20,7 @@ public class RegistroPersonaService {
     public List<Persona> listarPacientes() { return repositorio.listarPacientes(); }
 
     public UUID guardar(Persona persona, Rol rol, Clinica clinica, UUID asignacionId) {
-        if (rol == null && clinica == null) {
+        if (rol == null) {
             // Omitir la asignación no elimina relaciones ya utilizadas por consultas o pasos.
             if (asignacionId != null) {
                 PersonaRol actual = asignaciones.buscarPorId(asignacionId);

@@ -66,7 +66,7 @@
                                             completeMethod="#{registroPersonaModel.completarRoles}"
                                             var="opcion" itemLabel="#{opcion.nombre}" itemValue="#{opcion}"
                                             converter="rolConverter" dropdown="true" forceSelection="true"
-                                            scrollHeight="250" />
+                                            required="false" scrollHeight="250" />
                             <p:outputLabel for="clinica" value="#{msg['campo.idClinica']}" />
                             <p:autoComplete id="clinica" value="#{registroPersonaModel.clinica}"
                                             completeMethod="#{registroPersonaModel.completarClinicas}"
@@ -74,7 +74,7 @@
                                             converter="clinicaConverter" dropdown="true" forceSelection="true"
                                             scrollHeight="250" />
                         </p:panelGrid>
-                        <p>El rol y la clínica son opcionales. Para asignar un rol, seleccione ambos.</p>
+                        <p>#{msg['registro.rolOpcional']}</p>
                         <p:commandButton value="Nueva asignación" icon="pi pi-plus"
                                          rendered="#{registroPersonaModel.personaGuardada}"
                                          action="#{registroPersonaModel.nuevaAsignacion}" process="@this"
@@ -96,13 +96,17 @@
                                          action="#{registroPersonaModel.guardarPersona}" process="@form"
                                          update=":personaFormulario :frmPersonaList:tblPersonas :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelar}" process="@this"
+                                         action="#{registroPersonaModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
                                          update=":personaFormulario" resetValues="true" styleClass="ui-button-secondary" />
                     </h:form>
                 </p:tab>
                 <p:tab title="#{msg['entidad.Documento']}" disabled="#{not registroPersonaModel.personaGuardada}">
                     <h:form id="frmDocumento">
                         <p:messages showDetail="false" />
+                        <p:commandButton value="#{msg['registro.nuevo']}" icon="pi pi-plus"
+                                         rendered="#{not registroPersonaModel.documentoVisible}"
+                                         action="#{registroPersonaModel.nuevoDocumento}" process="@this" update="@form" resetValues="true" />
+                        <h:panelGroup layout="block" styleClass="galeno-formulario" rendered="#{registroPersonaModel.documentoVisible}">
                         <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
                             <p:outputLabel for="tipo" value="#{msg['campo.idTipoDocumento']}" />
                             <p:autoComplete id="tipo" value="#{registroPersonaModel.documento.idTipoDocumento}"
@@ -141,8 +145,9 @@
                                          action="#{registroPersonaModel.guardarDocumento}" process="@form"
                                          update="@form :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelarDocumento}" process="@this"
+                                         action="#{registroPersonaModel.cancelarDocumento}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
                                          update="@form" resetValues="true" styleClass="ui-button-secondary" />
+                        </h:panelGroup>
                         <p:dataTable value="#{registroPersonaModel.documentos}" var="registro" rows="5"
                                      paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                             <p:column headerText="#{msg['campo.tipo']}">
@@ -154,12 +159,25 @@
                             <p:column headerText="#{msg['campo.rutaFisica']}">
                                 <h:outputText value="#{registro.rutaFisica}" />
                             </p:column>
+                            <p:column headerText="#{msg['persona.columna.acciones']}">
+                                <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}"
+                                                 ariaLabel="#{msg['boton.eliminar']}" styleClass="ui-button-danger"
+                                                 action="#{registroPersonaModel.eliminarDocumento(registro)}"
+                                                 process="@this" update="@form :messages">
+                                    <p:confirm header="#{msg['persona.confirmar.header']}"
+                                               message="#{msg['registro.confirmarEliminar']}" />
+                                </p:commandButton>
+                            </p:column>
                         </p:dataTable>
                     </h:form>
                 </p:tab>
                 <p:tab title="#{msg['entidad.MedioContacto']}" disabled="#{not registroPersonaModel.personaGuardada}">
                     <h:form id="frmContacto">
                         <p:messages showDetail="false" />
+                        <p:commandButton value="#{msg['registro.nuevo']}" icon="pi pi-plus"
+                                         rendered="#{not registroPersonaModel.contactoVisible}"
+                                         action="#{registroPersonaModel.nuevoContacto}" process="@this" update="@form" resetValues="true" />
+                        <h:panelGroup layout="block" styleClass="galeno-formulario" rendered="#{registroPersonaModel.contactoVisible}">
                         <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
                             <p:outputLabel for="tipo" value="#{msg['campo.idTipoMedioContacto']}" />
                             <p:autoComplete id="tipo" value="#{registroPersonaModel.contacto.idTipoMedioContacto}"
@@ -194,8 +212,9 @@
                                          action="#{registroPersonaModel.guardarContacto}" process="@form"
                                          update="@form :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelarContacto}" process="@this"
+                                         action="#{registroPersonaModel.cancelarContacto}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
                                          update="@form" resetValues="true" styleClass="ui-button-secondary" />
+                        </h:panelGroup>
                         <p:dataTable value="#{registroPersonaModel.contactos}" var="registro" rows="5"
                                      paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
                             <p:column headerText="#{msg['campo.tipo']}">
@@ -203,6 +222,15 @@
                             </p:column>
                             <p:column headerText="#{msg['campo.valor']}">
                                 <h:outputText value="#{registro.valor}" />
+                            </p:column>
+                            <p:column headerText="#{msg['persona.columna.acciones']}">
+                                <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}"
+                                                 ariaLabel="#{msg['boton.eliminar']}" styleClass="ui-button-danger"
+                                                 action="#{registroPersonaModel.eliminarContacto(registro)}"
+                                                 process="@this" update="@form :messages">
+                                    <p:confirm header="#{msg['persona.confirmar.header']}"
+                                               message="#{msg['registro.confirmarEliminar']}" />
+                                </p:commandButton>
                             </p:column>
                         </p:dataTable>
                     </h:form>

@@ -46,7 +46,7 @@ public class TipoExamenModel extends AbstractModel<TipoExamen, UUID> {
     }
 
     public void cancelar() {
-        seleccionada = null;
+        seleccionada = FormularioCancelacion.estaVacio() ? null : nuevaInstancia();
     }
 
     @Override

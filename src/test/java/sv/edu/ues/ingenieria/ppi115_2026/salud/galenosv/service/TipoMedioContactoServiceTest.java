@@ -17,6 +17,23 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TipoMedioContactoServiceTest {
 
+    @Test
+    void impideEditarTipoConContactosAsociados() {
+        TipoMedioContacto tipo = new TipoMedioContacto(UUID.randomUUID());
+        when(tipoMedioContactoRepository.estaEnUso(tipo.getIdTipoMedioContacto())).thenReturn(true);
+        ServiceException error = assertThrows(ServiceException.class, () -> tipoMedioContactoService.actualizar(tipo));
+        assertEquals("tipoMedioContacto.enUso", error.getMessageKey());
+        verify(tipoMedioContactoRepository, never()).update(any());
+    }
+
+    @Test
+    void permiteEditarTipoSinContactosAsociados() {
+        TipoMedioContacto tipo = new TipoMedioContacto(UUID.randomUUID());
+        when(tipoMedioContactoRepository.find(tipo.getIdTipoMedioContacto())).thenReturn(tipo);
+        tipoMedioContactoService.actualizar(tipo);
+        verify(tipoMedioContactoRepository).update(tipo);
+    }
+
     @Mock
     private TipoMedioContactoRepository tipoMedioContactoRepository;
 

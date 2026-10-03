@@ -59,11 +59,37 @@ class HistorialConsultaModelTest {
         assertSame(consulta, model.getSeleccionada()); assertNull(model.getOrdenId());
         assertNull(model.getResultado()); assertNull(model.getInterpretacion());
     }
+    @Test void falloEnUnaSeccionNoOcultaLosDatosDeLaConsultaYaAutorizada() {
+        Consulta consulta = new Consulta(UUID.randomUUID());
+        when(servicio.cargar(consulta.getIdConsulta())).thenReturn(consulta);
+        when(servicio.pasos(consulta.getIdConsulta())).thenThrow(new jakarta.ejb.EJBException("Fallo al leer los pasos"));
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            model.seleccionar(consulta);
+            assertSame(consulta, model.getSeleccionada()); assertTrue(model.getPasos().isEmpty());
+            assertTrue(model.getOrdenes().isEmpty()); verify(faces).validationFailed();
+        }
+    }
+    @Test void falloDeAutorizacionLimpiaTodoElDetalleAnterior() {
+        Consulta primera = new Consulta(UUID.randomUUID()), ajena = new Consulta(UUID.randomUUID());
+        when(servicio.cargar(primera.getIdConsulta())).thenReturn(primera);
+        model.seleccionar(primera);
+        when(servicio.cargar(ajena.getIdConsulta())).thenThrow(new ServiceException("Consulta ajena"));
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            model.seleccionar(ajena);
+            assertNull(model.getSeleccionada()); assertTrue(model.getProcedimientos().isEmpty());
+            assertTrue(model.getPasos().isEmpty()); assertTrue(model.getOrdenes().isEmpty());
+        }
+        verify(servicio, never()).realizados(ajena.getIdConsulta());
+    }
     @Test void sinSesionNoCargaConsultasNiPacientes() {
         model.iniciar(); assertTrue(model.getConsultas().isEmpty()); assertTrue(model.getPacientes().isEmpty());
         verifyNoInteractions(servicio);
     }
-    @Test void busquedaDePacientesConservaLaSeleccionYFiltraPorNombre() {
+    @Test void selectorDePacientesConservaLaListaCompletaYLaSeleccion() {
         Persona ana=new Persona(UUID.randomUUID()); ana.setNombres("Ana"); ana.setApellidos("López");
         Persona luis=new Persona(UUID.randomUUID()); luis.setNombres("Luis"); luis.setApellidos("Pérez");
         PersonaRol primera=new PersonaRol(UUID.randomUUID()); primera.setIdPersona(ana);
@@ -71,10 +97,11 @@ class HistorialConsultaModelTest {
         Rol medico=new Rol(UUID.randomUUID()); medico.setNombre("Doctor"); medico.setActivo(true);
         PersonaRol activo=new PersonaRol(UUID.randomUUID()); activo.setIdRol(medico); activo.setIdPersona(new Persona(UUID.randomUUID())); activo.setIdClinica(new Clinica(UUID.randomUUID()));
         sesion.cambiarRol(activo); when(servicio.pacientesClinica()).thenReturn(List.of(primera,segunda));
-        model.iniciar(); model.setBuscarPaciente("ana");
-        assertEquals(List.of(primera),model.getPacientesFiltrados());
+        model.iniciar();
+        assertEquals(List.of(primera,segunda),model.getPacientes());
         model.setPacienteId(segunda.getIdPersonaRol().toString());
-        assertEquals(List.of(primera,segunda),model.getPacientesFiltrados());
+        assertEquals(List.of(primera,segunda),model.getPacientes());
+        assertEquals(segunda.getIdPersonaRol().toString(), model.getPacienteId());
     }
     @Test void cambioDeSesionEnOtraPestanaLimpiaElHistorialYElDetalleAnterior() {
         Clinica clinica = new Clinica(UUID.randomUUID());
@@ -90,5 +117,22 @@ class HistorialConsultaModelTest {
         sesion.cambiarRol(segundo); model.verificarContexto();
         assertTrue(model.getConsultas().isEmpty()); assertNull(model.getSeleccionada());
         assertNull(model.getPacienteId()); assertNull(model.getReferencia()); verify(servicio, times(2)).historial();
+    }
+
+    @Test void limiteInferiorNuevoLimpiaSoloUnLimiteSuperiorAnterior() {
+        var fecha = java.time.LocalDate.of(2026, 10, 3);
+        model.setDesde(fecha); model.setHasta(fecha.minusDays(1));
+        model.cambiarDesde(); assertNull(model.getHasta());
+        model.setHasta(fecha); model.cambiarDesde(); assertEquals(fecha, model.getHasta());
+        model.setHasta(fecha.plusDays(1)); model.cambiarDesde(); assertEquals(fecha.plusDays(1), model.getHasta());
+    }
+    @Test void rangoInvertidoNoEjecutaLaBusqueda() {
+        model.setDesde(java.time.LocalDate.of(2026, 10, 3));
+        model.setHasta(java.time.LocalDate.of(2026, 10, 2));
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            model.filtrar(); verify(faces).validationFailed(); verifyNoInteractions(servicio);
+        }
     }
 }

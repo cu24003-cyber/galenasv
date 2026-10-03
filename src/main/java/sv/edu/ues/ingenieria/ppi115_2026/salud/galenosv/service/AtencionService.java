@@ -127,29 +127,73 @@ public class AtencionService {
         return em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p JOIN FETCH p.idConsultaProcedimiento cp JOIN FETCH cp.idProcedimiento LEFT JOIN FETCH p.idProcedimientoPaso definicion LEFT JOIN FETCH definicion.idRol LEFT JOIN FETCH p.idPersonaRol responsable LEFT JOIN FETCH responsable.idPersona LEFT JOIN FETCH responsable.idRol WHERE cp.idConsulta.idConsulta=:id ORDER BY p.fechaInicio, p.idConsultaProcedimientoPaso",ConsultaProcedimientoPaso.class).setParameter("id",id).getResultList();
     }
     public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
-        Consulta c=abierta(consulta); Procedimiento p=em.find(Procedimiento.class,procedimiento);
+        Consulta c=abierta(consulta); Procedimiento p=em.find(Procedimiento.class,procedimiento,LockModeType.PESSIMISTIC_WRITE);
         if(p==null || !Boolean.TRUE.equals(p.getActivo())) throw new ServiceException("Seleccione un procedimiento activo.");
         List<ProcedimientoPaso> catalogo=em.createQuery("SELECT p FROM ProcedimientoPaso p WHERE p.idProcedimiento=:p",ProcedimientoPaso.class).setParameter("p",p).getResultList();
         if(catalogo.isEmpty()) throw new ServiceException("Configure los pasos del procedimiento antes de utilizarlo.");
+        // Comprobar también los pasos futuros antes de persistir cualquier ejecución.
+        Map<UUID, PersonaRol> encargados = responsablesProcedimiento(c, catalogo);
         List<ProcedimientoPasoSecuencia> secuencias=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso.idProcedimiento=:p",ProcedimientoPasoSecuencia.class).setParameter("p",p).getResultList();
         Set<UUID> destinos = new HashSet<>();
         for (ProcedimientoPasoSecuencia s : secuencias) destinos.add(s.getIdProcedimientoPasoReferencia().getIdProcedimientoPaso());
         List<ProcedimientoPaso> iniciales = catalogo.stream().filter(paso -> !destinos.contains(paso.getIdProcedimientoPaso())).toList();
         if (iniciales.isEmpty()) throw ServiceException.localizada("consulta.procedimientoSinInicial", "El procedimiento no tiene un paso inicial.");
-        Map<UUID, PersonaRol> encargados = new HashMap<>();
-        for (ProcedimientoPaso paso : iniciales) encargados.put(paso.getIdProcedimientoPaso(), responsableAutomatico(c, paso));
         ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(texto(notas,"Las observaciones del procedimiento",255)); em.persist(cp);
-        for (ProcedimientoPaso paso : iniciales) crearPaso(cp, paso, encargados.get(paso.getIdProcedimientoPaso()), c.getFechaInicio());
+        for (ProcedimientoPaso paso : iniciales) crearPaso(cp, paso, encargados.get(paso.getIdRol().getIdRol()), c.getFechaInicio());
+    }
+    private Map<UUID, PersonaRol> responsablesProcedimiento(Consulta consulta, List<ProcedimientoPaso> pasos) {
+        Map<UUID, List<PersonaRol>> candidatos = new LinkedHashMap<>();
+        for (ProcedimientoPaso paso : pasos) {
+            validarRolPaso(paso);
+            UUID rol = paso.getIdRol().getIdRol();
+            if (candidatos.containsKey(rol)) continue;
+            List<PersonaRol> disponibles = em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona WHERE r.idClinica=:clinica AND r.idRol=:rol AND r.idRol.activo=true ORDER BY r.fechaCreacion, r.idPersonaRol", PersonaRol.class)
+                    .setParameter("clinica", consulta.getIdPersonaRol().getIdClinica()).setParameter("rol", paso.getIdRol())
+                    .getResultList();
+            if (disponibles.isEmpty()) sinResponsable(paso);
+            candidatos.put(rol, disponibles);
+        }
+        Map<UUID, PersonaRol> encargados = new HashMap<>();
+        Map<UUID, UUID> rolesPorPersona = new HashMap<>();
+        for (UUID rol : candidatos.keySet()) {
+            if (!asignarPersonaDistinta(rol, candidatos, encargados, rolesPorPersona, new HashSet<>())) {
+                throw ServiceException.localizada("consulta.personalInsuficiente",
+                        "El procedimiento requiere al menos una persona distinta por cada rol requerido en la clínica de la consulta.");
+            }
+        }
+        return encargados;
+    }
+    private boolean asignarPersonaDistinta(UUID rol, Map<UUID, List<PersonaRol>> candidatos,
+            Map<UUID, PersonaRol> encargados, Map<UUID, UUID> rolesPorPersona, Set<UUID> visitadas) {
+        for (PersonaRol asignacion : candidatos.get(rol)) {
+            if (asignacion.getIdPersona() == null || asignacion.getIdPersona().getIdPersona() == null) continue;
+            UUID persona = asignacion.getIdPersona().getIdPersona();
+            if (!visitadas.add(persona)) continue;
+            UUID otroRol = rolesPorPersona.get(persona);
+            // Reubicar un rol previo permite encontrar una combinación válida con personas de varios roles.
+            if (otroRol == null || asignarPersonaDistinta(otroRol, candidatos, encargados, rolesPorPersona, visitadas)) {
+                rolesPorPersona.put(persona, rol);
+                encargados.put(rol, asignacion);
+                return true;
+            }
+        }
+        return false;
+    }
+    private void validarRolPaso(ProcedimientoPaso paso) {
+        if (paso.getIdRol() == null || paso.getIdRol().getIdRol() == null || !Boolean.TRUE.equals(paso.getIdRol().getActivo()))
+            throw ServiceException.localizada("consulta.pasoRolInactivo", "El paso " + paso.getNombre() + " no tiene un rol activo.", paso.getNombre());
+    }
+    private void sinResponsable(ProcedimientoPaso paso) {
+        throw ServiceException.localizada("consulta.sinResponsableAutomatico",
+                "No hay una persona activa con rol " + paso.getIdRol().getNombre() + " en la clínica de la consulta para el paso " + paso.getNombre() + ".",
+                paso.getIdRol().getNombre(), paso.getNombre());
     }
     private PersonaRol responsableAutomatico(Consulta consulta, ProcedimientoPaso paso) {
-        if (paso.getIdRol() == null || !Boolean.TRUE.equals(paso.getIdRol().getActivo()))
-            throw ServiceException.localizada("consulta.pasoRolInactivo", "El paso " + paso.getNombre() + " no tiene un rol activo.", paso.getNombre());
+        validarRolPaso(paso);
         List<PersonaRol> disponibles = em.createQuery("SELECT r FROM PersonaRol r WHERE r.idClinica=:clinica AND r.idRol=:rol AND r.idRol.activo=true ORDER BY r.fechaCreacion, r.idPersonaRol", PersonaRol.class)
                 .setParameter("clinica", consulta.getIdPersonaRol().getIdClinica()).setParameter("rol", paso.getIdRol())
                 .setMaxResults(1).getResultList();
-        if (disponibles.isEmpty()) throw ServiceException.localizada("consulta.sinResponsableAutomatico",
-                "No hay una persona activa con rol " + paso.getIdRol().getNombre() + " en la clínica de la consulta para el paso " + paso.getNombre() + ".",
-                paso.getIdRol().getNombre(), paso.getNombre());
+        if (disponibles.isEmpty()) sinResponsable(paso);
         return disponibles.get(0);
     }
     private void crearPaso(ConsultaProcedimiento cp, ProcedimientoPaso definicion, PersonaRol encargado, OffsetDateTime inicio) {

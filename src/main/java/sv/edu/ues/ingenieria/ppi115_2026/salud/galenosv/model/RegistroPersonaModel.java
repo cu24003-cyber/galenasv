@@ -41,6 +41,8 @@ public class RegistroPersonaModel implements Serializable {
     private List<Documento> documentos = List.of();
     private List<MedioContacto> contactos = List.of();
     private int pestana;
+    private boolean documentoVisible = true;
+    private boolean contactoVisible = true;
 
     public void nuevo() {
         limpiar();
@@ -77,6 +79,8 @@ public class RegistroPersonaModel implements Serializable {
         documentos = List.of();
         contactos = List.of();
         pestana = 0;
+        documentoVisible = true;
+        contactoVisible = true;
     }
 
     public void guardarPersona() {
@@ -150,7 +154,8 @@ public class RegistroPersonaModel implements Serializable {
             documentoService.crear(documento);
         } catch (ServiceException | EJBException e) {
             documento.setIdDocumento(null);
-            error("error.guardar");
+            if (e instanceof ServiceException se) errorMensaje(Mensajes.mensaje(se));
+            else error("error.guardar");
             return;
         }
         documento = new Documento();
@@ -198,6 +203,24 @@ public class RegistroPersonaModel implements Serializable {
         return persona;
     }
 
+    public void eliminarDocumento(Documento registro) {
+        try {
+            documentoService.eliminarDePersona(registro == null ? null : registro.getIdDocumento(), personaGuardada);
+            documentos = documentoService.listarPorPersona(personaGuardada);
+            eliminado();
+        } catch (ServiceException e) { errorMensaje(Mensajes.mensaje(e)); }
+        catch (EJBException e) { error("error.eliminar"); }
+    }
+
+    public void eliminarContacto(MedioContacto registro) {
+        try {
+            medioContactoService.eliminarDePersona(registro == null ? null : registro.getIdMedioContacto(), personaGuardada);
+            contactos = medioContactoService.listarPorPersona(personaGuardada);
+            eliminado();
+        } catch (ServiceException e) { errorMensaje(Mensajes.mensaje(e)); }
+        catch (EJBException e) { error("error.eliminar"); }
+    }
+
     private boolean valorValido(String valor, String expresion) {
         if (valor == null || valor.isBlank()) {
             error("registro.camposObligatorios");
@@ -215,9 +238,18 @@ public class RegistroPersonaModel implements Serializable {
     }
 
     private void error(String clave) {
+        errorMensaje(Mensajes.texto(clave));
+    }
+
+    private void errorMensaje(String mensaje) {
         FacesContext context = FacesContext.getCurrentInstance();
         context.validationFailed();
-        context.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, Mensajes.texto(clave), null));
+        context.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, mensaje, null));
+    }
+
+    private void eliminado() {
+        FacesContext.getCurrentInstance().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO, Mensajes.texto("registro.eliminado"), null));
     }
 
     private void exito() {
@@ -235,8 +267,12 @@ public class RegistroPersonaModel implements Serializable {
                 : contacto.getIdTipoMedioContacto().getExpresionRegular());
     }
 
-    public void cancelarDocumento() { documento = new Documento(); }
-    public void cancelarContacto() { contacto = new MedioContacto(); }
+    public void nuevoDocumento() { documento = new Documento(); documentoVisible = true; }
+    public void nuevoContacto() { contacto = new MedioContacto(); contactoVisible = true; }
+    public void cancelarDocumento() { documento = new Documento(); documentoVisible = !FormularioCancelacion.estaVacio(); }
+    public void cancelarContacto() { contacto = new MedioContacto(); contactoVisible = !FormularioCancelacion.estaVacio(); }
+    public boolean isDocumentoVisible() { return documentoVisible; }
+    public boolean isContactoVisible() { return contactoVisible; }
 
     public void cambiarTipoDocumento() { documento.setValor(null); }
     public void cambiarTipoContacto() { contacto.setValor(null); }
