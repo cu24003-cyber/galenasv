@@ -28,7 +28,7 @@
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{tipoDocumentoModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)" update="tipoDocumentoFormulario :messages"
+                            action="#{tipoDocumentoModel.cancelar}" process="@form" immediate="true" update="tipoDocumentoFormulario :messages"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{tipoDocumentoModel.guardar}" process="@this tipoDocumentoFormulario"

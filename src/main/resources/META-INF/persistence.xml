@@ -2,26 +2,26 @@
 <persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
   <persistence-unit name="GalenoSV-PU" transaction-type="JTA">
     <jta-data-source>jdbc/postgres</jta-data-source>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoExamen</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Documento</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimiento</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPasoSecuencia</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPasoExamen</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.OrdenExamen</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ProcedimientoPaso</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Clinica</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Consulta</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Persona</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenTipoExamen</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.MedioContacto</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoMedioContacto</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Procedimiento</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Rol</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.PersonaRol</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ExamenResultado</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.TipoDocumento</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.ConsultaProcedimientoPaso</class>
-    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entities.Examen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Documento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ConsultaProcedimiento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ProcedimientoPasoSecuencia</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ProcedimientoPasoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.OrdenExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ProcedimientoPaso</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Consulta</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenTipoExamen</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.MedioContacto</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Procedimiento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenResultado</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ConsultaProcedimientoPaso</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen</class>
     <properties>
       <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
       <property name="jakarta.persistence.show_sql" value="true"/>

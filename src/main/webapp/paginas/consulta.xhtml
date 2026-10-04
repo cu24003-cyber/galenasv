@@ -37,7 +37,7 @@
 <p:outputLabel for="procedimiento" value="Procedimiento"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}" maxlength="255"/>
 </p:panelGrid><p:commandButton value="Agregar a la consulta" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:formularioProcedimiento :tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
-<p:commandButton value="#{msg['boton.cancelar']}" action="#{atencionModel.cancelarProcedimiento}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{atencionModel.cancelarProcedimiento}" process="@form" immediate="true"
     update=":tabs:formularioProcedimiento" resetValues="true" styleClass="ui-button-secondary"/>
 </h:form>
 </p:outputPanel>

@@ -2,7 +2,7 @@
 set -e
 
 PKG="sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv"
-BASE_DIR="src/main/java/sv/edu/ues/ingenieria/ppi115_2026/salud/galenosv/service"
+BASE_DIR="src/main/java/sv/edu/ues/ingenieria/ppi115_2026/salud/galenosv/control/service"
 mkdir -p "$BASE_DIR"
 
 declare -A IDFIELD=(
@@ -56,14 +56,15 @@ for ENT in "${!IDFIELD[@]}"; do
         }"
   fi
 
+  if [ -e "$FILE" ]; then echo "Ya existe: $FILE; se conserva."; continue; fi
   cat > "$FILE" << EOF
-package ${PKG}.service;
+package ${PKG}.control.service;
 
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import ${PKG}.control.DefaultDAOInterface;
-import ${PKG}.control.${ENT}DAO;
-import ${PKG}.entities.${ENT};
+import ${PKG}.entity.repository.RepositoryInterface;
+import ${PKG}.entity.repository.${ENT}Repository;
+import ${PKG}.entity.${ENT};
 import java.util.UUID;
 ${EXTRA_IMPORT}
 
@@ -71,11 +72,11 @@ ${EXTRA_IMPORT}
 public class ${ENT}Service extends AbstractService<${ENT}, UUID> {
 
     @Inject
-    private ${ENT}DAO ${ENT,}DAO;
+    private ${ENT}Repository ${ENT,}Repository;
 
     @Override
-    protected DefaultDAOInterface<${ENT}, UUID> getDao() {
-        return ${ENT,}DAO;
+    protected RepositoryInterface<${ENT}, UUID> getRepository() {
+        return ${ENT,}Repository;
     }
 
     @Override

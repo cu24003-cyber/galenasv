@@ -26,7 +26,7 @@ En los formularios con **Cancelar**, el primer clic limpia los campos con datos 
 
 ## Personas y documentos
 
-Una persona se puede guardar sin rol, incluso si se ha seleccionado una clínica. La clínica es necesaria cuando se asigna un rol. En la ficha de Personas se pueden eliminar documentos y medios de contacto sin guardar los borradores de otras pestañas. Una persona solo puede tener un DUI, identificado por el nombre `DUI` o `Documento Único de Identidad` del tipo de documento; esta regla también se comprueba al actualizar un documento. Los tipos de documento y de contacto no se pueden editar mientras existan registros que los referencien. Después de eliminar todas esas referencias se pueden modificar.
+Una persona se puede guardar sin rol, incluso si se ha seleccionado una clínica. La pertenencia a la clínica se conserva en `PersonaRol` con rol nulo y se recupera al editar; no habilita actuar como paciente o personal hasta asignar un rol. La clínica es necesaria cuando se asigna un rol. En la ficha de Personas se pueden eliminar documentos y medios de contacto sin guardar los borradores de otras pestañas. Los nombres y apellidos admiten letras Unicode, tildes, ñ y espacios; se rechazan números y símbolos tanto en JSF como al crear o actualizar desde el servicio. Una persona solo puede tener un DUI, identificado por el nombre `DUI` o `Documento Único de Identidad` del tipo de documento; esta regla también se comprueba al actualizar un documento. Los tipos de documento y de contacto no se pueden editar mientras existan registros que los referencien. Después de eliminar todas esas referencias se pueden modificar.
 
 ## Verificación
 

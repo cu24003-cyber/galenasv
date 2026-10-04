@@ -2,7 +2,7 @@
 set -e
 
 PKG="sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv"
-BASE_DIR="src/main/java/sv/edu/ues/ingenieria/ppi115_2026/salud/galenosv/control"
+BASE_DIR="src/main/java/sv/edu/ues/ingenieria/ppi115_2026/salud/galenosv/entity/repository"
 mkdir -p "$BASE_DIR"
 
 ENTITIES=(
@@ -28,18 +28,19 @@ ENTITIES=(
 )
 
 for ENT in "${ENTITIES[@]}"; do
-  FILE="$BASE_DIR/${ENT}DAO.java"
+  FILE="$BASE_DIR/${ENT}Repository.java"
+  if [ -e "$FILE" ]; then echo "Ya existe: $FILE; se conserva."; continue; fi
   cat > "$FILE" << EOF
-package ${PKG}.control;
+package ${PKG}.entity.repository;
 
 import jakarta.ejb.Stateless;
-import ${PKG}.entities.${ENT};
+import ${PKG}.entity.${ENT};
 import java.util.UUID;
 
 @Stateless
-public class ${ENT}DAO extends DefaultDAO<${ENT}, UUID> {
+public class ${ENT}Repository extends AbstractRepository<${ENT}, UUID> {
 
-    public ${ENT}DAO() {
+    public ${ENT}Repository() {
         super(${ENT}.class);
     }
 }
@@ -47,4 +48,4 @@ EOF
   echo "Creado: $FILE"
 done
 
-echo "Listo: 19 DAO creados."
+echo "Listo: 19 Repository creados."

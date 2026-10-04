@@ -66,8 +66,7 @@
                 <p:column headerText="Referencia">#{c.referenciaExterna}</p:column>
                 <p:column>
                     <p:commandButton value="Ver detalle" icon="pi pi-eye" action="#{historialConsultaModel.seleccionar(c)}"
-                                     process="@this" update=":detalle :mensajes" resetValues="true"
-                                     oncomplete="if (!args.validationFailed) document.getElementById('detalle').scrollIntoView({behavior: 'smooth', block: 'start'});" />
+                                     process="@this" update=":detalle :mensajes" resetValues="true" />
                     <p:commandButton value="Retomar consulta" icon="pi pi-play" action="#{historialConsultaModel.retomar(c)}"
                                      rendered="#{empty c.fechaFin}" process="@this" ajax="false" />
                 </p:column>

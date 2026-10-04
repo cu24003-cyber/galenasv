@@ -24,7 +24,7 @@
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{rolModel.cancelRol}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)" update="rolFormulario :messages"
+                            action="#{rolModel.cancelRol}" process="@form" immediate="true" update="rolFormulario :messages"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{rolModel.saveRol}" process="@this rolFormulario"

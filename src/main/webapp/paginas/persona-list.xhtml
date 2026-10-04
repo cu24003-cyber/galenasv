@@ -48,19 +48,31 @@
                         <p:messages showDetail="false" />
                         <p:panelGrid columns="2" layout="grid" styleClass="ui-fluid">
                             <p:outputLabel for="nombres" value="#{msg['persona.campo.nombres']}" />
+                            <p:outputPanel>
                             <p:inputText id="nombres" value="#{personaModel.seleccionada.nombres}"
-                                         required="true" maxlength="255">
+                                         required="true" maxlength="255" validator="#{personaModel.validarNombre}">
                                 <f:validateLength maximum="255" />
+                            <p:ajax event="blur" process="@this" update="nombresMensaje" />
                             </p:inputText>
+                            <p:message id="nombresMensaje" for="nombres" />
+                            </p:outputPanel>
                             <p:outputLabel for="apellidos" value="#{msg['persona.campo.apellidos']}" />
+                            <p:outputPanel>
                             <p:inputText id="apellidos" value="#{personaModel.seleccionada.apellidos}"
-                                         required="true" maxlength="255">
+                                         required="true" maxlength="255" validator="#{personaModel.validarNombre}">
                                 <f:validateLength maximum="255" />
+                            <p:ajax event="blur" process="@this" update="apellidosMensaje" />
                             </p:inputText>
+                            <p:message id="apellidosMensaje" for="apellidos" />
+                            </p:outputPanel>
                             <p:outputLabel for="birthDate" value="#{msg['persona.campo.fechaNacimiento']}" />
-                            <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}"
-                                          showIcon="true" showOnFocus="false" monthNavigator="true" yearNavigator="true"
-                                          maxdate="#{registroPersonaModel.hoy}" timeZone="America/El_Salvador" />
+                            <p:outputPanel>
+                                <p:datePicker id="birthDate" value="#{personaModel.seleccionada.fechaNacimiento}"
+                                              required="true" requiredMessage="#{msg['persona.requerido.fecha']}"
+                                              showIcon="true" showOnFocus="false" monthNavigator="true" yearNavigator="true"
+                                              maxdate="#{registroPersonaModel.hoy}" timeZone="America/El_Salvador" />
+                                <p:message for="birthDate" />
+                            </p:outputPanel>
                             <p:outputLabel for="rol" value="#{msg['campo.idRol']}" />
                             <p:autoComplete id="rol" value="#{registroPersonaModel.rol}"
                                             completeMethod="#{registroPersonaModel.completarRoles}"
@@ -96,7 +108,7 @@
                                          action="#{registroPersonaModel.guardarPersona}" process="@form"
                                          update=":personaFormulario :frmPersonaList:tblPersonas :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+                                         action="#{registroPersonaModel.cancelar}" process="@form" immediate="true"
                                          update=":personaFormulario" resetValues="true" styleClass="ui-button-secondary" />
                     </h:form>
                 </p:tab>
@@ -145,7 +157,7 @@
                                          action="#{registroPersonaModel.guardarDocumento}" process="@form"
                                          update="@form :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelarDocumento}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+                                         action="#{registroPersonaModel.cancelarDocumento}" process="@form" immediate="true"
                                          update="@form" resetValues="true" styleClass="ui-button-secondary" />
                         </h:panelGroup>
                         <p:dataTable value="#{registroPersonaModel.documentos}" var="registro" rows="5"
@@ -212,7 +224,7 @@
                                          action="#{registroPersonaModel.guardarContacto}" process="@form"
                                          update="@form :messages" />
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                                         action="#{registroPersonaModel.cancelarContacto}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+                                         action="#{registroPersonaModel.cancelarContacto}" process="@form" immediate="true"
                                          update="@form" resetValues="true" styleClass="ui-button-secondary" />
                         </h:panelGroup>
                         <p:dataTable value="#{registroPersonaModel.contactos}" var="registro" rows="5"

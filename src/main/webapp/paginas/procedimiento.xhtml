@@ -20,7 +20,7 @@
 <p:outputLabel for="activo" value="Activo"/><p:selectBooleanCheckbox id="activo" value="#{catalogoProcedimientoModel.seleccionado.activo}"/>
 <p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{catalogoProcedimientoModel.seleccionado.observaciones}"/></p:panelGrid>
 <p:commandButton value="Guardar procedimiento" action="#{catalogoProcedimientoModel.guardar}" process="@form" update=":catalogo :formularioProcedimiento :mensajes"/>
-<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelar}" process="@form" immediate="true"
     update=":formularioProcedimiento" resetValues="true" styleClass="ui-button-secondary"/></h:form>
 </p:tab>
 <p:tab title="Pasos y roles">
@@ -38,7 +38,7 @@
 <p:outputLabel for="previo" value="Después del paso"/><p:selectOneMenu id="previo" value="#{catalogoProcedimientoModel.previoId}"><f:selectItem itemLabel="Sin dependencia (paso inicial)" itemValue=""/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="fin" value="Indica fin"/><p:selectBooleanCheckbox id="fin" value="#{catalogoProcedimientoModel.fin}"/></p:panelGrid>
 <p:commandButton value="Agregar paso" action="#{catalogoProcedimientoModel.agregarPaso}" process="@form" update="@form :configuracion:examenes :mensajes" resetValues="true"/>
-<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarPaso}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarPaso}" process="@form" immediate="true"
     update="@form" resetValues="true" styleClass="ui-button-secondary"/>
 </h:panelGroup>
 <p:dataTable value="#{catalogoProcedimientoModel.pasos}" var="p"><p:column headerText="Paso">#{p.nombre}</p:column><p:column headerText="Rol">#{p.idRol.nombre}</p:column><p:column headerText="Indica fin">#{p.indicaFin ? 'Sí' : 'No'}</p:column></p:dataTable>
@@ -56,7 +56,7 @@
 <p:outputLabel for="paso" value="Paso"/><p:selectOneMenu id="paso" value="#{catalogoProcedimientoModel.pasoExamenId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
 <p:outputLabel for="examen" value="Examen"/><p:selectOneMenu id="examen" value="#{catalogoProcedimientoModel.examenId}" required="true" filter="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.examenes}" var="e" itemLabel="#{e.nombre}" itemValue="#{e.idExamen.toString()}"/></p:selectOneMenu>
 </p:panelGrid><p:commandButton value="Asociar examen al paso" action="#{catalogoProcedimientoModel.asociar}" process="@form" update="@form :mensajes" resetValues="true"/>
-<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarExamen}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarExamen}" process="@form" immediate="true"
     update="@form" resetValues="true" styleClass="ui-button-secondary"/>
 </h:panelGroup>
 <p:dataTable value="#{catalogoProcedimientoModel.asociaciones}" var="e" emptyMessage="Sin exámenes asociados."><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column><p:column headerText="Examen">#{e.idExamen.nombre}</p:column></p:dataTable>

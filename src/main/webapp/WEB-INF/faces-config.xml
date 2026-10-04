@@ -18,10 +18,10 @@
     </application>
     <converter>
         <converter-id>tipoDocumentoConverter</converter-id>
-        <converter-class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.converter.TipoDocumentoConverter</converter-class>
+        <converter-class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.model.TipoDocumentoModel$TipoDocumentoConverter</converter-class>
     </converter>
     <converter>
         <converter-id>tipoMedioContactoConverter</converter-id>
-        <converter-class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.converter.TipoMedioContactoConverter</converter-class>
+        <converter-class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.model.TipoMedioContactoModel$TipoMedioContactoConverter</converter-class>
     </converter>
 </faces-config>

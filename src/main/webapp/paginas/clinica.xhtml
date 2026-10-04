@@ -39,7 +39,7 @@
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{clinicaModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)" update="clinicaFormulario"
+                            action="#{clinicaModel.cancelar}" process="@form" immediate="true" update="clinicaFormulario"
                             resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{clinicaModel.guardar}" process="@this clinicaFormulario"
