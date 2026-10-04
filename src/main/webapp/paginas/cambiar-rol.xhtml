@@ -2,49 +2,49 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
       xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
-    <ui:define name="pageTitle">Cambiar de rol</ui:define>
-    <ui:define name="title"><h3>Cambiar de rol</h3></ui:define>
+    <ui:define name="pageTitle">#{msg['ui.cambiarRol']}</ui:define>
+    <ui:define name="title"><h3>#{msg['ui.cambiarRol']}</h3></ui:define>
     <ui:define name="content">
-        <p>Seleccione una clínica y luego una persona de esa clínica. Su rol se muestra automáticamente.</p>
+        <p>#{msg['ui.seleccioneClinicaPersona']}</p>
         <p:messages id="mensajes" />
         <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}" layout="block">
-            <p><strong>Rol actual:</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
+            <p><strong>#{msg['ui.rolActual']}</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
                 · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
         </h:panelGroup>
         <h:panelGroup rendered="#{not empty atencionSesion.consulta}">
-            <p>Cierre la consulta antes de cambiar de médico, rol o clínica.</p>
+            <p>#{msg['ui.cerrarAntesCambiar']}</p>
         </h:panelGroup>
         <h:form id="frmRol">
             <p:panelGrid columns="2" layout="flex">
-            <p:outputLabel for="clinica" value="Clínica" />
+            <p:outputLabel for="clinica" value="#{msg['ui.clinica']}" />
             <p:selectOneMenu id="clinica" value="#{cambiarRolModel.clinicaId}" required="true"
                              filter="true" filterMatchMode="contains">
-                <f:selectItem itemValue="" itemLabel="Seleccione una clínica" noSelectionOption="true" />
+                <f:selectItem itemValue="" itemLabel="#{msg['ui.seleccioneClinica']}" noSelectionOption="true" />
                 <f:selectItems value="#{cambiarRolModel.clinicas}" var="c" itemValue="#{c.idClinica.toString()}" itemLabel="#{c.nombre}" />
                 <p:ajax listener="#{cambiarRolModel.cambiarClinica}" process="@this" update="persona asignacion" resetValues="true" />
             </p:selectOneMenu>
-            <p:outputLabel for="persona" value="Persona" />
+            <p:outputLabel for="persona" value="#{msg['ui.persona']}" />
             <p:selectOneMenu id="persona" value="#{cambiarRolModel.personaId}" required="true"
                              disabled="#{empty cambiarRolModel.clinicaId}" filter="true" filterMatchMode="contains">
-                <f:selectItem itemValue="" itemLabel="Seleccione una persona" noSelectionOption="true" />
+                <f:selectItem itemValue="" itemLabel="#{msg['ui.seleccionePersona']}" noSelectionOption="true" />
                 <f:selectItems value="#{cambiarRolModel.personas}" var="p" itemValue="#{p.idPersona.toString()}" itemLabel="#{p.nombres} #{p.apellidos}" />
                 <p:ajax listener="#{cambiarRolModel.cambiarPersona}" process="@this" update="asignacion" resetValues="true" />
             </p:selectOneMenu>
-            <p:outputLabel for="asignacion" value="Rol" />
+            <p:outputLabel for="asignacion" value="#{msg['ui.rol']}" />
             <p:selectOneMenu id="asignacion" value="#{cambiarRolModel.asignacionId}"
                              disabled="true" style="max-width: 100%">
-                <f:selectItem itemValue="" itemLabel="Seleccione una persona para ver su rol" noSelectionOption="true" />
+                <f:selectItem itemValue="" itemLabel="#{msg['ui.seleccionePersonaRol']}" noSelectionOption="true" />
                 <f:selectItems value="#{cambiarRolModel.rolesPersona}" var="asignacion"
                     itemValue="#{asignacion.idPersonaRol.toString()}"
                     itemLabel="#{asignacion.idRol.nombre}" />
             </p:selectOneMenu>
             </p:panelGrid>
-            <p:commandButton value="Usar este rol" icon="pi pi-check" action="#{cambiarRolModel.aplicar}"
+            <p:commandButton value="#{msg['ui.usarRol']}" icon="pi pi-check" action="#{cambiarRolModel.aplicar}"
                              process="@form" update="@form :mensajes" />
-            <p:button value="Volver a la consulta" outcome="/paginas/consulta.xhtml" rendered="#{not empty atencionSesion.consulta}" />
+            <p:button value="#{msg['ui.volverConsulta']}" outcome="/paginas/consulta.xhtml" rendered="#{not empty atencionSesion.consulta}" />
         </h:form>
         <h:panelGroup rendered="#{empty cambiarRolModel.asignaciones}">
-            <p>No hay roles disponibles. Asigne una persona a un rol activo y una clínica desde Personas.</p>
+            <p>#{msg['ui.sinRoles']}</p>
         </h:panelGroup>
     </ui:define>
 </ui:composition>

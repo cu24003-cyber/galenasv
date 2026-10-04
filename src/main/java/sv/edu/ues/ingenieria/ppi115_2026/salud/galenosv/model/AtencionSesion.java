@@ -19,10 +19,10 @@ public class AtencionSesion implements Serializable {
         if (rol == null || rol.getIdPersonaRol() == null || rol.getIdPersona() == null
                 || rol.getIdClinica() == null || rol.getIdRol() == null
                 || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) {
-            throw new ServiceException("Seleccione una asignación con un rol activo y una clínica.");
+            throw ServiceException.localizada("rolCambio.asignacionActivaClinica", "Seleccione una asignación con un rol activo y una clínica.");
         }
         if (consulta != null && (rolActivo == null || !rolActivo.getIdPersonaRol().equals(rol.getIdPersonaRol()))) {
-            throw new ServiceException("Cierre la consulta antes de cambiar de médico o rol.");
+            throw ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta antes de cambiar de médico o rol.");
         }
         rolActivo = rol;
     }

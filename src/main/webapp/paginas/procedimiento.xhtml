@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
-<ui:define name="pageTitle">Procedimientos</ui:define><ui:define name="title"><h3>Procedimientos y pasos</h3></ui:define><ui:define name="content">
+<ui:define name="pageTitle">#{msg['ui.procedimientos']}</ui:define><ui:define name="title"><h3>#{msg['ui.procedimientosPasos']}</h3></ui:define><ui:define name="content">
 <p:messages id="mensajes"/>
-<h:form id="catalogo"><p:commandButton value="Agregar procedimiento" action="#{catalogoProcedimientoModel.nuevo}" process="@this" update=":formularioProcedimiento" resetValues="true"/>
-<p:dataTable value="#{catalogoProcedimientoModel.lista}" var="p" emptyMessage="No hay procedimientos."><p:column headerText="Nombre">#{p.nombre}</p:column><p:column headerText="Activo">#{p.activo ? 'Sí' : 'No'}</p:column><p:column><p:commandButton value="Editar y configurar pasos" action="#{catalogoProcedimientoModel.seleccionar(p)}" process="@this" update=":formularioProcedimiento" resetValues="true"/><p:commandButton value="#{msg['boton.eliminar']}" icon="pi pi-trash" styleClass="ui-button-danger"
+<h:form id="catalogo"><p:commandButton value="#{msg['ui.agregarProcedimiento']}" action="#{catalogoProcedimientoModel.nuevo}" process="@this" update=":formularioProcedimiento" resetValues="true"/>
+<p:dataTable value="#{catalogoProcedimientoModel.lista}" var="p" emptyMessage="#{msg['ui.sinProcedimientosCatalogo']}"><p:column headerText="#{msg['ui.nombre']}">#{p.nombre}</p:column><p:column headerText="#{msg['ui.activo']}">#{p.activo ? msg['boton.si'] : msg['boton.no']}</p:column><p:column><p:commandButton value="#{msg['ui.editarPasos']}" action="#{catalogoProcedimientoModel.seleccionar(p)}" process="@this" update=":formularioProcedimiento" resetValues="true"/><p:commandButton value="#{msg['boton.eliminar']}" icon="pi pi-trash" styleClass="ui-button-danger"
     action="#{catalogoProcedimientoModel.eliminar(p)}" process="@this"
     update=":catalogo :formularioProcedimiento :mensajes" resetValues="true">
     <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['registro.confirmarEliminar']}"/>
@@ -15,51 +15,51 @@
 </p:confirmDialog>
 <p:outputPanel id="formularioProcedimiento">
 <p:tabView id="configuracion" rendered="#{not empty catalogoProcedimientoModel.seleccionado}">
-<p:tab title="Datos del procedimiento">
-<h:form id="editor" styleClass="galeno-formulario"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="Nombre"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.seleccionado.nombre}" required="true" maxlength="155"/>
-<p:outputLabel for="activo" value="Activo"/><p:selectBooleanCheckbox id="activo" value="#{catalogoProcedimientoModel.seleccionado.activo}"/>
-<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{catalogoProcedimientoModel.seleccionado.observaciones}"/></p:panelGrid>
-<p:commandButton value="Guardar procedimiento" action="#{catalogoProcedimientoModel.guardar}" process="@form" update=":catalogo :formularioProcedimiento :mensajes"/>
+<p:tab title="#{msg['ui.datosProcedimiento']}">
+<h:form id="editor" styleClass="galeno-formulario"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="#{msg['ui.nombre']}"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.seleccionado.nombre}" required="true" maxlength="155"/>
+<p:outputLabel for="activo" value="#{msg['ui.activo']}"/><p:selectBooleanCheckbox id="activo" value="#{catalogoProcedimientoModel.seleccionado.activo}"/>
+<p:outputLabel for="notas" value="#{msg['ui.observaciones']}"/><p:inputTextarea id="notas" value="#{catalogoProcedimientoModel.seleccionado.observaciones}"/></p:panelGrid>
+<p:commandButton value="#{msg['ui.guardarProcedimiento']}" action="#{catalogoProcedimientoModel.guardar}" process="@form" update=":catalogo :formularioProcedimiento :mensajes"/>
 <p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelar}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
     update=":formularioProcedimiento" resetValues="true" styleClass="ui-button-secondary"/></h:form>
 </p:tab>
-<p:tab title="Pasos y roles">
+<p:tab title="#{msg['ui.pasosRoles']}">
 <h:form id="pasos">
-<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>Guarde el procedimiento para configurar sus pasos.</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
-<h3>Pasos de #{catalogoProcedimientoModel.seleccionado.nombre}</h3>
+<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>#{msg['ui.guardarPasosAyuda']}</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
+<h3>#{msg['ui.pasosDe']} #{catalogoProcedimientoModel.seleccionado.nombre}</h3>
 <h:panelGroup rendered="#{catalogoProcedimientoModel.sinPasoFinal}" layout="block" styleClass="ui-message-warn" style="padding:.7rem;margin:.5rem 0">
     #{msg['procedimiento.sinPasoFinal']}
 </h:panelGroup>
-<p:commandButton value="Agregar paso" icon="pi pi-plus" action="#{catalogoProcedimientoModel.nuevoPaso}"
+<p:commandButton value="#{msg['ui.agregarPaso']}" icon="pi pi-plus" action="#{catalogoProcedimientoModel.nuevoPaso}"
     rendered="#{not catalogoProcedimientoModel.pasoVisible}" process="@this" update="@form" resetValues="true"/>
 <h:panelGroup layout="block" styleClass="galeno-formulario" rendered="#{catalogoProcedimientoModel.pasoVisible}">
-<p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="Nombre del paso"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.nombrePaso}" required="true" maxlength="155"/>
-<p:outputLabel for="rol" value="Rol responsable"/><p:selectOneMenu id="rol" value="#{catalogoProcedimientoModel.rolId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.roles}" var="r" itemLabel="#{r.nombre}" itemValue="#{r.idRol.toString()}"/></p:selectOneMenu>
-<p:outputLabel for="previo" value="Después del paso"/><p:selectOneMenu id="previo" value="#{catalogoProcedimientoModel.previoId}"><f:selectItem itemLabel="Sin dependencia (paso inicial)" itemValue=""/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
-<p:outputLabel for="fin" value="Indica fin"/><p:selectBooleanCheckbox id="fin" value="#{catalogoProcedimientoModel.fin}"/></p:panelGrid>
-<p:commandButton value="Agregar paso" action="#{catalogoProcedimientoModel.agregarPaso}" process="@form" update="@form :configuracion:examenes :mensajes" resetValues="true"/>
+<p:panelGrid columns="2" layout="flex"><p:outputLabel for="nombre" value="#{msg['ui.nombrePaso']}"/><p:inputText id="nombre" value="#{catalogoProcedimientoModel.nombrePaso}" required="true" maxlength="155"/>
+<p:outputLabel for="rol" value="#{msg['ui.rolResponsable']}"/><p:selectOneMenu id="rol" value="#{catalogoProcedimientoModel.rolId}" required="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.roles}" var="r" itemLabel="#{r.nombre}" itemValue="#{r.idRol.toString()}"/></p:selectOneMenu>
+<p:outputLabel for="previo" value="#{msg['ui.despuesPaso']}"/><p:selectOneMenu id="previo" value="#{catalogoProcedimientoModel.previoId}"><f:selectItem itemLabel="#{msg['ui.sinDependencia']}" itemValue=""/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
+<p:outputLabel for="fin" value="#{msg['ui.indicaFin']}"/><p:selectBooleanCheckbox id="fin" value="#{catalogoProcedimientoModel.fin}"/></p:panelGrid>
+<p:commandButton value="#{msg['ui.agregarPaso']}" action="#{catalogoProcedimientoModel.agregarPaso}" process="@form" update="@form :configuracion:examenes :mensajes" resetValues="true"/>
 <p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarPaso}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
     update="@form" resetValues="true" styleClass="ui-button-secondary"/>
 </h:panelGroup>
-<p:dataTable value="#{catalogoProcedimientoModel.pasos}" var="p"><p:column headerText="Paso">#{p.nombre}</p:column><p:column headerText="Rol">#{p.idRol.nombre}</p:column><p:column headerText="Indica fin">#{p.indicaFin ? 'Sí' : 'No'}</p:column></p:dataTable>
-<p:dataTable value="#{catalogoProcedimientoModel.secuencias}" var="s" emptyMessage="Sin dependencias."><p:column headerText="Paso anterior">#{s.idProcedimientoPaso.nombre}</p:column><p:column headerText="Paso siguiente">#{s.idProcedimientoPasoReferencia.nombre}</p:column></p:dataTable>
+<p:dataTable value="#{catalogoProcedimientoModel.pasos}" var="p"><p:column headerText="#{msg['ui.paso']}">#{p.nombre}</p:column><p:column headerText="#{msg['ui.rol']}">#{p.idRol.nombre}</p:column><p:column headerText="#{msg['ui.indicaFin']}">#{p.indicaFin ? msg['boton.si'] : msg['boton.no']}</p:column></p:dataTable>
+<p:dataTable value="#{catalogoProcedimientoModel.secuencias}" var="s" emptyMessage="#{msg['ui.sinDependencias']}"><p:column headerText="#{msg['ui.pasoAnterior']}">#{s.idProcedimientoPaso.nombre}</p:column><p:column headerText="#{msg['ui.pasoSiguiente']}">#{s.idProcedimientoPasoReferencia.nombre}</p:column></p:dataTable>
 </h:panelGroup></h:form>
 </p:tab>
-<p:tab title="Exámenes de los pasos">
+<p:tab title="#{msg['ui.examenesPasos']}">
 <h:form id="examenes">
-<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>Guarde el procedimiento y agregue sus pasos para asociar exámenes.</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
-<h3>Exámenes de los pasos</h3>
-<p:commandButton value="Asociar examen al paso" icon="pi pi-plus" action="#{catalogoProcedimientoModel.nuevoExamen}"
+<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>#{msg['ui.guardarExamenesAyuda']}</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
+<h3>#{msg['ui.examenesPasos']}</h3>
+<p:commandButton value="#{msg['ui.asociarExamen']}" icon="pi pi-plus" action="#{catalogoProcedimientoModel.nuevoExamen}"
     rendered="#{not catalogoProcedimientoModel.examenVisible}" process="@this" update="@form" resetValues="true"/>
 <h:panelGroup layout="block" styleClass="galeno-formulario" rendered="#{catalogoProcedimientoModel.examenVisible}">
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="paso" value="Paso"/><p:selectOneMenu id="paso" value="#{catalogoProcedimientoModel.pasoExamenId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
-<p:outputLabel for="examen" value="Examen"/><p:selectOneMenu id="examen" value="#{catalogoProcedimientoModel.examenId}" required="true" filter="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.examenes}" var="e" itemLabel="#{e.nombre}" itemValue="#{e.idExamen.toString()}"/></p:selectOneMenu>
-</p:panelGrid><p:commandButton value="Asociar examen al paso" action="#{catalogoProcedimientoModel.asociar}" process="@form" update="@form :mensajes" resetValues="true"/>
+<p:outputLabel for="paso" value="#{msg['ui.paso']}"/><p:selectOneMenu id="paso" value="#{catalogoProcedimientoModel.pasoExamenId}" required="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.pasos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimientoPaso.toString()}"/></p:selectOneMenu>
+<p:outputLabel for="examen" value="#{msg['ui.examen']}"/><p:selectOneMenu id="examen" value="#{catalogoProcedimientoModel.examenId}" required="true" filter="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{catalogoProcedimientoModel.examenes}" var="e" itemLabel="#{e.nombre}" itemValue="#{e.idExamen.toString()}"/></p:selectOneMenu>
+</p:panelGrid><p:commandButton value="#{msg['ui.asociarExamen']}" action="#{catalogoProcedimientoModel.asociar}" process="@form" update="@form :mensajes" resetValues="true"/>
 <p:commandButton value="#{msg['boton.cancelar']}" action="#{catalogoProcedimientoModel.cancelarExamen}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
     update="@form" resetValues="true" styleClass="ui-button-secondary"/>
 </h:panelGroup>
-<p:dataTable value="#{catalogoProcedimientoModel.asociaciones}" var="e" emptyMessage="Sin exámenes asociados."><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column><p:column headerText="Examen">#{e.idExamen.nombre}</p:column></p:dataTable>
+<p:dataTable value="#{catalogoProcedimientoModel.asociaciones}" var="e" emptyMessage="#{msg['ui.sinExamenesCatalogo']}"><p:column headerText="#{msg['ui.paso']}">#{e.idProcedimientoPaso.nombre}</p:column><p:column headerText="#{msg['ui.examen']}">#{e.idExamen.nombre}</p:column></p:dataTable>
 </h:panelGroup></h:form>
 </p:tab></p:tabView>
 </p:outputPanel>

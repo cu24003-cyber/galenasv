@@ -39,19 +39,19 @@ public class CambiarRolModel implements Serializable {
                 personaId = actual.getIdPersona().getIdPersona().toString();
                 asignacionId = actual.getIdPersonaRol().toString();
             }
-        } catch (ServiceException | EJBException e) { error("No se pudieron cargar los roles disponibles."); }
+        } catch (ServiceException | EJBException e) { error(Mensajes.texto("rolCambio.errorCarga")); }
     }
 
     public String aplicar() {
         try {
             if (clinicaId == null || clinicaId.isBlank() || personaId == null || personaId.isBlank())
-                throw new ServiceException("Seleccione una clínica y una persona.");
+                throw ServiceException.localizada("rolCambio.seleccioneClinicaPersona", "Seleccione una clínica y una persona.");
             cambiarPersona();
-            if (asignacionId == null) throw new ServiceException("La persona no tiene un rol activo en la clínica seleccionada.");
+            if (asignacionId == null) throw ServiceException.localizada("rolCambio.sinRol", "La persona no tiene un rol activo en la clínica seleccionada.");
             PersonaRol elegida = servicio.cargar(UUID.fromString(asignacionId));
             if (!elegida.getIdClinica().getIdClinica().toString().equals(clinicaId)
                     || !elegida.getIdPersona().getIdPersona().toString().equals(personaId))
-                throw new ServiceException("La persona y el rol deben pertenecer a la clínica seleccionada.");
+                throw ServiceException.localizada("rolCambio.clinicaAjena", "La persona y el rol deben pertenecer a la clínica seleccionada.");
             sesion.cambiarRol(elegida);
             FacesContext contexto = FacesContext.getCurrentInstance();
             if (contexto != null) {
@@ -61,8 +61,8 @@ public class CambiarRolModel implements Serializable {
             }
             return sesion.getConsulta() == null ? "/paginas/consultas.xhtml?faces-redirect=true"
                     : "/paginas/consulta.xhtml?faces-redirect=true";
-        } catch (ServiceException e) { error(e.getMessage()); }
-        catch (EJBException | IllegalArgumentException e) { error("Seleccione una asignación válida de persona, rol y clínica."); }
+        } catch (ServiceException e) { error(Mensajes.mensaje(e)); }
+        catch (EJBException | IllegalArgumentException e) { error(Mensajes.texto("rolCambio.asignacionInvalida")); }
         return null;
     }
 
