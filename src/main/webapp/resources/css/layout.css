@@ -203,6 +203,23 @@ body.galeno-body {
 /* ==========================================================
    RESPONSIVIDAD (Media Queries)
    ========================================================== */
+@media (min-width: 901px) {
+    .galeno-sidebar {
+        position: fixed;
+        top: var(--header-height);
+        bottom: 0;
+        left: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 90;
+    }
+
+    .galeno-container,
+    .galeno-footer {
+        margin-left: var(--sidebar-width);
+    }
+}
+
 @media (max-width: 900px) {
     .galeno-container {
         flex-direction: column;
