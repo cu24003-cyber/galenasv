@@ -18,6 +18,6 @@ public class ContextoRolService {
 
     public PersonaRol cargar(UUID id) {
         return listar().stream().filter(r -> r.getIdPersonaRol().equals(id)).findFirst()
-                .orElseThrow(() -> new ServiceException("Seleccione una asignación con un rol activo."));
+                .orElseThrow(() -> ServiceException.localizada("rolCambio.asignacionActiva", "Seleccione una asignación con un rol activo."));
     }
 }

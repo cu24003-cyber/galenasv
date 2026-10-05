@@ -76,8 +76,8 @@
                             <div class="avatar-circle">
                                 <i class="pi pi-user"></i>
                             </div>
-                            <h:link outcome="/paginas/cambiar-rol.xhtml" styleClass="user-name" title="Cambiar de rol">
-                                <h:outputText rendered="#{empty atencionSesion.rolActivo}" value="Cambiar de rol" />
+                            <h:link outcome="/paginas/cambiar-rol.xhtml" styleClass="user-name" title="#{msg['ui.cambiarRol']}">
+                                <h:outputText rendered="#{empty atencionSesion.rolActivo}" value="#{msg['ui.cambiarRol']}" />
                                 <h:outputText rendered="#{not empty atencionSesion.rolActivo}"
                                     value="#{atencionSesion.rolActivo.idPersona.nombres} · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}" />
                             </h:link>
@@ -95,10 +95,10 @@
                         <nav class="sidebar-nav" aria-label="#{msg['app.menu']}">
                             <ul>
                                 <li><h:link outcome="/paginas/paciente-list.xhtml"><i class="pi pi-users"></i> <span>#{msg['menu.pacientes']}</span></h:link></li>
-                                <li><h:link outcome="/paginas/consultas.xhtml"><i class="pi pi-folder-open"></i> <span>Consultas</span></h:link></li>
-                                <li><h:link outcome="/paginas/procedimiento.xhtml"><i class="pi pi-list"/> <span>Procedimientos</span></h:link></li>
+                                <li><h:link outcome="/paginas/consultas.xhtml"><i class="pi pi-folder-open"></i> <span>#{msg['ui.consultas']}</span></h:link></li>
+                                <li><h:link outcome="/paginas/procedimiento.xhtml"><i class="pi pi-list"/> <span>#{msg['ui.procedimientos']}</span></h:link></li>
                                 <li><h:link outcome="/paginas/examen.xhtml"><i class="pi pi-file"/> <span>#{msg['entidad.Examen']}</span></h:link></li>
-                                <li><h:link outcome="/paginas/cambiar-rol.xhtml"><i class="pi pi-sync"/> <span>Cambiar de rol</span></h:link></li>
+                                <li><h:link outcome="/paginas/cambiar-rol.xhtml"><i class="pi pi-sync"/> <span>#{msg['ui.cambiarRol']}</span></h:link></li>
                                 <li>
                                     <h:link outcome="/paginas/clinica.xhtml">
                                         <i class="pi pi-building"></i> <span>#{msg['entidad.Clinica']}</span>

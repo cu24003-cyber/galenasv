@@ -1,42 +1,42 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
-    <ui:define name="pageTitle">Consultas</ui:define>
-    <ui:define name="title"><h3>Consultas</h3></ui:define>
+    <ui:define name="pageTitle">#{msg['ui.consultas']}</ui:define>
+    <ui:define name="title"><h3>#{msg['ui.consultas']}</h3></ui:define>
     <ui:define name="content">
         <f:event type="preRenderView" listener="#{historialConsultaModel.verificarContexto}" />
         <p:messages id="mensajes" />
         <h:panelGroup rendered="#{empty atencionSesion.rolActivo}" layout="block">
-            <p>Seleccione su asignación de médico y clínica para crear una consulta o revisar su historial.</p>
-            <p:button value="Cambiar de rol" outcome="/paginas/cambiar-rol.xhtml" icon="pi pi-sync" />
+            <p>#{msg['ui.seleccionarAsignacion']}</p>
+            <p:button value="#{msg['ui.cambiarRol']}" outcome="/paginas/cambiar-rol.xhtml" icon="pi pi-sync" />
         </h:panelGroup>
         <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}" layout="block">
-            <p><strong>Personal en sesión:</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
+            <p><strong>#{msg['ui.personalSesion']}</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
                 · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
-            <p>El historial muestra las consultas de la clínica activa.</p>
+            <p>#{msg['ui.historialClinica']}</p>
             <h:form id="nuevaConsulta">
-                <p:panel header="Crear consulta" style="margin-bottom:1rem">
+                <p:panel header="#{msg['ui.crearConsulta']}" style="margin-bottom:1rem">
                     <p:panelGrid columns="2" layout="flex">
-                        <p:outputLabel for="paciente" value="Paciente de la clínica" />
+                        <p:outputLabel for="paciente" value="#{msg['ui.pacienteClinica']}" />
                         <p:selectOneMenu id="paciente" value="#{historialConsultaModel.pacienteId}" required="true"
-                                         requiredMessage="Seleccione un paciente de su clínica." filter="true" filterMatchMode="contains">
-                            <f:selectItem itemLabel="Seleccione un paciente" itemValue="" noSelectionOption="true" />
+                                         requiredMessage="#{msg['ui.seleccionePacienteClinica']}" filter="true" filterMatchMode="contains">
+                            <f:selectItem itemLabel="#{msg['ui.seleccionePaciente']}" itemValue="" noSelectionOption="true" />
                             <f:selectItems value="#{historialConsultaModel.pacientes}" var="r" itemValue="#{r.idPersonaRol.toString()}"
                                            itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos}" />
                         </p:selectOneMenu>
-                        <p:outputLabel for="referencia" value="Referencia externa" />
+                        <p:outputLabel for="referencia" value="#{msg['ui.referenciaExterna']}" />
                         <p:inputText id="referencia" value="#{historialConsultaModel.referencia}" maxlength="255"><f:validateLength maximum="255" /></p:inputText>
-                        <p:outputLabel for="observaciones" value="Observaciones" />
+                        <p:outputLabel for="observaciones" value="#{msg['ui.observaciones']}" />
                         <p:inputTextarea id="observaciones" value="#{historialConsultaModel.observaciones}" maxlength="255"><f:validateLength maximum="255" /></p:inputTextarea>
                     </p:panelGrid>
-                    <p>El inicio se registra al crear la consulta y el fin al cerrarla, después de completar sus procedimientos.</p>
-                    <h:panelGroup rendered="#{empty historialConsultaModel.pacientes}"><p>No hay pacientes asignados a esta clínica. Puede asignarles el rol Paciente desde Personas.</p></h:panelGroup>
-                    <p:commandButton value="Crear consulta" icon="pi pi-plus" action="#{historialConsultaModel.crear}"
+                    <p>#{msg['ui.inicioFinAyuda']}</p>
+                    <h:panelGroup rendered="#{empty historialConsultaModel.pacientes}"><p>#{msg['ui.sinPacientes']}</p></h:panelGroup>
+                    <p:commandButton value="#{msg['ui.crearConsulta']}" icon="pi pi-plus" action="#{historialConsultaModel.crear}"
                                      process="@form" ajax="false" disabled="#{empty historialConsultaModel.pacientes}" styleClass="ui-button-success" />
                 </p:panel>
             </h:form>
         </h:panelGroup>
-        <h3>Historial de mis consultas</h3>
+        <h3>#{msg['ui.historialMisConsultas']}</h3>
         <h:form id="historial">
             <p:panelGrid columns="2" layout="flex">
                 <p:outputLabel for="desde" value="#{msg['consulta.desde']}" />
@@ -56,70 +56,71 @@
             <p:commandButton value="#{msg['consulta.filtrar']}" action="#{historialConsultaModel.filtrar}" process="@form" update="@form :mensajes" />
             <p:commandButton value="#{msg['consulta.limpiar']}" action="#{historialConsultaModel.limpiarFiltro}" process="@this" update="@form :mensajes" resetValues="true" />
             <p:dataTable value="#{historialConsultaModel.consultas}" var="c" rows="10" paginator="true"
-                         paginatorPosition="bottom" emptyMessage="No hay consultas para este médico y clínica.">
-                <p:column headerText="Paciente" filterBy="#{c.idPersonaRol.idPersona.nombres} #{c.idPersonaRol.idPersona.apellidos}" filterMatchMode="contains">
+                         paginatorPosition="bottom" emptyMessage="#{msg['ui.sinConsultas']}">
+                <p:column headerText="#{msg['ui.paciente']}" filterBy="#{c.idPersonaRol.idPersona.nombres} #{c.idPersonaRol.idPersona.apellidos}" filterMatchMode="contains">
                     #{c.idPersonaRol.idPersona.nombres} #{c.idPersonaRol.idPersona.apellidos}
                 </p:column>
-                <p:column headerText="Clínica">#{c.idPersonaRol.idClinica.nombre}</p:column>
-                <p:column headerText="Inicio">#{historialConsultaModel.fecha(c.fechaInicio)}</p:column>
-                <p:column headerText="Fin">#{historialConsultaModel.fecha(c.fechaFin)}</p:column>
-                <p:column headerText="Referencia">#{c.referenciaExterna}</p:column>
+                <p:column headerText="#{msg['ui.clinica']}">#{c.idPersonaRol.idClinica.nombre}</p:column>
+                <p:column headerText="#{msg['ui.inicio']}">#{historialConsultaModel.fecha(c.fechaInicio)}</p:column>
+                <p:column headerText="#{msg['ui.fin']}">#{historialConsultaModel.fecha(c.fechaFin)}</p:column>
+                <p:column headerText="#{msg['ui.referencia']}">#{c.referenciaExterna}</p:column>
                 <p:column>
-                    <p:commandButton value="Ver detalle" icon="pi pi-eye" action="#{historialConsultaModel.seleccionar(c)}"
-                                     process="@this" update=":detalle :mensajes" resetValues="true" />
-                    <p:commandButton value="Retomar consulta" icon="pi pi-play" action="#{historialConsultaModel.retomar(c)}"
+                    <p:commandButton value="#{msg['ui.verDetalle']}" icon="pi pi-eye" action="#{historialConsultaModel.seleccionar(c)}"
+                                     process="@this" update=":detalle :mensajes" resetValues="true"
+                                     oncomplete="if (!args.validationFailed) document.getElementById('detalle').scrollIntoView({behavior: 'smooth', block: 'start'});" />
+                    <p:commandButton value="#{msg['ui.retomarConsulta']}" icon="pi pi-play" action="#{historialConsultaModel.retomar(c)}"
                                      rendered="#{empty c.fechaFin}" process="@this" ajax="false" />
                 </p:column>
             </p:dataTable>
         </h:form>
         <h:form id="detalle">
-            <p:panel header="Detalle de consulta" rendered="#{not empty historialConsultaModel.seleccionada}" style="margin-top:1rem">
-                <p><strong>Paciente:</strong> #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.nombres} #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.apellidos}</p>
-                <p><strong>Referencia:</strong> #{historialConsultaModel.seleccionada.referenciaExterna}</p>
-                <p><strong>Observaciones:</strong> #{historialConsultaModel.seleccionada.observaciones}</p>
-                <p><strong>Inicio:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaInicio)}
-                    · <strong>Fin:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaFin)}</p>
-                <h3>Procedimientos</h3>
-                <p:dataTable value="#{historialConsultaModel.procedimientos}" var="p" emptyMessage="Sin procedimientos.">
-                    <p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column>
-                    <p:column headerText="Observaciones">#{p.observaciones}</p:column>
-                    <p:column headerText="Fin">#{historialConsultaModel.fecha(p.fechaFin)}</p:column>
+            <p:panel header="#{msg['ui.detalleConsulta']}" rendered="#{not empty historialConsultaModel.seleccionada}" style="margin-top:1rem">
+                <p><strong>#{msg['ui.paciente']}:</strong> #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.nombres} #{historialConsultaModel.seleccionada.idPersonaRol.idPersona.apellidos}</p>
+                <p><strong>#{msg['ui.referencia']}:</strong> #{historialConsultaModel.seleccionada.referenciaExterna}</p>
+                <p><strong>#{msg['ui.observaciones']}:</strong> #{historialConsultaModel.seleccionada.observaciones}</p>
+                <p><strong>#{msg['ui.inicio']}:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaInicio)}
+                    · <strong>#{msg['ui.fin']}:</strong> #{historialConsultaModel.fecha(historialConsultaModel.seleccionada.fechaFin)}</p>
+                <h3>#{msg['ui.procedimientos']}</h3>
+                <p:dataTable value="#{historialConsultaModel.procedimientos}" var="p" emptyMessage="#{msg['ui.sinProcedimientos']}">
+                    <p:column headerText="#{msg['ui.procedimiento']}">#{p.idProcedimiento.nombre}</p:column>
+                    <p:column headerText="#{msg['ui.observaciones']}">#{p.observaciones}</p:column>
+                    <p:column headerText="#{msg['ui.fin']}">#{historialConsultaModel.fecha(p.fechaFin)}</p:column>
                 </p:dataTable>
-                <h3>Pasos</h3>
-                <p:dataTable value="#{historialConsultaModel.pasos}" var="p" emptyMessage="Sin pasos.">
-                    <p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column>
-                    <p:column headerText="Estado">#{p.estado}</p:column>
-                    <p:column headerText="Responsable">#{p.idPersonaRol.idPersona.nombres} #{p.idPersonaRol.idPersona.apellidos}</p:column>
-                    <p:column headerText="Valor">#{p.valor}</p:column>
-                    <p:column headerText="Fin">#{historialConsultaModel.fecha(p.fechaFin)}</p:column>
+                <h3>#{msg['ui.pasos']}</h3>
+                <p:dataTable value="#{historialConsultaModel.pasos}" var="p" emptyMessage="#{msg['ui.sinPasos']}">
+                    <p:column headerText="#{msg['ui.paso']}">#{p.idProcedimientoPaso.nombre}</p:column>
+                    <p:column headerText="#{msg['ui.estado']}">#{historialConsultaModel.estado(p.estado)}</p:column>
+                    <p:column headerText="#{msg['ui.responsable']}">#{p.idPersonaRol.idPersona.nombres} #{p.idPersonaRol.idPersona.apellidos}</p:column>
+                    <p:column headerText="#{msg['ui.valor']}">#{p.valor}</p:column>
+                    <p:column headerText="#{msg['ui.fin']}">#{historialConsultaModel.fecha(p.fechaFin)}</p:column>
                 </p:dataTable>
-                <h3>Órdenes de examen</h3>
-                <p:dataTable value="#{historialConsultaModel.ordenes}" var="o" emptyMessage="Sin órdenes.">
-                    <p:column headerText="Paso">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column>
-                    <p:column headerText="Indicaciones">#{o.indicaciones}</p:column>
-                    <p:column headerText="Fecha">#{historialConsultaModel.fecha(o.fechaCreacion)}</p:column>
+                <h3>#{msg['ui.ordenesExamen']}</h3>
+                <p:dataTable value="#{historialConsultaModel.ordenes}" var="o" emptyMessage="#{msg['ui.sinOrdenes']}">
+                    <p:column headerText="#{msg['ui.paso']}">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column>
+                    <p:column headerText="#{msg['ui.indicaciones']}">#{o.indicaciones}</p:column>
+                    <p:column headerText="#{msg['ui.fecha']}">#{historialConsultaModel.fecha(o.fechaCreacion)}</p:column>
                 </p:dataTable>
-                <h3>Resultados de examen</h3>
-                <p:dataTable value="#{historialConsultaModel.resultados}" var="r" emptyMessage="Sin resultados.">
-                    <p:column headerText="Orden">#{r.idOrdenExamen.indicaciones}</p:column>
-                    <p:column headerText="Resultado">#{r.resultado}</p:column>
-                    <p:column headerText="Interpretación">#{r.interpretacion}</p:column>
-                    <p:column headerText="Fecha">#{historialConsultaModel.fechaResultado(r.fechaCreacion)}</p:column>
+                <h3>#{msg['ui.resultadosExamen']}</h3>
+                <p:dataTable value="#{historialConsultaModel.resultados}" var="r" emptyMessage="#{msg['ui.sinResultados']}">
+                    <p:column headerText="#{msg['ui.orden']}">#{r.idOrdenExamen.indicaciones}</p:column>
+                    <p:column headerText="#{msg['ui.resultado']}">#{r.resultado}</p:column>
+                    <p:column headerText="#{msg['ui.interpretacion']}">#{r.interpretacion}</p:column>
+                    <p:column headerText="#{msg['ui.fecha']}">#{historialConsultaModel.fechaResultado(r.fechaCreacion)}</p:column>
                 </p:dataTable>
                 <h:panelGroup id="nuevoResultado" layout="block" rendered="#{not empty historialConsultaModel.ordenes}">
-                    <h3>Registrar resultado de una orden</h3>
+                    <h3>#{msg['ui.registrarResultadoOrden']}</h3>
                     <p:panelGrid columns="2" layout="flex">
-                        <p:outputLabel for="orden" value="Orden" />
+                        <p:outputLabel for="orden" value="#{msg['ui.orden']}" />
                         <p:selectOneMenu id="orden" value="#{historialConsultaModel.ordenId}" required="true">
-                            <f:selectItem itemLabel="Seleccione una orden" itemValue="" noSelectionOption="true" />
+                            <f:selectItem itemLabel="#{msg['ui.seleccioneOrden']}" itemValue="" noSelectionOption="true" />
                             <f:selectItems value="#{historialConsultaModel.ordenes}" var="o" itemLabel="#{o.indicaciones}" itemValue="#{o.idOrdenExamen.toString()}" />
                         </p:selectOneMenu>
-                        <p:outputLabel for="valor" value="Resultado" />
+                        <p:outputLabel for="valor" value="#{msg['ui.resultado']}" />
                         <p:inputTextarea id="valor" value="#{historialConsultaModel.resultado}" required="true" maxlength="255" />
-                        <p:outputLabel for="interpretacion" value="Interpretación" />
+                        <p:outputLabel for="interpretacion" value="#{msg['ui.interpretacion']}" />
                         <p:inputTextarea id="interpretacion" value="#{historialConsultaModel.interpretacion}" maxlength="255" />
                     </p:panelGrid>
-                    <p:commandButton value="Guardar resultado" icon="pi pi-check" styleClass="ui-button-success"
+                    <p:commandButton value="#{msg['ui.guardarResultado']}" icon="pi pi-check" styleClass="ui-button-success"
                                      action="#{historialConsultaModel.registrarResultado}" process="@this nuevoResultado" resetValues="true" update=":detalle :mensajes" />
                 </h:panelGroup>
             </p:panel>

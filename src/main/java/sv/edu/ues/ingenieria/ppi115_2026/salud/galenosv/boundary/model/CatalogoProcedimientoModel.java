@@ -62,7 +62,7 @@ public class CatalogoProcedimientoModel implements Serializable {
                     new FacesMessage(FacesMessage.SEVERITY_INFO, Mensajes.texto("registro.eliminado"), null));
         });
     }
-    private void ejecutar(Runnable r) { try { r.run(); } catch(ServiceException e) { error(Mensajes.mensaje(e)); } catch(EJBException | IllegalArgumentException e) { error("No se pudo guardar. Verifique los datos y la conexión."); } }
+    private void ejecutar(Runnable r) { try { r.run(); } catch(ServiceException e) { error(Mensajes.mensaje(e)); } catch(EJBException | IllegalArgumentException e) { error(Mensajes.texto("consulta.errorGuardar")); } }
     private void error(String m) { FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,m,null)); FacesContext.getCurrentInstance().validationFailed(); }
     public Procedimiento getSeleccionado() { return seleccionado; }
     public List<Procedimiento> getLista() { return lista; }

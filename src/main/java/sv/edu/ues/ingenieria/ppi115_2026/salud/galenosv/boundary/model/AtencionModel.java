@@ -49,7 +49,7 @@ public class AtencionModel implements Serializable {
     private boolean ejecutar(Runnable r) {
         try { r.run(); return true; }
         catch(ServiceException e) { mensaje(Mensajes.mensaje(e)); }
-        catch(EJBException | IllegalArgumentException e) { mensaje("No se pudo guardar. Verifique los datos y la conexión."); }
+        catch(EJBException | IllegalArgumentException e) { mensaje(Mensajes.texto("consulta.errorGuardar")); }
         return false;
     }
     private void mensaje(String m) { FacesContext.getCurrentInstance().addMessage(null,new FacesMessage(FacesMessage.SEVERITY_ERROR,m,null)); FacesContext.getCurrentInstance().validationFailed(); }
@@ -63,7 +63,7 @@ public class AtencionModel implements Serializable {
         }
     }
     private UUID responsableActivo() {
-        if (sesion.getRolActivo() == null) throw new ServiceException("Seleccione el rol y la clínica desde Cambiar de rol.");
+        if (sesion.getRolActivo() == null) throw ServiceException.localizada("consulta.seleccioneRolClinica", "Seleccione el rol y la clínica desde Cambiar de rol.");
         return sesion.getRolActivo().getIdPersonaRol();
     }
     public List<PersonaRol> getResponsables() { return responsables; }
@@ -71,7 +71,7 @@ public class AtencionModel implements Serializable {
     public void asignar(ConsultaProcedimientoPaso paso) {
         ejecutar(() -> {
             String id = responsableIds.get(paso.getIdConsultaProcedimientoPaso());
-            if (id == null || id.isBlank()) throw new ServiceException("Seleccione el responsable del paso.");
+            if (id == null || id.isBlank()) throw ServiceException.localizada("consulta.seleccioneResponsable", "Seleccione el responsable del paso.");
             servicio.asignarResponsable(consulta.getIdConsulta(), paso.getIdConsultaProcedimientoPaso(), UUID.fromString(id));
             recargar();
         });
@@ -90,8 +90,13 @@ public class AtencionModel implements Serializable {
         sesion.setConsulta(null);
         return "/paginas/consultas.xhtml?faces-redirect=true";
     }
-    public String fecha(java.time.OffsetDateTime f) { return f==null?"Pendiente":f.atZoneSameInstant(java.time.ZoneId.of("America/El_Salvador")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss XXX")); }
-    public String fechaResultado(java.util.Date f) { return f==null?"Pendiente":fecha(f.toInstant().atOffset(java.time.ZoneOffset.UTC)); }
+    public String fecha(java.time.OffsetDateTime f) { return f==null?Mensajes.texto("consulta.pendiente"):f.atZoneSameInstant(java.time.ZoneId.of("America/El_Salvador")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss XXX")); }
+    public String fechaResultado(java.util.Date f) { return f==null?Mensajes.texto("consulta.pendiente"):fecha(f.toInstant().atOffset(java.time.ZoneOffset.UTC)); }
+    public String estado(String valor) {
+        if ("PENDIENTE".equals(valor)) return Mensajes.texto("consulta.estadoPendiente");
+        if ("COMPLETADO".equals(valor)) return Mensajes.texto("consulta.estadoCompletado");
+        return valor;
+    }
     public Consulta getConsulta() { return consulta; }
     public List<Procedimiento> getProcedimientos() { return procedimientos; }
     public List<ConsultaProcedimiento> getRealizados() { return realizados; }

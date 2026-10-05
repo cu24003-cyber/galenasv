@@ -1,100 +1,100 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
-<ui:define name="pageTitle">Consulta</ui:define><ui:define name="title"><h3>Consulta del paciente</h3></ui:define>
+<ui:define name="pageTitle">#{msg['ui.consulta']}</ui:define><ui:define name="title"><h3>#{msg['ui.consultaPaciente']}</h3></ui:define>
 <ui:define name="menusidebar">
     <h:panelGroup rendered="#{not empty atencionSesion.consulta}" layout="block" style="padding: 1rem">
-        <h3>Consulta en curso</h3>
-        <p>Complete la atención y pulse Cerrar consulta para regresar a Consultas.</p>
-        <h:link outcome="/paginas/cambiar-rol.xhtml" value="Cambiar de rol" />
+        <h3>#{msg['ui.consultaCurso']}</h3>
+        <p>#{msg['ui.cerrarAyuda']}</p>
+        <h:link outcome="/paginas/cambiar-rol.xhtml" value="#{msg['ui.cambiarRol']}" />
     </h:panelGroup>
-    <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/consultas.xhtml" value="Consultas"/>
+    <h:link rendered="#{empty atencionSesion.consulta}" outcome="/paginas/consultas.xhtml" value="#{msg['ui.consultas']}"/>
 </ui:define>
 <ui:define name="content">
 <p:messages id="mensajes" />
-<h:panelGroup rendered="#{empty atencionModel.consulta}"><p>Cree una consulta o retome una consulta en curso desde Consultas.</p><p:button value="Consultas" outcome="/paginas/consultas.xhtml" /></h:panelGroup>
+<h:panelGroup rendered="#{empty atencionModel.consulta}"><p>#{msg['ui.crearRetomarAyuda']}</p><p:button value="#{msg['ui.consultas']}" outcome="/paginas/consultas.xhtml" /></h:panelGroup>
 <h:panelGroup rendered="#{not empty atencionModel.consulta}">
 <p><strong>#{atencionModel.consulta.idPersonaRol.idPersona.nombres} #{atencionModel.consulta.idPersonaRol.idPersona.apellidos}</strong> · #{atencionModel.consulta.idPersonaRol.idClinica.nombre}</p>
-<p>Inicio: #{atencionModel.fecha(atencionModel.consulta.fechaInicio)} · Fin: #{atencionModel.fecha(atencionModel.consulta.fechaFin)}</p>
-<p>Guarde los cambios y complete los pasos antes de cerrar la consulta. Para salir de esta página, utilice Cerrar consulta.</p>
+<p>#{msg['ui.inicio']}: #{atencionModel.fecha(atencionModel.consulta.fechaInicio)} · Fin: #{atencionModel.fecha(atencionModel.consulta.fechaFin)}</p>
+<p>#{msg['ui.guardarCerrarAyuda']}</p>
 <p:tabView id="tabs">
-<p:tab title="Consulta y procedimientos">
+<p:tab title="#{msg['ui.consultaProcedimientos']}">
 <h:form id="datos">
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="referencia" value="Referencia externa"/><p:inputText id="referencia" value="#{atencionModel.consulta.referenciaExterna}" maxlength="255"/>
-<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.consulta.observaciones}" maxlength="255"/>
+<p:outputLabel for="referencia" value="#{msg['ui.referenciaExterna']}"/><p:inputText id="referencia" value="#{atencionModel.consulta.referenciaExterna}" maxlength="255"/>
+<p:outputLabel for="notas" value="#{msg['ui.observaciones']}"/><p:inputTextarea id="notas" value="#{atencionModel.consulta.observaciones}" maxlength="255"/>
 </p:panelGrid>
-<p:commandButton value="Guardar consulta" icon="pi pi-save" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
-<p:commandButton value="Cerrar consulta" icon="pi pi-check-circle" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
+<p:commandButton value="#{msg['ui.guardarConsulta']}" icon="pi pi-save" action="#{atencionModel.guardar}" process="@form" update=":mensajes"/>
+<p:commandButton value="#{msg['ui.cerrarConsulta']}" icon="pi pi-check-circle" action="#{atencionModel.cerrar}" ajax="false" styleClass="ui-button-success"/>
 </h:form>
 <p:outputPanel id="formularioProcedimiento">
 <h:form id="nuevoProcedimiento" rendered="#{not atencionModel.procedimientoVisible}">
-<p:commandButton value="Agregar procedimiento" icon="pi pi-plus" action="#{atencionModel.nuevoProcedimiento}"
+<p:commandButton value="#{msg['ui.agregarProcedimiento']}" icon="pi pi-plus" action="#{atencionModel.nuevoProcedimiento}"
     process="@this" update=":tabs:formularioProcedimiento" resetValues="true"/>
 </h:form>
 <h:form id="procedimientos" styleClass="galeno-formulario" rendered="#{atencionModel.procedimientoVisible}">
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="procedimiento" value="Procedimiento"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
-<p:outputLabel for="notas" value="Observaciones del procedimiento"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}" maxlength="255"/>
-</p:panelGrid><p:commandButton value="Agregar a la consulta" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:formularioProcedimiento :tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
-<p:commandButton value="#{msg['boton.cancelar']}" action="#{atencionModel.cancelarProcedimiento}" process="@form" immediate="true"
+<p:outputLabel for="procedimiento" value="#{msg['ui.procedimiento']}"/><p:selectOneMenu id="procedimiento" value="#{atencionModel.procedimientoId}" required="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.procedimientos}" var="p" itemLabel="#{p.nombre}" itemValue="#{p.idProcedimiento.toString()}"/></p:selectOneMenu>
+<p:outputLabel for="notas" value="#{msg['ui.observacionesProcedimiento']}"/><p:inputTextarea id="notas" value="#{atencionModel.notasProcedimiento}" maxlength="255"/>
+</p:panelGrid><p:commandButton value="#{msg['ui.agregarConsulta']}" icon="pi pi-plus" action="#{atencionModel.agregar}" process="@form" update=":tabs:formularioProcedimiento :tabs:ejecucion :tabs:examen :tabs:orden :mensajes"/>
+<p:commandButton value="#{msg['boton.cancelar']}" action="#{atencionModel.cancelarProcedimiento}" process="@this" partialSubmit="false" onclick="GalenoFormularios.prepararCancelacion(this)"
     update=":tabs:formularioProcedimiento" resetValues="true" styleClass="ui-button-secondary"/>
 </h:form>
 </p:outputPanel>
 <h:form id="ejecucion">
-<p:dataTable value="#{atencionModel.realizados}" var="p" emptyMessage="Agregue un procedimiento.">
-<p:column headerText="Procedimiento">#{p.idProcedimiento.nombre}</p:column><p:column headerText="Inicio">#{atencionModel.fecha(p.fechaInicio)}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column><p:column headerText="Observaciones">#{p.observaciones}</p:column>
+<p:dataTable value="#{atencionModel.realizados}" var="p" emptyMessage="#{msg['ui.agregueProcedimiento']}">
+<p:column headerText="#{msg['ui.procedimiento']}">#{p.idProcedimiento.nombre}</p:column><p:column headerText="#{msg['ui.inicio']}">#{atencionModel.fecha(p.fechaInicio)}</p:column><p:column headerText="#{msg['ui.fin']}">#{atencionModel.fecha(p.fechaFin)}</p:column><p:column headerText="#{msg['ui.observaciones']}">#{p.observaciones}</p:column>
 </p:dataTable>
-<p:dataTable value="#{atencionModel.pasos}" var="p" emptyMessage="No hay pasos.">
-<p:column headerText="Procedimiento">#{p.idConsultaProcedimiento.idProcedimiento.nombre}</p:column><p:column headerText="Paso">#{p.idProcedimientoPaso.nombre}</p:column><p:column headerText="Rol del paso">#{p.idProcedimientoPaso.idRol.nombre}</p:column>
-<p:column headerText="Responsable">
+<p:dataTable value="#{atencionModel.pasos}" var="p" emptyMessage="#{msg['ui.sinPasosConsulta']}">
+<p:column headerText="#{msg['ui.procedimiento']}">#{p.idConsultaProcedimiento.idProcedimiento.nombre}</p:column><p:column headerText="#{msg['ui.paso']}">#{p.idProcedimientoPaso.nombre}</p:column><p:column headerText="#{msg['ui.rolPaso']}">#{p.idProcedimientoPaso.idRol.nombre}</p:column>
+<p:column headerText="#{msg['ui.responsable']}">
     <h:outputText rendered="#{not empty p.fechaFin}" value="#{p.idPersonaRol.idPersona.nombres} #{p.idPersonaRol.idPersona.apellidos} / #{p.idPersonaRol.idRol.nombre}" />
     <p:selectOneMenu id="responsable" value="#{atencionModel.responsableIds[p.idConsultaProcedimientoPaso]}"
                      rendered="#{empty p.fechaFin}" filter="true" filterMatchMode="contains">
-        <f:selectItem itemLabel="Seleccione responsable" itemValue="" noSelectionOption="true" />
+        <f:selectItem itemLabel="#{msg['ui.seleccioneResponsable']}" itemValue="" noSelectionOption="true" />
         <f:selectItems value="#{atencionModel.responsables}" var="r" itemValue="#{r.idPersonaRol.toString()}"
             itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos} / #{r.idRol.nombre}" />
         <p:ajax listener="#{atencionModel.asignar(p)}" process="@this" update=":mensajes" />
     </p:selectOneMenu>
 </p:column>
-<p:column headerText="Valor">
+<p:column headerText="#{msg['ui.valor']}">
     <h:outputText rendered="#{not empty p.fechaFin}" value="#{p.valor}" />
     <p:inputTextarea rendered="#{empty p.fechaFin}" value="#{p.valor}" rows="2" />
 </p:column>
-<p:column headerText="Estado">#{p.estado}</p:column><p:column headerText="Fin">#{atencionModel.fecha(p.fechaFin)}</p:column>
-<p:column><p:commandButton value="Completar" icon="pi pi-check" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@form" update="@form :mensajes"/></p:column>
+<p:column headerText="#{msg['ui.estado']}">#{atencionModel.estado(p.estado)}</p:column><p:column headerText="#{msg['ui.fin']}">#{atencionModel.fecha(p.fechaFin)}</p:column>
+<p:column><p:commandButton value="#{msg['ui.completar']}" icon="pi pi-check" action="#{atencionModel.completar(p)}" disabled="#{not empty p.fechaFin}" process="@form" update="@form :mensajes"/></p:column>
 </p:dataTable></h:form>
 </p:tab>
-<p:tab title="Registro de examen"><h:form id="examen">
-<p>El examen se registra en el catálogo y se asocia al paso del procedimiento.</p>
+<p:tab title="#{msg['ui.registroExamen']}"><h:form id="examen">
+<p>#{msg['ui.examenCatalogoAyuda']}</p>
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="nombre" value="Nombre del examen"/><p:inputText id="nombre" value="#{atencionModel.nombreExamen}" required="true" maxlength="155"/>
-<p:outputLabel for="tipo" value="Tipo de examen"/><p:autoComplete id="tipo" value="#{atencionModel.tipo}" completeMethod="#{atencionModel.completarTipos}" var="t" itemLabel="#{t.nombre}" itemValue="#{t}" converter="tipoExamenAtencionConverter" forceSelection="true" dropdown="true" required="true"/>
-<p:outputLabel for="notas" value="Observaciones"/><p:inputTextarea id="notas" value="#{atencionModel.notasExamen}" maxlength="255"/>
-</p:panelGrid><p:commandButton value="Registrar examen" icon="pi pi-plus" action="#{atencionModel.registrarExamen}" process="@form" update="@form :mensajes"/>
-<p:dataTable value="#{atencionModel.examenes}" var="e" emptyMessage="No hay exámenes asociados."><p:column headerText="Examen">#{e.idExamen.nombre}</p:column><p:column headerText="Paso">#{e.idProcedimientoPaso.nombre}</p:column></p:dataTable>
+<p:outputLabel for="paso" value="#{msg['ui.pasoProcedimiento']}"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="nombre" value="#{msg['ui.nombreExamen']}"/><p:inputText id="nombre" value="#{atencionModel.nombreExamen}" required="true" maxlength="155"/>
+<p:outputLabel for="tipo" value="#{msg['ui.tipoExamen']}"/><p:autoComplete id="tipo" value="#{atencionModel.tipo}" completeMethod="#{atencionModel.completarTipos}" var="t" itemLabel="#{t.nombre}" itemValue="#{t}" converter="tipoExamenAtencionConverter" forceSelection="true" dropdown="true" required="true"/>
+<p:outputLabel for="notas" value="#{msg['ui.observaciones']}"/><p:inputTextarea id="notas" value="#{atencionModel.notasExamen}" maxlength="255"/>
+</p:panelGrid><p:commandButton value="#{msg['ui.registrarExamen']}" icon="pi pi-plus" action="#{atencionModel.registrarExamen}" process="@form" update="@form :mensajes"/>
+<p:dataTable value="#{atencionModel.examenes}" var="e" emptyMessage="#{msg['ui.sinExamenesAsociados']}"><p:column headerText="#{msg['ui.examen']}">#{e.idExamen.nombre}</p:column><p:column headerText="#{msg['ui.paso']}">#{e.idProcedimientoPaso.nombre}</p:column></p:dataTable>
 </h:form></p:tab>
-<p:tab title="Orden de examen"><h:form id="orden"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="paso" value="Paso del procedimiento"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="Seleccione" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="indicaciones" value="Indicaciones / exámenes solicitados"/><p:inputTextarea id="indicaciones" value="#{atencionModel.indicaciones}" required="true" maxlength="255"/>
-</p:panelGrid><p:commandButton value="Registrar orden" icon="pi pi-plus" action="#{atencionModel.ordenar}" process="@form" update="@form :tabs:resultado :mensajes"/>
-<p:dataTable value="#{atencionModel.ordenes}" var="o" emptyMessage="No hay órdenes."><p:column headerText="Fecha y hora">#{atencionModel.fecha(o.fechaCreacion)}</p:column><p:column headerText="Paso">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column><p:column headerText="Indicaciones">#{o.indicaciones}</p:column></p:dataTable>
+<p:tab title="#{msg['ui.ordenExamen']}"><h:form id="orden"><p:panelGrid columns="2" layout="flex"><p:outputLabel for="paso" value="#{msg['ui.pasoProcedimiento']}"/><p:selectOneMenu id="paso" value="#{atencionModel.pasoId}" required="true"><f:selectItem itemLabel="#{msg['ui.seleccione']}" itemValue="" noSelectionOption="true"/><f:selectItems value="#{atencionModel.pasos}" var="p" itemLabel="#{p.idConsultaProcedimiento.idProcedimiento.nombre} / #{p.idProcedimientoPaso.nombre}" itemValue="#{p.idConsultaProcedimientoPaso.toString()}"/></p:selectOneMenu><p:outputLabel for="indicaciones" value="#{msg['ui.indicacionesExamenes']}"/><p:inputTextarea id="indicaciones" value="#{atencionModel.indicaciones}" required="true" maxlength="255"/>
+</p:panelGrid><p:commandButton value="#{msg['ui.registrarOrden']}" icon="pi pi-plus" action="#{atencionModel.ordenar}" process="@form" update="@form :tabs:resultado :mensajes"/>
+<p:dataTable value="#{atencionModel.ordenes}" var="o" emptyMessage="#{msg['ui.sinOrdenesConsulta']}"><p:column headerText="#{msg['ui.fechaHora']}">#{atencionModel.fecha(o.fechaCreacion)}</p:column><p:column headerText="#{msg['ui.paso']}">#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre}</p:column><p:column headerText="#{msg['ui.indicaciones']}">#{o.indicaciones}</p:column></p:dataTable>
 </h:form></p:tab>
-<p:tab title="Resultados de examen"><h:form id="resultado">
-<p>Registre los resultados de las órdenes emitidas durante esta consulta.</p>
+<p:tab title="#{msg['ui.resultadosExamen']}"><h:form id="resultado">
+<p>#{msg['ui.resultadosAyuda']}</p>
 <p:panelGrid columns="2" layout="flex">
-<p:outputLabel for="orden" value="Orden"/>
+<p:outputLabel for="orden" value="#{msg['ui.orden']}"/>
 <p:selectOneMenu id="orden" value="#{atencionModel.ordenId}" required="true">
-<f:selectItem itemLabel="Seleccione una orden" itemValue="" noSelectionOption="true"/>
+<f:selectItem itemLabel="#{msg['ui.seleccioneOrden']}" itemValue="" noSelectionOption="true"/>
 <f:selectItems value="#{atencionModel.ordenes}" var="o" itemLabel="#{o.idConsultaProcedimientoPaso.idProcedimientoPaso.nombre} / #{o.indicaciones}" itemValue="#{o.idOrdenExamen.toString()}"/>
 </p:selectOneMenu>
-<p:outputLabel for="valor" value="Resultado"/><p:inputTextarea id="valor" value="#{atencionModel.resultado}" required="true" maxlength="255"/>
-<p:outputLabel for="interpretacion" value="Interpretación"/><p:inputTextarea id="interpretacion" value="#{atencionModel.interpretacion}" maxlength="255"/>
+<p:outputLabel for="valor" value="#{msg['ui.resultado']}"/><p:inputTextarea id="valor" value="#{atencionModel.resultado}" required="true" maxlength="255"/>
+<p:outputLabel for="interpretacion" value="#{msg['ui.interpretacion']}"/><p:inputTextarea id="interpretacion" value="#{atencionModel.interpretacion}" maxlength="255"/>
 </p:panelGrid>
-<p:commandButton value="Registrar resultado" icon="pi pi-check" styleClass="ui-button-success" action="#{atencionModel.registrarResultado}" process="@form" resetValues="true" update="@form :mensajes"/>
-<p:dataTable value="#{atencionModel.resultados}" var="r" emptyMessage="No hay resultados.">
-<p:column headerText="Fecha y hora">#{atencionModel.fechaResultado(r.fechaCreacion)}</p:column>
-<p:column headerText="Orden">#{r.idOrdenExamen.indicaciones}</p:column>
-<p:column headerText="Resultado">#{r.resultado}</p:column>
-<p:column headerText="Interpretación">#{r.interpretacion}</p:column>
+<p:commandButton value="#{msg['ui.registrarResultado']}" icon="pi pi-check" styleClass="ui-button-success" action="#{atencionModel.registrarResultado}" process="@form" resetValues="true" update="@form :mensajes"/>
+<p:dataTable value="#{atencionModel.resultados}" var="r" emptyMessage="#{msg['ui.sinResultadosConsulta']}">
+<p:column headerText="#{msg['ui.fechaHora']}">#{atencionModel.fechaResultado(r.fechaCreacion)}</p:column>
+<p:column headerText="#{msg['ui.orden']}">#{r.idOrdenExamen.indicaciones}</p:column>
+<p:column headerText="#{msg['ui.resultado']}">#{r.resultado}</p:column>
+<p:column headerText="#{msg['ui.interpretacion']}">#{r.interpretacion}</p:column>
 </p:dataTable>
 </h:form></p:tab></p:tabView>
 </h:panelGroup>
