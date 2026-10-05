@@ -4,6 +4,10 @@
  */
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity;
 
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.UUID;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,9 +18,6 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.UUID;
 
 /**
  *

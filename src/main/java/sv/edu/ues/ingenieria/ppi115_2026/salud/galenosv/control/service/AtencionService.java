@@ -205,7 +205,11 @@ public class AtencionService {
         Consulta c = abierta(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
         if (paso.getFechaFin() != null) throw ServiceException.localizada("consulta.pasoYaCompletado", "El paso ya está completado.");
-        paso.setIdPersonaRol(responsable(responsableId, c.getIdPersonaRol()));
+        sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol resp = responsable(responsableId, c.getIdPersonaRol());
+        if (paso.getIdProcedimientoPaso() != null && paso.getIdProcedimientoPaso().getIdRol() != null && !resp.getIdRol().getIdRol().equals(paso.getIdProcedimientoPaso().getIdRol().getIdRol())) {
+            throw ServiceException.localizada("consulta.rolInvalido", "El responsable debe tener el rol " + paso.getIdProcedimientoPaso().getIdRol().getNombre());
+        }
+        paso.setIdPersonaRol(resp);
     }
     public void completar(UUID consulta,UUID pasoId) {
         completar(consulta, pasoId, null);

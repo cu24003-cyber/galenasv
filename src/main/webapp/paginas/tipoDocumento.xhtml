@@ -1,13 +1,16 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core"
-      xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:f="jakarta.faces.core" xmlns:h="jakarta.faces.html"
+    xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui">
 <ui:composition template="/WEB-INF/templates/template.xhtml">
     <ui:define name="pageTitle">#{msg['entidad.TipoDocumento']}</ui:define>
-    <ui:define name="title"><h3>#{msg['entidad.TipoDocumento']}</h3></ui:define>
+    <ui:define name="title">
+        <h3>#{msg['entidad.TipoDocumento']}</h3>
+    </ui:define>
     <ui:define name="content">
         <h:form id="frmTipoDocumento">
-            <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoTipoDocumento" value="#{msg['registro.nuevo']}" icon="pi pi-plus"
-                action="#{tipoDocumentoModel.nuevo}" process="@this" update="tipoDocumentoFormulario :messages" resetValues="true" />
+            <p:commandButton styleClass="ui-button-success" style="margin-bottom: 1rem;" id="btnNuevoTipoDocumento"
+                value="#{msg['registro.nuevo']}" icon="pi pi-plus" action="#{tipoDocumentoModel.nuevo}" process="@this"
+                update="tipoDocumentoFormulario :messages" resetValues="true" />
 
             <p:outputPanel id="tipoDocumentoFormulario" styleClass="galeno-formulario">
                 <p:panel header="#{msg['registro.detalle']}" rendered="#{tipoDocumentoModel.seleccionada != null}"
@@ -22,14 +25,16 @@
                         <p:outputLabel for="indicaciones" value="#{msg['campo.indicaciones']}" />
                         <p:inputTextarea id="indicaciones" value="#{tipoDocumentoModel.seleccionada.indicaciones}" />
                         <p:outputLabel for="expresionRegular" value="#{msg['campo.expresionRegular']}" />
-                        <p:inputText id="expresionRegular" value="#{tipoDocumentoModel.seleccionada.expresionRegular}">
+                        <p:inputText id="expresionRegular" value="#{tipoDocumentoModel.seleccionada.expresionRegular}"
+                            required="true">
                             <f:validator validatorId="expresionRegularValidator" />
                         </p:inputText>
                     </p:panelGrid>
                     <div style="text-align: right; margin-top: 1rem;">
                         <p:commandButton value="#{msg['boton.cancelar']}" icon="pi pi-times"
-                            action="#{tipoDocumentoModel.cancelar}" process="@form" immediate="true" update="tipoDocumentoFormulario :messages"
-                            resetValues="true" styleClass="ui-button-secondary" style="margin-right: .5rem;" />
+                            action="#{tipoDocumentoModel.cancelar}" process="@form" immediate="true"
+                            update="tipoDocumentoFormulario :messages" resetValues="true"
+                            styleClass="ui-button-secondary" style="margin-right: .5rem;" />
                         <p:commandButton value="#{msg['boton.guardar']}" icon="pi pi-check"
                             action="#{tipoDocumentoModel.guardar}" process="@this tipoDocumentoFormulario"
                             update="tipoDocumentoFormulario tblTipoDocumento :messages" />
@@ -37,30 +42,42 @@
                 </p:panel>
             </p:outputPanel>
 
-            <p:dataTable id="tblTipoDocumento" var="registro" value="#{tipoDocumentoModel.registros}" rows="10" paginator="true"
-                paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
-                <p:column headerText="#{msg['campo.nombre']}"><h:outputText value="#{registro.nombre}" /></p:column>
+            <p:dataTable id="tblTipoDocumento" var="registro" value="#{tipoDocumentoModel.registros}" rows="10"
+                paginator="true" paginatorPosition="bottom" emptyMessage="#{msg['tabla.vacia']}">
+                <p:column headerText="#{msg['campo.nombre']}">
+                    <h:outputText value="#{registro.nombre}" />
+                </p:column>
                 <p:column headerText="#{msg['campo.activo']}">
                     <h:outputText value="#{registro.activo ? msg['boton.si'] : msg['boton.no']}" />
                 </p:column>
-                <p:column headerText="#{msg['campo.indicaciones']}"><h:outputText value="#{registro.indicaciones}" /></p:column>
-                <p:column headerText="#{msg['campo.expresionRegular']}"><h:outputText value="#{registro.expresionRegular}" /></p:column>
+                <p:column headerText="#{msg['campo.indicaciones']}">
+                    <h:outputText value="#{registro.indicaciones}" />
+                </p:column>
+                <p:column headerText="#{msg['campo.expresionRegular']}">
+                    <h:outputText value="#{registro.expresionRegular}" />
+                </p:column>
                 <p:column headerText="#{msg['persona.columna.acciones']}">
-                    <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}" ariaLabel="#{msg['boton.editar']}"
-                        action="#{tipoDocumentoModel.editar(registro)}" process="@this" update="tipoDocumentoFormulario :messages" resetValues="true" />
-                    <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}" ariaLabel="#{msg['boton.eliminar']}"
-                        action="#{tipoDocumentoModel.eliminar(registro)}" process="@this" update="tblTipoDocumento tipoDocumentoFormulario :messages">
-                        <p:confirm header="#{msg['persona.confirmar.header']}" message="#{msg['registro.confirmarEliminar']}" />
+                    <p:commandButton icon="pi pi-pencil" title="#{msg['boton.editar']}"
+                        ariaLabel="#{msg['boton.editar']}" action="#{tipoDocumentoModel.editar(registro)}"
+                        process="@this" update="tipoDocumentoFormulario :messages" resetValues="true" />
+                    <p:commandButton icon="pi pi-trash" title="#{msg['boton.eliminar']}"
+                        ariaLabel="#{msg['boton.eliminar']}" action="#{tipoDocumentoModel.eliminar(registro)}"
+                        process="@this" update="tblTipoDocumento tipoDocumentoFormulario :messages">
+                        <p:confirm header="#{msg['persona.confirmar.header']}"
+                            message="#{msg['registro.confirmarEliminar']}" />
                     </p:commandButton>
                 </p:column>
             </p:dataTable>
             <p:confirmDialog global="true">
-                <p:commandButton value="#{msg['boton.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
-                <p:commandButton value="#{msg['boton.si']}" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
+                <p:commandButton value="#{msg['boton.no']}" type="button"
+                    styleClass="ui-confirmdialog-no ui-button-flat" />
+                <p:commandButton value="#{msg['boton.si']}" type="button"
+                    styleClass="ui-confirmdialog-yes ui-button-danger" />
             </p:confirmDialog>
         </h:form>
 
         <p:messages id="messages" showDetail="true" globalOnly="true" />
     </ui:define>
 </ui:composition>
+
 </html>

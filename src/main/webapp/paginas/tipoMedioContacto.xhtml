@@ -22,7 +22,7 @@
                         <p:outputLabel for="indicaciones" value="#{msg['campo.indicaciones']}" />
                         <p:inputTextarea id="indicaciones" value="#{tipoMedioContactoModel.seleccionada.indicaciones}" />
                         <p:outputLabel for="expresionRegular" value="#{msg['campo.expresionRegular']}" />
-                        <p:inputText id="expresionRegular" value="#{tipoMedioContactoModel.seleccionada.expresionRegular}">
+                        <p:inputText id="expresionRegular" value="#{tipoMedioContactoModel.seleccionada.expresionRegular}" required="true">
                             <f:validator validatorId="expresionRegularValidator" />
                         </p:inputText>
                     </p:panelGrid>

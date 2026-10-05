@@ -47,7 +47,7 @@
 </p:tab>
 <p:tab title="#{msg['ui.examenesPasos']}">
 <h:form id="examenes">
-<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento}"><p>#{msg['ui.guardarExamenesAyuda']}</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento}">
+<h:panelGroup rendered="#{empty catalogoProcedimientoModel.seleccionado.idProcedimiento or empty catalogoProcedimientoModel.pasos}"><p>#{msg['ui.guardarExamenesAyuda']}</p></h:panelGroup><h:panelGroup rendered="#{not empty catalogoProcedimientoModel.seleccionado.idProcedimiento and not empty catalogoProcedimientoModel.pasos}">
 <h3>#{msg['ui.examenesPasos']}</h3>
 <p:commandButton value="#{msg['ui.asociarExamen']}" icon="pi pi-plus" action="#{catalogoProcedimientoModel.nuevoExamen}"
     rendered="#{not catalogoProcedimientoModel.examenVisible}" process="@this" update="@form" resetValues="true"/>
