@@ -117,7 +117,7 @@ public class AtencionService {
     public void guardar(UUID id,String referencia,String observaciones) {
         Consulta c=abierta(id); c.setReferenciaExterna(texto(referencia, "La referencia", "consulta.longitudReferencia", 255)); c.setObservaciones(texto(observaciones, "Las observaciones", "consulta.longitudObservaciones", 255));
     }
-    public List<Procedimiento> procedimientos() { return em.createQuery("SELECT p FROM Procedimiento p WHERE p.activo=true ORDER BY p.nombre",Procedimiento.class).getResultList(); }
+    public List<Procedimiento> procedimientos() { return em.createQuery("SELECT p FROM Procedimiento p WHERE p.activo=true AND EXISTS (SELECT 1 FROM ProcedimientoPaso pp WHERE pp.idProcedimiento = p AND pp.indicaFin = true) ORDER BY p.nombre",Procedimiento.class).getResultList(); }
     public List<ConsultaProcedimiento> realizados(UUID id) {
         cargar(id);
         return em.createQuery("SELECT p FROM ConsultaProcedimiento p JOIN FETCH p.idProcedimiento WHERE p.idConsulta.idConsulta=:id ORDER BY p.fechaInicio",ConsultaProcedimiento.class).setParameter("id",id).getResultList();
