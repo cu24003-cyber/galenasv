@@ -1,0 +1,6047 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GalenoSV REST API",
+    "version": "1.0.0",
+    "description": "CRUD de las 20 entidades, DTOs con referencias UUID y errores JSON comunes. Las operaciones usan los servicios y repositorios existentes. La autenticación depende de la configuración del contenedor."
+  },
+  "servers": [
+    {
+      "url": "/galenosv/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Clinica"
+    },
+    {
+      "name": "Consulta"
+    },
+    {
+      "name": "ConsultaProcedimiento"
+    },
+    {
+      "name": "ConsultaProcedimientoPaso"
+    },
+    {
+      "name": "Documento"
+    },
+    {
+      "name": "Examen"
+    },
+    {
+      "name": "ExamenResultado"
+    },
+    {
+      "name": "ExamenTipoExamen"
+    },
+    {
+      "name": "MedioContacto"
+    },
+    {
+      "name": "OrdenExamen"
+    },
+    {
+      "name": "Persona"
+    },
+    {
+      "name": "PersonaRol"
+    },
+    {
+      "name": "Procedimiento"
+    },
+    {
+      "name": "ProcedimientoPaso"
+    },
+    {
+      "name": "ProcedimientoPasoExamen"
+    },
+    {
+      "name": "ProcedimientoPasoSecuencia"
+    },
+    {
+      "name": "Rol"
+    },
+    {
+      "name": "TipoDocumento"
+    },
+    {
+      "name": "TipoExamen"
+    },
+    {
+      "name": "TipoMedioContacto"
+    },
+    {
+      "name": "Estado"
+    }
+  ],
+  "paths": {
+    "/clinicas": {
+      "get": {
+        "tags": [
+          "Clinica"
+        ],
+        "operationId": "listarClinica",
+        "summary": "Listar Clinica",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClinicaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Clinica"
+        ],
+        "operationId": "crearClinica",
+        "summary": "Crear Clinica",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicaDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/clinicas/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Clinica"
+        ],
+        "operationId": "buscarClinica",
+        "summary": "Consultar Clinica",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Clinica"
+        ],
+        "operationId": "actualizarClinica",
+        "summary": "Reemplazar los campos de Clinica",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Clinica"
+        ],
+        "operationId": "eliminarClinica",
+        "summary": "Eliminar Clinica",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas": {
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "listarConsulta",
+        "summary": "Listar Consulta",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsultaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "crearConsulta",
+        "summary": "Crear Consulta",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "buscarConsulta",
+        "summary": "Consultar Consulta",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "actualizarConsulta",
+        "summary": "Reemplazar los campos de Consulta",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "eliminarConsulta",
+        "summary": "Eliminar Consulta",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas-procedimientos": {
+      "get": {
+        "tags": [
+          "ConsultaProcedimiento"
+        ],
+        "operationId": "listarConsultaProcedimiento",
+        "summary": "Listar ConsultaProcedimiento",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ConsultaProcedimiento"
+        ],
+        "operationId": "crearConsultaProcedimiento",
+        "summary": "Crear ConsultaProcedimiento",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas-procedimientos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ConsultaProcedimiento"
+        ],
+        "operationId": "buscarConsultaProcedimiento",
+        "summary": "Consultar ConsultaProcedimiento",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ConsultaProcedimiento"
+        ],
+        "operationId": "actualizarConsultaProcedimiento",
+        "summary": "Reemplazar los campos de ConsultaProcedimiento",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ConsultaProcedimiento"
+        ],
+        "operationId": "eliminarConsultaProcedimiento",
+        "summary": "Eliminar ConsultaProcedimiento",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas-procedimientos-pasos": {
+      "get": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "listarConsultaProcedimientoPaso",
+        "summary": "Listar ConsultaProcedimientoPaso",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "crearConsultaProcedimientoPaso",
+        "summary": "Crear ConsultaProcedimientoPaso",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/consultas-procedimientos-pasos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "buscarConsultaProcedimientoPaso",
+        "summary": "Consultar ConsultaProcedimientoPaso",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "actualizarConsultaProcedimientoPaso",
+        "summary": "Reemplazar los campos de ConsultaProcedimientoPaso",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "eliminarConsultaProcedimientoPaso",
+        "summary": "Eliminar ConsultaProcedimientoPaso",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/documentos": {
+      "get": {
+        "tags": [
+          "Documento"
+        ],
+        "operationId": "listarDocumento",
+        "summary": "Listar Documento",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Documento"
+        ],
+        "operationId": "crearDocumento",
+        "summary": "Crear Documento",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/documentos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Documento"
+        ],
+        "operationId": "buscarDocumento",
+        "summary": "Consultar Documento",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Documento"
+        ],
+        "operationId": "actualizarDocumento",
+        "summary": "Reemplazar los campos de Documento",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Documento"
+        ],
+        "operationId": "eliminarDocumento",
+        "summary": "Eliminar Documento",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes": {
+      "get": {
+        "tags": [
+          "Examen"
+        ],
+        "operationId": "listarExamen",
+        "summary": "Listar Examen",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExamenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Examen"
+        ],
+        "operationId": "crearExamen",
+        "summary": "Crear Examen",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Examen"
+        ],
+        "operationId": "buscarExamen",
+        "summary": "Consultar Examen",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Examen"
+        ],
+        "operationId": "actualizarExamen",
+        "summary": "Reemplazar los campos de Examen",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Examen"
+        ],
+        "operationId": "eliminarExamen",
+        "summary": "Eliminar Examen",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes-resultados": {
+      "get": {
+        "tags": [
+          "ExamenResultado"
+        ],
+        "operationId": "listarExamenResultado",
+        "summary": "Listar ExamenResultado",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExamenResultadoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExamenResultado"
+        ],
+        "operationId": "crearExamenResultado",
+        "summary": "Crear ExamenResultado",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenResultadoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenResultadoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes-resultados/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ExamenResultado"
+        ],
+        "operationId": "buscarExamenResultado",
+        "summary": "Consultar ExamenResultado",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenResultadoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ExamenResultado"
+        ],
+        "operationId": "actualizarExamenResultado",
+        "summary": "Reemplazar los campos de ExamenResultado",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenResultadoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenResultadoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ExamenResultado"
+        ],
+        "operationId": "eliminarExamenResultado",
+        "summary": "Eliminar ExamenResultado",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes-tipos-examen": {
+      "get": {
+        "tags": [
+          "ExamenTipoExamen"
+        ],
+        "operationId": "listarExamenTipoExamen",
+        "summary": "Listar ExamenTipoExamen",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExamenTipoExamenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExamenTipoExamen"
+        ],
+        "operationId": "crearExamenTipoExamen",
+        "summary": "Crear ExamenTipoExamen",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenTipoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenTipoExamenDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/examenes-tipos-examen/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ExamenTipoExamen"
+        ],
+        "operationId": "buscarExamenTipoExamen",
+        "summary": "Consultar ExamenTipoExamen",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenTipoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ExamenTipoExamen"
+        ],
+        "operationId": "actualizarExamenTipoExamen",
+        "summary": "Reemplazar los campos de ExamenTipoExamen",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamenTipoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamenTipoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ExamenTipoExamen"
+        ],
+        "operationId": "eliminarExamenTipoExamen",
+        "summary": "Eliminar ExamenTipoExamen",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/medios-contacto": {
+      "get": {
+        "tags": [
+          "MedioContacto"
+        ],
+        "operationId": "listarMedioContacto",
+        "summary": "Listar MedioContacto",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MedioContactoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MedioContacto"
+        ],
+        "operationId": "crearMedioContacto",
+        "summary": "Crear MedioContacto",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedioContactoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioContactoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/medios-contacto/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "MedioContacto"
+        ],
+        "operationId": "buscarMedioContacto",
+        "summary": "Consultar MedioContacto",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioContactoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "MedioContacto"
+        ],
+        "operationId": "actualizarMedioContacto",
+        "summary": "Reemplazar los campos de MedioContacto",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedioContactoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioContactoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MedioContacto"
+        ],
+        "operationId": "eliminarMedioContacto",
+        "summary": "Eliminar MedioContacto",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/ordenes-examen": {
+      "get": {
+        "tags": [
+          "OrdenExamen"
+        ],
+        "operationId": "listarOrdenExamen",
+        "summary": "Listar OrdenExamen",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrdenExamenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OrdenExamen"
+        ],
+        "operationId": "crearOrdenExamen",
+        "summary": "Crear OrdenExamen",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdenExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdenExamenDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/ordenes-examen/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "OrdenExamen"
+        ],
+        "operationId": "buscarOrdenExamen",
+        "summary": "Consultar OrdenExamen",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdenExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "OrdenExamen"
+        ],
+        "operationId": "actualizarOrdenExamen",
+        "summary": "Reemplazar los campos de OrdenExamen",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdenExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdenExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "OrdenExamen"
+        ],
+        "operationId": "eliminarOrdenExamen",
+        "summary": "Eliminar OrdenExamen",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/personas": {
+      "get": {
+        "tags": [
+          "Persona"
+        ],
+        "operationId": "listarPersona",
+        "summary": "Listar Persona",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Persona"
+        ],
+        "operationId": "crearPersona",
+        "summary": "Crear Persona",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/personas/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Persona"
+        ],
+        "operationId": "buscarPersona",
+        "summary": "Consultar Persona",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Persona"
+        ],
+        "operationId": "actualizarPersona",
+        "summary": "Reemplazar los campos de Persona",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Persona"
+        ],
+        "operationId": "eliminarPersona",
+        "summary": "Eliminar Persona",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/personas-roles": {
+      "get": {
+        "tags": [
+          "PersonaRol"
+        ],
+        "operationId": "listarPersonaRol",
+        "summary": "Listar PersonaRol",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonaRolDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "PersonaRol"
+        ],
+        "operationId": "crearPersonaRol",
+        "summary": "Crear PersonaRol",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaRolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaRolDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/personas-roles/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "PersonaRol"
+        ],
+        "operationId": "buscarPersonaRol",
+        "summary": "Consultar PersonaRol",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaRolDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "PersonaRol"
+        ],
+        "operationId": "actualizarPersonaRol",
+        "summary": "Reemplazar los campos de PersonaRol",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaRolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaRolDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "PersonaRol"
+        ],
+        "operationId": "eliminarPersonaRol",
+        "summary": "Eliminar PersonaRol",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos": {
+      "get": {
+        "tags": [
+          "Procedimiento"
+        ],
+        "operationId": "listarProcedimiento",
+        "summary": "Listar Procedimiento",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedimientoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Procedimiento"
+        ],
+        "operationId": "crearProcedimiento",
+        "summary": "Crear Procedimiento",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Procedimiento"
+        ],
+        "operationId": "buscarProcedimiento",
+        "summary": "Consultar Procedimiento",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Procedimiento"
+        ],
+        "operationId": "actualizarProcedimiento",
+        "summary": "Reemplazar los campos de Procedimiento",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Procedimiento"
+        ],
+        "operationId": "eliminarProcedimiento",
+        "summary": "Eliminar Procedimiento",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos": {
+      "get": {
+        "tags": [
+          "ProcedimientoPaso"
+        ],
+        "operationId": "listarProcedimientoPaso",
+        "summary": "Listar ProcedimientoPaso",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedimientoPasoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ProcedimientoPaso"
+        ],
+        "operationId": "crearProcedimientoPaso",
+        "summary": "Crear ProcedimientoPaso",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ProcedimientoPaso"
+        ],
+        "operationId": "buscarProcedimientoPaso",
+        "summary": "Consultar ProcedimientoPaso",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ProcedimientoPaso"
+        ],
+        "operationId": "actualizarProcedimientoPaso",
+        "summary": "Reemplazar los campos de ProcedimientoPaso",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ProcedimientoPaso"
+        ],
+        "operationId": "eliminarProcedimientoPaso",
+        "summary": "Eliminar ProcedimientoPaso",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos-examenes": {
+      "get": {
+        "tags": [
+          "ProcedimientoPasoExamen"
+        ],
+        "operationId": "listarProcedimientoPasoExamen",
+        "summary": "Listar ProcedimientoPasoExamen",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ProcedimientoPasoExamen"
+        ],
+        "operationId": "crearProcedimientoPasoExamen",
+        "summary": "Crear ProcedimientoPasoExamen",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos-examenes/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ProcedimientoPasoExamen"
+        ],
+        "operationId": "buscarProcedimientoPasoExamen",
+        "summary": "Consultar ProcedimientoPasoExamen",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ProcedimientoPasoExamen"
+        ],
+        "operationId": "actualizarProcedimientoPasoExamen",
+        "summary": "Reemplazar los campos de ProcedimientoPasoExamen",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ProcedimientoPasoExamen"
+        ],
+        "operationId": "eliminarProcedimientoPasoExamen",
+        "summary": "Eliminar ProcedimientoPasoExamen",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos-secuencias": {
+      "get": {
+        "tags": [
+          "ProcedimientoPasoSecuencia"
+        ],
+        "operationId": "listarProcedimientoPasoSecuencia",
+        "summary": "Listar ProcedimientoPasoSecuencia",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ProcedimientoPasoSecuencia"
+        ],
+        "operationId": "crearProcedimientoPasoSecuencia",
+        "summary": "Crear ProcedimientoPasoSecuencia",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/procedimientos-pasos-secuencias/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "ProcedimientoPasoSecuencia"
+        ],
+        "operationId": "buscarProcedimientoPasoSecuencia",
+        "summary": "Consultar ProcedimientoPasoSecuencia",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ProcedimientoPasoSecuencia"
+        ],
+        "operationId": "actualizarProcedimientoPasoSecuencia",
+        "summary": "Reemplazar los campos de ProcedimientoPasoSecuencia",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedimientoPasoSecuenciaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ProcedimientoPasoSecuencia"
+        ],
+        "operationId": "eliminarProcedimientoPasoSecuencia",
+        "summary": "Eliminar ProcedimientoPasoSecuencia",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": [
+          "Rol"
+        ],
+        "operationId": "listarRol",
+        "summary": "Listar Rol",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RolDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Rol"
+        ],
+        "operationId": "crearRol",
+        "summary": "Crear Rol",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Rol"
+        ],
+        "operationId": "buscarRol",
+        "summary": "Consultar Rol",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Rol"
+        ],
+        "operationId": "actualizarRol",
+        "summary": "Reemplazar los campos de Rol",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Rol"
+        ],
+        "operationId": "eliminarRol",
+        "summary": "Eliminar Rol",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-documento": {
+      "get": {
+        "tags": [
+          "TipoDocumento"
+        ],
+        "operationId": "listarTipoDocumento",
+        "summary": "Listar TipoDocumento",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoDocumentoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TipoDocumento"
+        ],
+        "operationId": "crearTipoDocumento",
+        "summary": "Crear TipoDocumento",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoDocumentoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoDocumentoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-documento/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "TipoDocumento"
+        ],
+        "operationId": "buscarTipoDocumento",
+        "summary": "Consultar TipoDocumento",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoDocumentoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "TipoDocumento"
+        ],
+        "operationId": "actualizarTipoDocumento",
+        "summary": "Reemplazar los campos de TipoDocumento",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoDocumentoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoDocumentoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TipoDocumento"
+        ],
+        "operationId": "eliminarTipoDocumento",
+        "summary": "Eliminar TipoDocumento",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-examen": {
+      "get": {
+        "tags": [
+          "TipoExamen"
+        ],
+        "operationId": "listarTipoExamen",
+        "summary": "Listar TipoExamen",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoExamenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TipoExamen"
+        ],
+        "operationId": "crearTipoExamen",
+        "summary": "Crear TipoExamen",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoExamenDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-examen/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "TipoExamen"
+        ],
+        "operationId": "buscarTipoExamen",
+        "summary": "Consultar TipoExamen",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "TipoExamen"
+        ],
+        "operationId": "actualizarTipoExamen",
+        "summary": "Reemplazar los campos de TipoExamen",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoExamenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoExamenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TipoExamen"
+        ],
+        "operationId": "eliminarTipoExamen",
+        "summary": "Eliminar TipoExamen",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-medio-contacto": {
+      "get": {
+        "tags": [
+          "TipoMedioContacto"
+        ],
+        "operationId": "listarTipoMedioContacto",
+        "summary": "Listar TipoMedioContacto",
+        "responses": {
+          "200": {
+            "description": "Listado; devuelve [] cuando no hay registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoMedioContactoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TipoMedioContacto"
+        ],
+        "operationId": "crearTipoMedioContacto",
+        "summary": "Crear TipoMedioContacto",
+        "description": "Omitir el identificador propio; el servidor lo genera. Las relaciones usan UUID existentes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoMedioContactoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoMedioContactoDto"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL del recurso creado.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/tipos-medio-contacto/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "TipoMedioContacto"
+        ],
+        "operationId": "buscarTipoMedioContacto",
+        "summary": "Consultar TipoMedioContacto",
+        "responses": {
+          "200": {
+            "description": "Registro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoMedioContactoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "TipoMedioContacto"
+        ],
+        "operationId": "actualizarTipoMedioContacto",
+        "summary": "Reemplazar los campos de TipoMedioContacto",
+        "description": "Reemplaza todos los campos del DTO; no crea un registro cuando el UUID no existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoMedioContactoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registro actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoMedioContactoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TipoMedioContacto"
+        ],
+        "operationId": "eliminarTipoMedioContacto",
+        "summary": "Eliminar TipoMedioContacto",
+        "responses": {
+          "204": {
+            "description": "Eliminado; respuesta sin cuerpo."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "default": {
+            "$ref": "#/components/responses/HttpError"
+          }
+        }
+      }
+    },
+    "/jakartaee11": {
+      "get": {
+        "tags": [
+          "Estado"
+        ],
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "description": "La aplicación REST responde.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "ping Jakarta EE"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClinicaDto": {
+        "type": "object",
+        "properties": {
+          "idClinica": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "tipo": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "comentarios": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ConsultaDto": {
+        "type": "object",
+        "properties": {
+          "idConsulta": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "referenciaExterna": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idPersonaRol": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de PersonaRol; debe existir."
+          }
+        },
+        "required": [
+          "idPersonaRol"
+        ]
+      },
+      "ConsultaProcedimientoDto": {
+        "type": "object",
+        "properties": {
+          "idConsultaProcedimiento": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "idProcedimiento": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Procedimiento; debe existir."
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idConsulta": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Consulta; debe existir."
+          }
+        },
+        "required": [
+          "idProcedimiento",
+          "idConsulta"
+        ]
+      },
+      "ConsultaProcedimientoPasoDto": {
+        "type": "object",
+        "properties": {
+          "idConsultaProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "valor": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idConsultaProcedimiento": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de ConsultaProcedimiento; debe existir."
+          },
+          "idPersonaRol": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de PersonaRol; debe existir."
+          },
+          "idProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de ProcedimientoPaso; debe existir."
+          }
+        },
+        "required": [
+          "idConsultaProcedimiento",
+          "idPersonaRol",
+          "idProcedimientoPaso"
+        ]
+      },
+      "DocumentoDto": {
+        "type": "object",
+        "properties": {
+          "idDocumento": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "valor": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "rutaFisica": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idPersona": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Persona; debe existir."
+          },
+          "idTipoDocumento": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de TipoDocumento; debe existir."
+          }
+        },
+        "required": [
+          "valor",
+          "idPersona",
+          "idTipoDocumento"
+        ]
+      },
+      "ExamenDto": {
+        "type": "object",
+        "properties": {
+          "idExamen": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ExamenResultadoDto": {
+        "type": "object",
+        "properties": {
+          "idExamenResultado": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2000-01-01T12:00:00.000Z",
+            "description": "Fecha y hora con milisegundos y zona horaria."
+          },
+          "resultado": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "interpretacion": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "rutaAtestado": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idOrdenExamen": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de OrdenExamen; debe existir."
+          }
+        },
+        "required": [
+          "resultado",
+          "idOrdenExamen"
+        ]
+      },
+      "ExamenTipoExamenDto": {
+        "type": "object",
+        "properties": {
+          "idExamenTipoExamen": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idExamen": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Examen; debe existir."
+          },
+          "idTipoExamen": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de TipoExamen; debe existir."
+          }
+        },
+        "required": [
+          "idExamen",
+          "idTipoExamen"
+        ]
+      },
+      "MedioContactoDto": {
+        "type": "object",
+        "properties": {
+          "idMedioContacto": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "valor": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2000-01-01T12:00:00.000Z",
+            "description": "Fecha y hora con milisegundos y zona horaria."
+          },
+          "idPersona": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Persona; debe existir."
+          },
+          "idTipoMedioContacto": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de TipoMedioContacto; debe existir."
+          }
+        },
+        "required": [
+          "valor",
+          "idPersona",
+          "idTipoMedioContacto"
+        ]
+      },
+      "OrdenExamenDto": {
+        "type": "object",
+        "properties": {
+          "idOrdenExamen": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "indicaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "idConsultaProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de ConsultaProcedimientoPaso; debe existir."
+          }
+        },
+        "required": [
+          "indicaciones",
+          "idConsultaProcedimientoPaso"
+        ]
+      },
+      "PersonaDto": {
+        "type": "object",
+        "properties": {
+          "idPersona": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2000-01-01T12:00:00.000Z",
+            "description": "Fecha y hora con milisegundos y zona horaria."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2000-01-01T12:00:00.000Z",
+            "description": "Fecha y hora con milisegundos y zona horaria."
+          }
+        },
+        "required": [
+          "nombres",
+          "apellidos",
+          "fechaNacimiento"
+        ]
+      },
+      "PersonaRolDto": {
+        "type": "object",
+        "properties": {
+          "idPersonaRol": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2000-01-01T12:00:00.000Z",
+            "description": "Fecha y hora con milisegundos y zona horaria."
+          },
+          "idClinica": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Clinica; debe existir."
+          },
+          "idPersona": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Persona; debe existir."
+          },
+          "idRol": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Rol; debe existir."
+          }
+        },
+        "required": [
+          "idClinica",
+          "idPersona",
+          "idRol"
+        ]
+      },
+      "ProcedimientoDto": {
+        "type": "object",
+        "properties": {
+          "idProcedimiento": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ProcedimientoPasoDto": {
+        "type": "object",
+        "properties": {
+          "idProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "indicaFin": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "idProcedimiento": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Procedimiento; debe existir."
+          },
+          "idRol": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Rol; debe existir."
+          }
+        },
+        "required": [
+          "nombre",
+          "idProcedimiento",
+          "idRol"
+        ]
+      },
+      "ProcedimientoPasoExamenDto": {
+        "type": "object",
+        "properties": {
+          "idProcedimientoPasoExamen": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "idExamen": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de Examen; debe existir."
+          },
+          "idProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de ProcedimientoPaso; debe existir."
+          }
+        },
+        "required": [
+          "idExamen",
+          "idProcedimientoPaso"
+        ]
+      },
+      "ProcedimientoPasoSecuenciaDto": {
+        "type": "object",
+        "properties": {
+          "idProcedimientoPasoSecuencia": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "idProcedimientoPasoReferencia": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "UUID de ProcedimientoPaso; debe existir."
+          },
+          "tipoSecuencia": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1
+          },
+          "idProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID de ProcedimientoPaso; debe existir."
+          }
+        },
+        "required": [
+          "tipoSecuencia",
+          "idProcedimientoPaso"
+        ]
+      },
+      "RolDto": {
+        "type": "object",
+        "properties": {
+          "idRol": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "TipoDocumentoDto": {
+        "type": "object",
+        "properties": {
+          "idTipoDocumento": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "indicaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "expresionRegular": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "TipoExamenDto": {
+        "type": "object",
+        "properties": {
+          "idTipoExamen": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "TipoMedioContactoDto": {
+        "type": "object",
+        "properties": {
+          "idTipoMedioContacto": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Generado por el servidor en POST. En PUT puede omitirse o debe coincidir con la URL."
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 155,
+            "minLength": 1
+          },
+          "indicaciones": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "expresionRegular": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "activo": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "required": [
+          "status",
+          "code",
+          "message",
+          "path",
+          "timestamp",
+          "details"
+        ],
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 404
+          },
+          "code": {
+            "type": "string",
+            "example": "recurso.noExiste"
+          },
+          "message": {
+            "type": "string",
+            "example": "El recurso no existe."
+          },
+          "path": {
+            "type": "string",
+            "example": "/galenosv/api/clinicas/6a4ed47b-8d96-4d83-bbe3-653026ae5120"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "message"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "UUID, JSON o datos inválidos.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Autenticación requerida por el contenedor, si se configura.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Acceso denegado por el contenedor, si se configura.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso, ruta o relación inexistente.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "Método HTTP no permitido; conserva Allow.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "NotAcceptable": {
+        "description": "Se requiere Accept: application/json.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Duplicado, concurrencia o restricciones de negocio/relaciones.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Se requiere Content-Type: application/json.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Error interno; las causas se registran en el servidor.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "HttpError": {
+        "description": "Otro error HTTP; conserva el código y las cabeceras del runtime.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ El paquete base es `sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv`:
 boundary/
   model/       Beans JSF, presentación, conversión y validación de campos
   web/         Filtro de navegación de la consulta activa
-  resources/   Recursos HTTP
+  resources/   Recursos REST, DTOs y proveedores de errores HTTP
 control/
   service/     Reglas de negocio, transacciones y sesión del flujo de atención
 entity/
@@ -23,3 +23,5 @@ La cancelación utiliza `process="@form" immediate="true"`: JSF decodifica los c
 `AtencionSesion` es un bean de Control porque conserva el contexto del flujo de atención que utilizan los servicios y el filtro. Las entidades JPA, servicios EJB, repositorios y excepciones de negocio mantienen clases propias porque tienen identidad, ciclo de vida o contratos independientes.
 
 Después de cambiar paquetes, ejecutar `mvn clean package` con JDK 21 para evitar clases antiguas en el WAR. La unidad de persistencia y los conversores explícitos apuntan a los paquetes BCE. `refactor_script.sh` comprueba las referencias; los generadores crean solamente archivos faltantes y respetan los existentes.
+
+La API REST se activa en `/api` mediante `AppConfig`. Su contrato HTTP, los recursos de las 20 entidades y los ejemplos están en [api-rest.md](api-rest.md). El contrato OpenAPI se publica en `/galenosv/openapi.json`.
