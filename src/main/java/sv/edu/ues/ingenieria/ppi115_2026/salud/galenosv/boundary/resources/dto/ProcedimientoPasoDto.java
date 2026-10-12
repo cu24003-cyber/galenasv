@@ -8,6 +8,11 @@ import java.util.UUID;
 /** Contrato JSON de ProcedimientoPaso; las relaciones se representan mediante UUID. */
 public class ProcedimientoPasoDto implements IdentifiableDto {
 
+    /** Solo se usa al crear un paso mediante el flujo del catálogo. */
+    private UUID idPasoPrevio;
+    public UUID getIdPasoPrevio() { return idPasoPrevio; }
+    public void setIdPasoPrevio(UUID value) { idPasoPrevio = value; }
+
     private UUID idProcedimientoPaso;
 
     @NotBlank(message = "nombre es obligatorio.")

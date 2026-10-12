@@ -2,12 +2,25 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.AtencionDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ConsultaProcedimientoPasoDto;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ConsultaProcedimientoPasoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ConsultaProcedimientoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaRolService;
@@ -23,6 +36,42 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
     @Inject
     private ConsultaProcedimientoPasoService service;
 
+    @Inject private AtencionService atencion;
+
+    @Override
+    protected Set<String> metodosEscritura() { return idPadre() == null ? Set.of("POST", "PUT", "DELETE") : Set.of(); }
+
+    @PUT
+    @Path("{id}/responsable")
+    public Response asignar(@PathParam("id") String id, @Valid @NotNull AtencionDto.Responsable datos) {
+        ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
+        atencion.asignarResponsable(consultaDe(paso), paso.getIdConsultaProcedimientoPaso(), datos.getIdPersonaRol());
+        return Response.ok(toDto(paso)).build();
+    }
+
+    @PUT
+    @Path("{id}/finalizacion")
+    public Response completar(@PathParam("id") String id, @Valid @NotNull AtencionDto.Finalizacion datos) {
+        ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
+        atencion.completar(consultaDe(paso), paso.getIdConsultaProcedimientoPaso(), datos.getValor());
+        return Response.ok(toDto(paso)).build();
+    }
+
+    @POST
+    @Path("{id}/examenes")
+    public Response registrarExamen(@PathParam("id") String id, @Valid @NotNull AtencionDto.Examen datos,
+            @Context UriInfo uriInfo, @Context ResourceContext recursos) {
+        ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
+        var examen = atencion.examen(consultaDe(paso), paso.getIdConsultaProcedimientoPaso(),
+                datos.getNombre(), datos.getObservaciones(), datos.getIdTipoExamen());
+        return Response.created(uriInfo.getBaseUriBuilder().path("examenes").path(examen.getIdExamen().toString()).build())
+                .entity(recursos.getResource(ExamenResource.class).toDto(examen)).build();
+    }
+
+    private UUID consultaDe(ConsultaProcedimientoPaso paso) {
+        return paso.getIdConsultaProcedimiento().getIdConsulta().getIdConsulta();
+    }
+
     @Inject
     private ConsultaProcedimientoService consultaProcedimientoService;
 
@@ -31,6 +80,20 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
 
     @Inject
     private ProcedimientoPasoService procedimientoPasoService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idConsultaProcedimiento", "idConsultaProcedimiento.idConsultaProcedimiento",
+                "idPersonaRol", "idPersonaRol.idPersonaRol",
+                "idProcedimientoPaso", "idProcedimientoPaso.idProcedimientoPaso");
+    }
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "ordenes-examen", new ColeccionRelacionada(OrdenExamenResource.class, "idConsultaProcedimientoPaso", Set.of("POST")));
+    }
 
     @Override
     protected ConsultaProcedimientoPasoService getService() {

@@ -3,6 +3,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.PersistenceException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.RepositoryInterface;
 
 public abstract class AbstractService<T, ID> {
@@ -55,6 +57,14 @@ public abstract class AbstractService<T, ID> {
 
     public List<T> listarTodos() {
         return getRepository().findAll();
+    }
+
+    public List<T> listarPorFiltros(Map<String, UUID> filtros) {
+        return filtros.isEmpty() ? listarTodos() : getRepository().findByFilters(filtros);
+    }
+
+    public boolean perteneceAFiltros(ID id, Map<String, UUID> filtros) {
+        return getRepository().matchesFilters(id, filtros);
     }
 
     protected abstract ID obtenerId(T entidad);

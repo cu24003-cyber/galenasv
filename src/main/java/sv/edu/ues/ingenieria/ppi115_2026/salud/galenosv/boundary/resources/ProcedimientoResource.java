@@ -6,6 +6,8 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ProcedimientoDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ProcedimientoService;
@@ -19,6 +21,13 @@ public class ProcedimientoResource extends AbstractResource<Procedimiento, Proce
 
     @Inject
     private ProcedimientoService service;
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "pasos", new ColeccionRelacionada(ProcedimientoPasoResource.class, "idProcedimiento", Set.of("POST")),
+                "consultas-procedimientos", new ColeccionRelacionada(ConsultaProcedimientoResource.class, "idProcedimiento"));
+    }
 
     @Override
     protected ProcedimientoService getService() {

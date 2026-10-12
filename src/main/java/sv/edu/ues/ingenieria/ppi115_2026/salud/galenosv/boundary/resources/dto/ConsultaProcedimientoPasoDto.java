@@ -19,7 +19,6 @@ public class ConsultaProcedimientoPasoDto implements IdentifiableDto {
     @Size(max = 20, message = "estado admite hasta 20 caracteres.")
     private String estado;
 
-    @Size(max = 255, message = "valor admite hasta 255 caracteres.")
     private String valor;
 
     @NotNull(message = "idConsultaProcedimiento es obligatorio.")

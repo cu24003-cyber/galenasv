@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ExamenTipoExamenDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ExamenService;
@@ -27,6 +28,13 @@ public class ExamenTipoExamenResource extends AbstractResource<ExamenTipoExamen,
 
     @Inject
     private TipoExamenService tipoExamenService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idExamen", "idExamen.idExamen",
+                "idTipoExamen", "idTipoExamen.idTipoExamen");
+    }
 
     @Override
     protected ExamenTipoExamenService getService() {

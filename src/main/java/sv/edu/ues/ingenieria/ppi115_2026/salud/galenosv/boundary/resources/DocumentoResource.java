@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.DocumentoDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DocumentoService;
@@ -22,11 +23,24 @@ public class DocumentoResource extends AbstractResource<Documento, DocumentoDto>
     @Inject
     private DocumentoService service;
 
+    @Override
+    protected void eliminarEntidad(Documento entidad) {
+        if ("idPersona".equals(filtroPadre())) service.eliminarDePersona(entidad.getIdDocumento(), idPadre());
+        else super.eliminarEntidad(entidad);
+    }
+
     @Inject
     private PersonaService personaService;
 
     @Inject
     private TipoDocumentoService tipoDocumentoService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idPersona", "idPersona.idPersona",
+                "idTipoDocumento", "idTipoDocumento.idTipoDocumento");
+    }
 
     @Override
     protected DocumentoService getService() {
@@ -51,9 +65,14 @@ public class DocumentoResource extends AbstractResource<Documento, DocumentoDto>
 
     @Override
     protected void aplicar(DocumentoDto dto, Documento entidad) {
-        entidad.setValor(dto.getValor());
+        var tipo = relacion(tipoDocumentoService, dto.getIdTipoDocumento(), "idTipoDocumento");
+        String valor = dto.getValor();
+        if (idPadre() != null || esModificacionParcial()) {
+            valor = validarValorCatalogo(valor, tipo.getActivo(), tipo.getExpresionRegular());
+        }
+        entidad.setValor(valor);
         entidad.setRutaFisica(dto.getRutaFisica());
         entidad.setIdPersona(relacion(personaService, dto.getIdPersona(), "idPersona"));
-        entidad.setIdTipoDocumento(relacion(tipoDocumentoService, dto.getIdTipoDocumento(), "idTipoDocumento"));
+        entidad.setIdTipoDocumento(tipo);
     }
 }

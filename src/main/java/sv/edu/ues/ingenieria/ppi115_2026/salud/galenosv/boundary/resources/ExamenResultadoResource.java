@@ -6,8 +6,13 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ExamenResultadoDto;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.exception.ApiException;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ExamenResultadoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.OrdenExamenService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenResultado;
@@ -21,8 +26,31 @@ public class ExamenResultadoResource extends AbstractResource<ExamenResultado, E
     @Inject
     private ExamenResultadoService service;
 
+    @Inject private AtencionService atencion;
+
+    @Override
+    protected Set<String> metodosEscritura() { return idPadre() == null ? Set.of("POST", "PUT", "DELETE") : Set.of("POST"); }
+
+    @Override
+    protected ExamenResultado crearEntidad(UUID id, ExamenResultadoDto datos) {
+        if (idPadre() == null) return super.crearEntidad(id, datos);
+        var orden = relacion(ordenExamenService, datos.getIdOrdenExamen(), "idOrdenExamen");
+        if (datos.getFechaCreacion() != null) {
+            throw new ApiException(
+                    Response.Status.BAD_REQUEST, "campos.servidor", "La fecha del resultado la genera el servidor.");
+        }
+        return atencion.registrarResultado(orden.getIdConsultaProcedimientoPaso().getIdConsultaProcedimiento()
+                .getIdConsulta().getIdConsulta(), orden.getIdOrdenExamen(), datos.getResultado(), datos.getInterpretacion());
+    }
+
     @Inject
     private OrdenExamenService ordenExamenService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idOrdenExamen", "idOrdenExamen.idOrdenExamen");
+    }
 
     @Override
     protected ExamenResultadoService getService() {

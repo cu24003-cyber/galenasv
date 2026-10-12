@@ -6,6 +6,8 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ClinicaDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ClinicaService;
@@ -19,6 +21,14 @@ public class ClinicaResource extends AbstractResource<Clinica, ClinicaDto> {
 
     @Inject
     private ClinicaService service;
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "personas", new ColeccionRelacionada(PersonaResource.class, "idClinica", Set.of("POST")),
+                "personas-roles", new ColeccionRelacionada(PersonaRolResource.class, "idClinica", CRUD),
+                "consultas", new ColeccionRelacionada(ConsultaResource.class, "idClinica"));
+    }
 
     @Override
     protected ClinicaService getService() {

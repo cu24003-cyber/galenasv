@@ -126,7 +126,7 @@ public class AtencionService {
         cargar(id);
         return em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p JOIN FETCH p.idConsultaProcedimiento cp JOIN FETCH cp.idProcedimiento LEFT JOIN FETCH p.idProcedimientoPaso definicion LEFT JOIN FETCH definicion.idRol LEFT JOIN FETCH p.idPersonaRol responsable LEFT JOIN FETCH responsable.idPersona LEFT JOIN FETCH responsable.idRol WHERE cp.idConsulta.idConsulta=:id ORDER BY p.fechaInicio, p.idConsultaProcedimientoPaso",ConsultaProcedimientoPaso.class).setParameter("id",id).getResultList();
     }
-    public void agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
+    public ConsultaProcedimiento agregarProcedimiento(UUID consulta,UUID procedimiento,String notas,UUID responsableId) {
         Consulta c=abierta(consulta); Procedimiento p=em.find(Procedimiento.class,procedimiento,LockModeType.PESSIMISTIC_WRITE);
         if(p==null || !Boolean.TRUE.equals(p.getActivo())) throw ServiceException.localizada("consulta.procedimientoActivo", "Seleccione un procedimiento activo.");
         List<ProcedimientoPaso> catalogo=em.createQuery("SELECT p FROM ProcedimientoPaso p WHERE p.idProcedimiento=:p",ProcedimientoPaso.class).setParameter("p",p).getResultList();
@@ -140,6 +140,7 @@ public class AtencionService {
         if (iniciales.isEmpty()) throw ServiceException.localizada("consulta.procedimientoSinInicial", "El procedimiento no tiene un paso inicial.");
         ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c); cp.setIdProcedimiento(p); cp.setFechaInicio(c.getFechaInicio()); cp.setObservaciones(texto(notas, "Las observaciones del procedimiento", "consulta.longitudObservacionesProcedimiento", 255)); em.persist(cp);
         for (ProcedimientoPaso paso : iniciales) crearPaso(cp, paso, encargados.get(paso.getIdRol().getIdRol()), c.getFechaInicio());
+        return cp;
     }
     private Map<UUID, PersonaRol> responsablesProcedimiento(Consulta consulta, List<ProcedimientoPaso> pasos) {
         Map<UUID, List<PersonaRol>> candidatos = new LinkedHashMap<>();
@@ -249,7 +250,7 @@ public class AtencionService {
         if(p==null || !consulta.equals(p.getIdConsultaProcedimiento().getIdConsulta().getIdConsulta())) throw ServiceException.localizada("consulta.pasoPropio", "Seleccione un paso de esta consulta."); return p;
     }
     public List<TipoExamen> tipos(String texto) { return em.createQuery("SELECT t FROM TipoExamen t WHERE t.activo=true AND LOWER(t.nombre) LIKE :q ORDER BY t.nombre",TipoExamen.class).setParameter("q","%"+(texto == null ? "" : texto.toLowerCase(Locale.ROOT))+"%").setMaxResults(30).getResultList(); }
-    public void examen(UUID consulta,UUID pasoId,String nombre,String notas,UUID tipoId) {
+    public Examen examen(UUID consulta,UUID pasoId,String nombre,String notas,UUID tipoId) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);
         TipoExamen tipo=tipoId==null?null:em.find(TipoExamen.class,tipoId);
         if(nombre==null || nombre.isBlank() || nombre.trim().length()>155 || tipo==null || !Boolean.TRUE.equals(tipo.getActivo())) throw ServiceException.localizada("consulta.examenValido", "Indique un nombre de hasta 155 caracteres y un tipo de examen activo.");
@@ -258,16 +259,18 @@ public class AtencionService {
         Examen e=new Examen(UUID.randomUUID()); e.setNombre(nombre.trim()); e.setActivo(true); e.setObservaciones(texto(notas, "Las observaciones del examen", "consulta.longitudObservacionesExamen", 255)); em.persist(e);
         ExamenTipoExamen et=new ExamenTipoExamen(UUID.randomUUID()); et.setIdExamen(e); et.setIdTipoExamen(tipo); et.setFechaCreacion(ahora()); em.persist(et);
         ProcedimientoPasoExamen pe=new ProcedimientoPasoExamen(UUID.randomUUID()); pe.setIdExamen(e); pe.setIdProcedimientoPaso(paso.getIdProcedimientoPaso()); pe.setActivo(true); pe.setFechaCreacion(ahora()); em.persist(pe);
+        return e;
     }
     public List<ProcedimientoPasoExamen> examenes(UUID consulta) {
         cargar(consulta);
         return em.createQuery("SELECT DISTINCT e FROM ProcedimientoPasoExamen e JOIN FETCH e.idExamen JOIN FETCH e.idProcedimientoPaso WHERE e.idProcedimientoPaso IN (SELECT p.idProcedimientoPaso FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id)",ProcedimientoPasoExamen.class).setParameter("id",consulta).getResultList();
     }
-    public void ordenar(UUID consulta,UUID paso,String indicaciones) {
+    public OrdenExamen ordenar(UUID consulta,UUID paso,String indicaciones) {
         abierta(consulta); ConsultaProcedimientoPaso p=pasoPropio(consulta,paso);
         if(indicaciones==null || indicaciones.isBlank() || indicaciones.trim().length()>255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");
         if(p.getFechaFin()!=null) throw ServiceException.localizada("consulta.ordenPasoCompletado", "No se pueden crear órdenes en un paso completado.");
         OrdenExamen o=new OrdenExamen(UUID.randomUUID()); o.setIdConsultaProcedimientoPaso(p); o.setIndicaciones(indicaciones.trim()); o.setFechaCreacion(ahora()); em.persist(o);
+        return o;
     }
     public List<OrdenExamen> ordenes(UUID consulta) { cargar(consulta); return em.createQuery("SELECT o FROM OrdenExamen o JOIN FETCH o.idConsultaProcedimientoPaso p LEFT JOIN FETCH p.idProcedimientoPaso WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id ORDER BY o.fechaCreacion",OrdenExamen.class).setParameter("id",consulta).getResultList(); }
     public List<ExamenResultado> resultados(UUID consulta) {
@@ -275,7 +278,7 @@ public class AtencionService {
         return em.createQuery("SELECT r FROM ExamenResultado r JOIN FETCH r.idOrdenExamen o JOIN FETCH o.idConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id ORDER BY r.fechaCreacion DESC", ExamenResultado.class)
                 .setParameter("id", consulta).getResultList();
     }
-    public void registrarResultado(UUID consulta, UUID ordenId, String resultado, String interpretacion) {
+    public ExamenResultado registrarResultado(UUID consulta, UUID ordenId, String resultado, String interpretacion) {
         cargar(consulta);
         OrdenExamen orden = ordenId == null ? null : em.find(OrdenExamen.class, ordenId);
         if (orden == null || orden.getIdConsultaProcedimientoPaso() == null
@@ -291,6 +294,7 @@ public class AtencionService {
         registro.setResultado(resultado.trim());
         registro.setInterpretacion(interpretacion == null ? null : interpretacion.trim());
         em.persist(registro);
+        return registro;
     }
     public void cerrar(UUID id,String referencia,String notas) {
         Consulta c=abierta(id);

@@ -6,8 +6,12 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.PersonaRolDto;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.exception.ApiException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ClinicaService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaRolService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaService;
@@ -33,6 +37,21 @@ public class PersonaRolResource extends AbstractResource<PersonaRol, PersonaRolD
     private RolService rolService;
 
     @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idPersona", "idPersona.idPersona",
+                "idRol", "idRol.idRol",
+                "idClinica", "idClinica.idClinica");
+    }
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "consultas", new ColeccionRelacionada(ConsultaResource.class, "idPersonaRol", Set.of("POST", "PUT", "PATCH")),
+                "pasos-consulta", new ColeccionRelacionada(ConsultaProcedimientoPasoResource.class, "idPersonaRol"));
+    }
+
+    @Override
     protected PersonaRolService getService() {
         return service;
     }
@@ -55,9 +74,24 @@ public class PersonaRolResource extends AbstractResource<PersonaRol, PersonaRolD
 
     @Override
     protected void aplicar(PersonaRolDto dto, PersonaRol entidad) {
+        boolean flujo = idPadre() != null || esModificacionParcial();
+        if (flujo && entidad.getIdPersona() != null
+                && !entidad.getIdPersona().getIdPersona().equals(dto.getIdPersona())) {
+            throw new ApiException(Response.Status.BAD_REQUEST, "registro.relacionAjena", "La asignación debe conservar su persona.");
+        }
+        var clinica = relacion(clinicaService, dto.getIdClinica(), "idClinica");
+        var persona = relacion(personaService, dto.getIdPersona(), "idPersona");
+        UUID idRol = dto.getIdRol();
+        if (flujo && idRol == null && entidad.getIdRol() != null) idRol = entidad.getIdRol().getIdRol();
+        var rol = relacion(rolService, idRol, "idRol");
+        if (flujo && (!Boolean.TRUE.equals(clinica.getActivo())
+                || (rol != null && !Boolean.TRUE.equals(rol.getActivo())))) {
+            throw new ApiException(
+                    Response.Status.BAD_REQUEST, "registro.seleccionInvalida", "Seleccione una clínica y un rol activos.");
+        }
         entidad.setFechaCreacion(dto.getFechaCreacion());
-        entidad.setIdClinica(relacion(clinicaService, dto.getIdClinica(), "idClinica"));
-        entidad.setIdPersona(relacion(personaService, dto.getIdPersona(), "idPersona"));
-        entidad.setIdRol(relacion(rolService, dto.getIdRol(), "idRol"));
+        entidad.setIdClinica(clinica);
+        entidad.setIdPersona(persona);
+        entidad.setIdRol(rol);
     }
 }

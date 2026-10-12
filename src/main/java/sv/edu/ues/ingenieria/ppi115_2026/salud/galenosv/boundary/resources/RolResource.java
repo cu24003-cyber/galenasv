@@ -6,6 +6,8 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.RolDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.RolService;
@@ -19,6 +21,14 @@ public class RolResource extends AbstractResource<Rol, RolDto> {
 
     @Inject
     private RolService service;
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "personas", new ColeccionRelacionada(PersonaResource.class, "idRol"),
+                "personas-roles", new ColeccionRelacionada(PersonaRolResource.class, "idRol", CRUD),
+                "procedimientos-pasos", new ColeccionRelacionada(ProcedimientoPasoResource.class, "idRol"));
+    }
 
     @Override
     protected RolService getService() {

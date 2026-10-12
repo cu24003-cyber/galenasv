@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ProcedimientoPasoSecuenciaDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ProcedimientoPasoSecuenciaService;
@@ -23,6 +24,13 @@ public class ProcedimientoPasoSecuenciaResource extends AbstractResource<Procedi
 
     @Inject
     private ProcedimientoPasoService procedimientoPasoService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idProcedimientoPaso", "idProcedimientoPaso.idProcedimientoPaso",
+                "idProcedimientoPasoReferencia", "idProcedimientoPasoReferencia.idProcedimientoPaso");
+    }
 
     @Override
     protected ProcedimientoPasoSecuenciaService getService() {

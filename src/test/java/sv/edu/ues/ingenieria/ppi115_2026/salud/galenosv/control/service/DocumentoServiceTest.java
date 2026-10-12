@@ -2,6 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 
 import jakarta.persistence.PersistenceException;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -140,6 +142,27 @@ class DocumentoServiceTest {
 
         assertSame(esperada, resultado);
         verify(documentoRepository).find(id);
+    }
+
+    @Test
+    void listarPorFiltros_consultaElRepositorioSinCargarTodosLosDocumentos() {
+        Map<String, UUID> filtros = Map.of("idPersona.idPersona", UUID.randomUUID());
+        List<Documento> esperados = List.of(new Documento());
+        when(documentoRepository.findByFilters(filtros)).thenReturn(esperados);
+
+        assertSame(esperados, documentoService.listarPorFiltros(filtros));
+
+        verify(documentoRepository, never()).findAll();
+    }
+
+    @Test
+    void listarPorFiltros_sinFiltrosConservaElListadoCompleto() {
+        List<Documento> esperados = List.of(new Documento());
+        when(documentoRepository.findAll()).thenReturn(esperados);
+
+        assertSame(esperados, documentoService.listarPorFiltros(Map.of()));
+
+        verify(documentoRepository, never()).findByFilters(anyMap());
     }
 
     @Test

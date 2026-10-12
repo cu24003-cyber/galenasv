@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.MedioContactoDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.MedioContactoService;
@@ -22,11 +23,24 @@ public class MedioContactoResource extends AbstractResource<MedioContacto, Medio
     @Inject
     private MedioContactoService service;
 
+    @Override
+    protected void eliminarEntidad(MedioContacto entidad) {
+        if ("idPersona".equals(filtroPadre())) service.eliminarDePersona(entidad.getIdMedioContacto(), idPadre());
+        else super.eliminarEntidad(entidad);
+    }
+
     @Inject
     private PersonaService personaService;
 
     @Inject
     private TipoMedioContactoService tipoMedioContactoService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idPersona", "idPersona.idPersona",
+                "idTipoMedioContacto", "idTipoMedioContacto.idTipoMedioContacto");
+    }
 
     @Override
     protected MedioContactoService getService() {
@@ -51,9 +65,14 @@ public class MedioContactoResource extends AbstractResource<MedioContacto, Medio
 
     @Override
     protected void aplicar(MedioContactoDto dto, MedioContacto entidad) {
-        entidad.setValor(dto.getValor());
+        var tipo = relacion(tipoMedioContactoService, dto.getIdTipoMedioContacto(), "idTipoMedioContacto");
+        String valor = dto.getValor();
+        if (idPadre() != null || esModificacionParcial()) {
+            valor = validarValorCatalogo(valor, tipo.getActivo(), tipo.getExpresionRegular());
+        }
+        entidad.setValor(valor);
         entidad.setFechaCreacion(dto.getFechaCreacion());
         entidad.setIdPersona(relacion(personaService, dto.getIdPersona(), "idPersona"));
-        entidad.setIdTipoMedioContacto(relacion(tipoMedioContactoService, dto.getIdTipoMedioContacto(), "idTipoMedioContacto"));
+        entidad.setIdTipoMedioContacto(tipo);
     }
 }

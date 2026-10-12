@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.TipoDocumentoDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TipoDocumentoService;
@@ -19,6 +20,12 @@ public class TipoDocumentoResource extends AbstractResource<TipoDocumento, TipoD
 
     @Inject
     private TipoDocumentoService service;
+
+    @Override
+    protected Map<String, ColeccionRelacionada> coleccionesRelacionadas() {
+        return Map.of(
+                "documentos", new ColeccionRelacionada(DocumentoResource.class, "idTipoDocumento"));
+    }
 
     @Override
     protected TipoDocumentoService getService() {

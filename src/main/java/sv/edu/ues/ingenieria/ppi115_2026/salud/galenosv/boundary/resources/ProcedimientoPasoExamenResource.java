@@ -6,8 +6,12 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.util.Map;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.ProcedimientoPasoExamenDto;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.exception.ApiException;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ConfiguracionProcedimientoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ExamenService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ProcedimientoPasoExamenService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ProcedimientoPasoService;
@@ -22,11 +26,32 @@ public class ProcedimientoPasoExamenResource extends AbstractResource<Procedimie
     @Inject
     private ProcedimientoPasoExamenService service;
 
+    @Inject private ConfiguracionProcedimientoService configuracion;
+
+    @Override
+    protected ProcedimientoPasoExamen crearEntidad(UUID id, ProcedimientoPasoExamenDto datos) {
+        if (idPadre() == null) return super.crearEntidad(id, datos);
+        if (datos.getFechaCreacion() != null || Boolean.FALSE.equals(datos.getActivo())) {
+            throw new ApiException(
+                    Response.Status.BAD_REQUEST, "campos.servidor", "La asociación se crea activa y con fecha del servidor.");
+        }
+        var paso = relacion(procedimientoPasoService, datos.getIdProcedimientoPaso(), "idProcedimientoPaso");
+        return configuracion.asociar(paso.getIdProcedimiento().getIdProcedimiento(),
+                paso.getIdProcedimientoPaso(), datos.getIdExamen());
+    }
+
     @Inject
     private ExamenService examenService;
 
     @Inject
     private ProcedimientoPasoService procedimientoPasoService;
+
+    @Override
+    protected Map<String, String> filtrosPermitidos() {
+        return Map.of(
+                "idProcedimientoPaso", "idProcedimientoPaso.idProcedimientoPaso",
+                "idExamen", "idExamen.idExamen");
+    }
 
     @Override
     protected ProcedimientoPasoExamenService getService() {

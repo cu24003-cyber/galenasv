@@ -19,7 +19,6 @@ public class PersonaRolDto implements IdentifiableDto {
     @NotNull(message = "idPersona es obligatorio.")
     private UUID idPersona;
 
-    @NotNull(message = "idRol es obligatorio.")
     private UUID idRol;
 
     public UUID getIdPersonaRol() {
