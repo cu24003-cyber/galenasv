@@ -51,6 +51,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.AppConfig;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
+import jakarta.servlet.http.HttpServletRequest;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider.ApiExceptionMapper;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider.JsonBodyReaderInterceptor;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider.ValidationExceptionMapper;
@@ -162,6 +165,14 @@ class RestApiTest extends JerseyTest {
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento) records.get(entityType(TipoDocumentoResource.class)).get(ID)).setExpresionRegular(".");
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto) records.get(entityType(TipoMedioContactoResource.class)).get(ID)).setExpresionRegular(".");
         when(sesion.getRolActivo()).thenReturn((PersonaRol) records.get(PersonaRol.class).get(ID));
+        AccesoSesion acceso = mock(AccesoSesion.class);
+        AutenticacionService autenticacion = mock(AutenticacionService.class);
+        when(acceso.getIdUsuario()).thenReturn(ID);
+        when(autenticacion.contexto(eq(ID), any())).thenAnswer(i ->
+                new AutenticacionService.Contexto(null, (PersonaRol) records.get(PersonaRol.class).get(i.getArgument(1))));
+        bindings.put(AccesoSesion.class, acceso);
+        bindings.put(AutenticacionService.class, autenticacion);
+        bindings.put(HttpServletRequest.class, mock(HttpServletRequest.class));
         var documentos = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DocumentoService) bindings.get(
                 sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DocumentoService.class);
         doAnswer(i -> { records.get(Documento.class).remove(i.getArgument(0)); return null; })
@@ -714,6 +725,21 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void codigoDeAccesoDelRolNoSePuedeCambiarDesdeElCrud() {
+        var rol = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol)
+                records.get(entityType(RolResource.class)).get(ID);
+        rol.setCodigo("DOCTOR");
+        try (Response response = target("roles/" + ID).request().method("PATCH", Entity.json("{\"codigo\":\"ADMINISTRACION\"}"))) {
+            assertError(response, 400);
+        }
+        try (Response response = target("roles/" + ID).request().put(Entity.json(
+                "{\"nombre\":\"Doctor\",\"activo\":true,\"codigo\":\"ADMINISTRACION\"}"))) {
+            assertEquals(200, response.getStatus());
+        }
+        assertEquals("DOCTOR", rol.getCodigo());
+    }
+
+    @Test
     void seleccionaRolActivoYRetomaConsultaAbierta() {
         try (Response response = target("atencion/rol-activo").request().put(Entity.json("{\"idPersonaRol\":\"" + ID + "\"}"))) {
             assertEquals(200, response.getStatus());
@@ -1039,6 +1065,7 @@ class RestApiTest extends JerseyTest {
         JsonObjectBuilder body = Json.createObjectBuilder();
         for (Field field : entity.getDeclaredFields()) {
             if (field.isAnnotationPresent(Id.class)) continue;
+            if (entity.getSimpleName().equals("Rol") && field.getName().equals("codigo")) continue;
             Class<?> type = field.getType();
             if (type == String.class) body.add(field.getName(), "Texto");
             else if (type == Boolean.class) body.add(field.getName(), true);
@@ -1052,6 +1079,7 @@ class RestApiTest extends JerseyTest {
     private static JsonObject updatedPayload(Class<?> entity) {
         JsonObjectBuilder body = Json.createObjectBuilder(payload(entity));
         for (Field field : entity.getDeclaredFields()) {
+            if (entity.getSimpleName().equals("Rol") && field.getName().equals("codigo")) continue;
             if (field.getType() == String.class) body.add(field.getName(), "Actualizado");
             else if (field.getType() == Boolean.class) body.add(field.getName(), false);
             else if (field.getType() == Date.class) body.add(field.getName(), "2000-01-02T12:00:00.000Z");

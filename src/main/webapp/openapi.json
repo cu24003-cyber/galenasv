@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "GalenoSV REST API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "CRUD existente de las 20 entidades, filtros UUID, nuevas escrituras en rutas relacionadas y cambios parciales. Las nuevas operaciones clínicas usan los servicios del flujo de GalenoSV y su sesión de rol y clínica."
   },
   "servers": [
@@ -73,6 +73,9 @@
     },
     {
       "name": "Estado"
+    },
+    {
+      "name": "Autenticación"
     }
   ],
   "paths": {
@@ -13281,7 +13284,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
       }
     },
     "/atencion/rol-activo": {
@@ -13333,7 +13341,23 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "La asignación debe pertenecer a la cuenta autenticada y tener rol y clínica activos."
       }
     },
     "/consultas/{id}/sesion": {
@@ -13650,6 +13674,162 @@
           }
         }
       ]
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión por usuario o correo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredencialesAcceso"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sesión iniciada; cookie de sesión renovada."
+          },
+          "400": {
+            "description": "Credenciales con formato inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales o sesión no válidas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen, CSRF o asignación no autorizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de intentos alcanzado; Retry-After: 300.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Consultar la cuenta y el rol activo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identidad y asignación activa revalidadas contra la base.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionAcceso"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales o sesión no válidas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen, CSRF o asignación no autorizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Invalidar la sesión completa",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sesión invalidada."
+          },
+          "401": {
+            "description": "Credenciales o sesión no válidas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen, CSRF o asignación no autorizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14895,6 +15075,95 @@
             "nullable": true
           }
         }
+      },
+      "CredencialesAcceso": {
+        "type": "object",
+        "required": [
+          "identificador",
+          "password"
+        ],
+        "properties": {
+          "identificador": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          }
+        }
+      },
+      "SesionAcceso": {
+        "type": "object",
+        "required": [
+          "usuario",
+          "rolActivo",
+          "csrfToken"
+        ],
+        "properties": {
+          "usuario": {
+            "type": "object",
+            "required": [
+              "idUsuario",
+              "idPersona",
+              "nombres",
+              "apellidos"
+            ],
+            "properties": {
+              "idUsuario": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "idPersona": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nombres": {
+                "type": "string"
+              },
+              "apellidos": {
+                "type": "string"
+              }
+            }
+          },
+          "rolActivo": {
+            "type": "object",
+            "required": [
+              "idPersonaRol",
+              "codigo",
+              "idClinica",
+              "nombreClinica"
+            ],
+            "properties": {
+              "idPersonaRol": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "codigo": {
+                "type": "string",
+                "enum": [
+                  "ADMINISTRACION",
+                  "DOCTOR",
+                  "PACIENTE"
+                ]
+              },
+              "idClinica": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nombreClinica": {
+                "type": "string"
+              }
+            }
+          },
+          "csrfToken": {
+            "type": "string",
+            "description": "Enviar en X-CSRF-Token al cerrar sesión o cambiar de rol."
+          }
+        }
       }
     },
     "responses": {
@@ -14997,6 +15266,14 @@
             }
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "JSESSIONID",
+        "description": "Cookie HttpOnly creada al iniciar sesión."
       }
     }
   }

@@ -1,5 +1,6 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider;
 
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoException;
 import jakarta.ejb.EJBAccessException;
 import jakarta.ejb.EJBException;
 import jakarta.persistence.EntityExistsException;
@@ -55,7 +56,11 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
         List<ApiError.Detail> details = List.of();
         Response.ResponseBuilder builder = null;
 
-        if (error instanceof WebApplicationException web) {
+        if (error instanceof AccesoException acceso) {
+            status = acceso.getStatus();
+            code = acceso.getMessageKey();
+            message = acceso.getMessage();
+        } else if (error instanceof WebApplicationException web) {
             status = web.getResponse().getStatus();
             if (status < 400) {
                 return web.getResponse();
@@ -125,6 +130,9 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             message = "Ocurrió un error interno al procesar la solicitud.";
             details = List.of();
             LOG.log(Level.SEVERE, "Error REST en " + path(uriInfo), original);
+        }
+        if (status == 429) {
+            builder = Response.status(status).header("Retry-After", "300");
         }
         ApiError body = new ApiError(status, code, message, path(uriInfo), details);
         return (builder == null ? Response.status(status) : builder.status(status))

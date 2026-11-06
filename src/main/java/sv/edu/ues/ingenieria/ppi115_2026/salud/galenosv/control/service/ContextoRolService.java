@@ -1,19 +1,18 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 
 import jakarta.ejb.Stateless;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
 
-/** Consulta las asignaciones existentes sin crear usuarios ni persistir la sesión. */
+/** Consulta únicamente las asignaciones activas de la cuenta autenticada. */
 @Stateless
 public class ContextoRolService {
-    @PersistenceContext private EntityManager em;
+    @jakarta.inject.Inject private AccesoSesion acceso;
+    @jakarta.inject.Inject private AutenticacionService autenticacion;
 
     public List<PersonaRol> listar() {
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica c WHERE rol.activo=true AND c.activo=true ORDER BY p.apellidos, p.nombres, c.nombre, rol.nombre", PersonaRol.class).getResultList();
+        return acceso.vigente() ? autenticacion.asignaciones(acceso.getIdUsuario()) : List.of();
     }
 
     public PersonaRol cargar(UUID id) {

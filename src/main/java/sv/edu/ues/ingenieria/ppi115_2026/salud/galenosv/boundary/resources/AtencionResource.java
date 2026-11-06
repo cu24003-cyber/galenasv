@@ -1,5 +1,9 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -14,11 +18,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.AtencionDto;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.exception.ApiException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionSesion;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaRolService;
 
-/** Comparte el contexto de rol de JSF; la selección no es un mecanismo de autenticación. */
+/** Comparte el contexto de JSF y admite únicamente asignaciones de la cuenta autenticada. */
 @Path("atencion")
 @RequestScoped
 @Transactional(rollbackOn = Exception.class)
@@ -26,10 +28,14 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaR
 @Consumes(MediaType.APPLICATION_JSON)
 public class AtencionResource {
     @Inject private AtencionSesion sesion;
-    @Inject private PersonaRolService asignaciones;
+    @Inject private AccesoSesion acceso;
+    @Inject private AutenticacionService autenticacion;
+    @Context private HttpServletRequest request;
 
     @GET
     public Response contexto() {
+        var activo = sesion.getRolActivo();
+        autenticacion.contexto(acceso.getIdUsuario(), activo == null ? null : activo.getIdPersonaRol());
         var json = Json.createObjectBuilder();
         if (sesion.getRolActivo() == null) json.addNull("idPersonaRol");
         else json.add("idPersonaRol", sesion.getRolActivo().getIdPersonaRol().toString());
@@ -42,9 +48,9 @@ public class AtencionResource {
     @PUT
     @Path("rol-activo")
     public Response cambiarRol(@Valid @NotNull AtencionDto.Responsable datos) {
-        var rol = asignaciones.buscarPorId(datos.getIdPersonaRol());
-        if (rol == null) throw new ApiException(Response.Status.NOT_FOUND, "recurso.noExiste", "La asignación no existe.");
-        sesion.cambiarRol(rol);
+        var contexto = autenticacion.contexto(acceso.getIdUsuario(), datos.getIdPersonaRol());
+        sesion.cambiarRol(contexto.asignacion());
+        request.changeSessionId();
         return contexto();
     }
 }

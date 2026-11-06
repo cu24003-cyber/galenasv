@@ -12,6 +12,7 @@
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Consulta</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona</class>
+    <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Usuario</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenTipoExamen</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.MedioContacto</class>
     <class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto</class>

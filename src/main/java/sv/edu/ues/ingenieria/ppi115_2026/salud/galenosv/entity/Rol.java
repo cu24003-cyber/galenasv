@@ -37,6 +37,8 @@ public class Rol implements Serializable {
     private UUID idRol;
     @Column(name = "nombre" , length = 155)
     private String nombre;
+    @Column(name = "codigo", length = 20, unique = true)
+    private String codigo;
     @Column(name = "activo")
     private Boolean activo;
     @Column(name = "observaciones")
@@ -68,6 +70,9 @@ public class Rol implements Serializable {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 
     public Boolean getActivo() {
         return activo;
