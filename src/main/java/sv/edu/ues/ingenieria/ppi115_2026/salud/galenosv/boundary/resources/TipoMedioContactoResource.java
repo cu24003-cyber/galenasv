@@ -52,7 +52,7 @@ public class TipoMedioContactoResource extends AbstractResource<TipoMedioContact
     protected void aplicar(TipoMedioContactoDto dto, TipoMedioContacto entidad) {
         entidad.setNombre(dto.getNombre());
         entidad.setIndicaciones(dto.getIndicaciones());
-        entidad.setExpresionRegular(dto.getExpresionRegular());
+        entidad.setExpresionRegular(validarExpresionRegular(dto.getExpresionRegular()));
         entidad.setActivo(dto.getActivo());
     }
 }

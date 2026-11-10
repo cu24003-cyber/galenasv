@@ -269,6 +269,16 @@ public abstract class AbstractResource<T, D extends IdentifiableDto> {
 
     protected void eliminarEntidad(T entidad) { getService().eliminar(toDto(entidad).id()); }
 
+    protected String validarExpresionRegular(String expresion) {
+        if (expresion != null && !expresion.isBlank()) {
+            try { java.util.regex.Pattern.compile(expresion); }
+            catch (PatternSyntaxException e) {
+                throw new ApiException(Response.Status.BAD_REQUEST, "registro.expresionInvalida", "La expresión regular no es válida.");
+            }
+        }
+        return expresion;
+    }
+
     protected String validarValorCatalogo(String valor, Boolean activo, String expresion) {
         if (!Boolean.TRUE.equals(activo)) {
             throw new ApiException(Response.Status.BAD_REQUEST, "registro.seleccionInvalida", "Seleccione un tipo activo.");

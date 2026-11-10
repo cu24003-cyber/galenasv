@@ -31,6 +31,9 @@ public class RolResource extends AbstractResource<Rol, RolDto> {
     }
 
     @Override
+    protected java.util.Set<String> camposInmutables() { return java.util.Set.of("codigo"); }
+
+    @Override
     protected RolService getService() {
         return service;
     }
@@ -45,6 +48,7 @@ public class RolResource extends AbstractResource<Rol, RolDto> {
         RolDto dto = new RolDto();
         dto.setIdRol(entidad.getIdRol());
         dto.setNombre(entidad.getNombre());
+        dto.setCodigo(entidad.getCodigo());
         dto.setActivo(entidad.getActivo());
         dto.setObservaciones(entidad.getObservaciones());
         return dto;

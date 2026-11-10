@@ -66,10 +66,7 @@ public class MedioContactoResource extends AbstractResource<MedioContacto, Medio
     @Override
     protected void aplicar(MedioContactoDto dto, MedioContacto entidad) {
         var tipo = relacion(tipoMedioContactoService, dto.getIdTipoMedioContacto(), "idTipoMedioContacto");
-        String valor = dto.getValor();
-        if (idPadre() != null || esModificacionParcial()) {
-            valor = validarValorCatalogo(valor, tipo.getActivo(), tipo.getExpresionRegular());
-        }
+        String valor = validarValorCatalogo(dto.getValor(), tipo.getActivo(), tipo.getExpresionRegular());
         entidad.setValor(valor);
         entidad.setFechaCreacion(dto.getFechaCreacion());
         entidad.setIdPersona(relacion(personaService, dto.getIdPersona(), "idPersona"));

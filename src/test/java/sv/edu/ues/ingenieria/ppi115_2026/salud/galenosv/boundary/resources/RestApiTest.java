@@ -1050,7 +1050,7 @@ class RestApiTest extends JerseyTest {
             if (field.isAnnotationPresent(Id.class)) continue;
             Class<?> type = field.getType();
             Object data;
-            if (type == String.class) data = "Texto";
+            if (type == String.class) data = field.getName().equals("expresionRegular") ? null : "Texto";
             else if (type == Boolean.class) data = true;
             else if (type == Date.class) data = new Date(946728000000L);
             else if (type == OffsetDateTime.class) data = OffsetDateTime.parse("2000-01-01T12:00:00Z");
@@ -1118,6 +1118,43 @@ class RestApiTest extends JerseyTest {
         @Path("validacion")
         public Response falloValidacion() {
             throw new ValidationException("detalle interno");
+        }
+    }
+    @Test void crearYEditarPersonaRechazanNumerosEnNombresYApellidos() {
+        for (String campo : List.of("nombres", "apellidos")) {
+            String body=Json.createObjectBuilder().add("nombres","María José").add("apellidos","Peña")
+                    .add("fechaNacimiento","2000-01-01T00:00:00.000Z").add(campo,"Ana123").build().toString();
+            try(Response response=target("personas").request().post(Entity.json(body))) { assertError(response,400); }
+            try(Response response=target("personas/"+ID).request().method("PATCH",Entity.json(
+                    Json.createObjectBuilder().add(campo,"Peña2").build().toString()))) { assertError(response,400); }
+        }
+    }
+    @Test void configuracionDeDocumentoYContactoRechazaExpresionesInvalidas() {
+        for(String recurso:List.of("tipos-documento","tipos-medio-contacto")) {
+            try(Response response=target(recurso).request().post(Entity.json("{\"nombre\":\"Tipo\",\"activo\":true,\"expresionRegular\":\"[\"}"))) {
+                assertEquals("registro.expresionInvalida",assertError(response,400).getString("code"));
+            }
+        }
+    }
+    @Test void nuevaAsignacionRechazaRolOClinicaInactivos() {
+        var clinica=(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica)records.get(entityType(ClinicaResource.class)).get(ID);
+        var rol=(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol)records.get(entityType(RolResource.class)).get(ID);
+        String body=Json.createObjectBuilder().add("idPersona",ID.toString()).add("idClinica",ID.toString()).add("idRol",ID.toString()).build().toString();
+        clinica.setActivo(false);
+        try(Response response=target("personas-roles").request().post(Entity.json(body))) { assertError(response,400); }
+        clinica.setActivo(true);rol.setActivo(false);
+        try(Response response=target("personas-roles").request().post(Entity.json(body))) { assertError(response,400); }
+    }
+    @Test void rutasDirectasTambienValidanDocumentoYContacto() {
+        var documento=(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento)records.get(entityType(TipoDocumentoResource.class)).get(ID);
+        var contacto=(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto)records.get(entityType(TipoMedioContactoResource.class)).get(ID);
+        documento.setExpresionRegular("\\d+");contacto.setExpresionRegular("\\d+");
+        for(String recurso:List.of("documentos","medios-contacto")) {
+            String campo=recurso.equals("documentos")?"idTipoDocumento":"idTipoMedioContacto";
+            String body=Json.createObjectBuilder().add("idPersona",ID.toString()).add(campo,ID.toString()).add("valor","ABC").build().toString();
+            try(Response response=target(recurso).request().post(Entity.json(body))) {
+                assertEquals("registro.formatoInvalido",assertError(response,400).getString("code"));
+            }
         }
     }
 }

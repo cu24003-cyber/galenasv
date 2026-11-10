@@ -66,10 +66,7 @@ public class DocumentoResource extends AbstractResource<Documento, DocumentoDto>
     @Override
     protected void aplicar(DocumentoDto dto, Documento entidad) {
         var tipo = relacion(tipoDocumentoService, dto.getIdTipoDocumento(), "idTipoDocumento");
-        String valor = dto.getValor();
-        if (idPadre() != null || esModificacionParcial()) {
-            valor = validarValorCatalogo(valor, tipo.getActivo(), tipo.getExpresionRegular());
-        }
+        String valor = validarValorCatalogo(dto.getValor(), tipo.getActivo(), tipo.getExpresionRegular());
         entidad.setValor(valor);
         entidad.setRutaFisica(dto.getRutaFisica());
         entidad.setIdPersona(relacion(personaService, dto.getIdPersona(), "idPersona"));

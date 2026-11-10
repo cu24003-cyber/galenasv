@@ -12,8 +12,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
 
-// shortcut: los módulos clínicos conservan sus permisos previos; aplicar la matriz de acceso antes de usar datos reales.
-@WebFilter(urlPatterns = {"/api/auth/*", "/api/atencion", "/api/atencion/*"})
+@WebFilter(urlPatterns = "/api/*")
 public class AutenticacionFilter implements Filter {
     @Inject AccesoSesion acceso;
 

@@ -50,10 +50,18 @@ public class AtencionService {
                 .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
         if (medico == null || medico.getIdRol() == null || medico.getIdClinica() == null
                 || !Boolean.TRUE.equals(medico.getIdRol().getActivo())
-                || !Set.of("medico", "medica", "doctor", "doctora").contains(rolNormalizado)) {
+                || !("DOCTOR".equals(medico.getIdRol().getCodigo()) || medico.getIdRol().getCodigo() == null
+                    && Set.of("medico", "medica", "doctor", "doctora").contains(rolNormalizado))) {
             throw ServiceException.localizada("consulta.soloMedico", "Solo un médico con rol activo puede consultar expedientes clínicos.");
         }
         return medico;
+    }
+    private PersonaRol operadorConsulta() {
+        PersonaRol actual = sesion == null ? null : sesion.getRolActivo();
+        PersonaRol operador = actual == null ? null : em.find(PersonaRol.class, actual.getIdPersonaRol());
+        if (operador != null && operador.getIdRol() != null && "ADMINISTRACION".equals(operador.getIdRol().getCodigo())
+                && Boolean.TRUE.equals(operador.getIdRol().getActivo()) && operador.getIdClinica() != null) return operador;
+        return medicoActivo();
     }
     private void comprobarClinica(Consulta consulta) {
         PersonaRol medico = medicoActivo();
@@ -70,7 +78,7 @@ public class AtencionService {
         return iniciarConsulta(pacienteId, null, referencia, observaciones, false);
     }
     private Consulta iniciarConsulta(UUID rolId, UUID responsableId, String referencia, String observaciones, boolean retomar) {
-        PersonaRol medico = medicoActivo();
+        PersonaRol medico = retomar ? medicoActivo() : operadorConsulta();
         if (retomar && !medico.getIdPersonaRol().equals(responsableId)) throw ServiceException.localizada("consulta.medicoPropio", "El médico activo debe abrir su propia consulta.");
         String referenciaValidada = texto(referencia, "La referencia", "consulta.longitudReferencia", 255);
         String notasValidadas = texto(observaciones, "Las observaciones", "consulta.longitudObservaciones", 255);
@@ -79,13 +87,13 @@ public class AtencionService {
         responsable(medico.getIdPersonaRol(), rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
         if(!abiertas.isEmpty()) {
-            comprobarClinica(abiertas.get(0));
             if (!retomar) throw ServiceException.localizada("consulta.pacienteEnCurso", "El paciente ya tiene una consulta en curso. Retómela desde su historial.");
+            comprobarClinica(abiertas.get(0));
             return cargar(abiertas.get(0).getIdConsulta());
         }
         Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(ahora());
         c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas);
-        em.persist(c); em.flush(); return cargar(c.getIdConsulta());
+        em.persist(c); em.flush(); return retomar ? cargar(c.getIdConsulta()) : c;
     }
     public Consulta cargar(UUID id) {
         Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();

@@ -71,4 +71,23 @@ class AutenticacionFilterTest {
         assertFalse(AutenticacionFilter.tokenValido("a", "b")); assertFalse(AutenticacionFilter.tokenValido(null, "a"));
         when(request.getHeader("Origin")).thenReturn("null"); assertFalse(AutenticacionFilter.origenPermitido(request));
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas", "/api/consultas", "/api/ordenes-examen", "/api/recepcion/pacientes"})
+    void recursosClinicosNoAdmitenAnonimos(String ruta) throws Exception {
+        when(request.getRequestURI()).thenReturn("/galenosv"+ruta);
+        filtro.doFilter(request,response,chain);
+        verify(response).setStatus(401); verifyNoInteractions(chain);
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas/uuid/documentos", "/api/consultas/uuid", "/api/atencion/rol-activo", "/api/recepcion/pacientes"})
+    void todaEscrituraDeLaApiExigeCsrf(String ruta) throws Exception {
+        when(request.getRequestURI()).thenReturn("/galenosv"+ruta); when(request.getMethod()).thenReturn("POST");
+        when(request.getHeader("Origin")).thenReturn("http://localhost:9080");
+        when(request.getSession(false)).thenReturn(sesion); when(acceso.vigente()).thenReturn(true); when(acceso.getCsrfToken()).thenReturn("secreto");
+        filtro.doFilter(request,response,chain);
+        verify(response).setStatus(403); verifyNoInteractions(chain);
+    }
+    @Test void filtroCubreTodaLaApi() {
+        assertArrayEquals(new String[]{"/api/*"},AutenticacionFilter.class.getAnnotation(jakarta.servlet.annotation.WebFilter.class).urlPatterns());
+    }
 }

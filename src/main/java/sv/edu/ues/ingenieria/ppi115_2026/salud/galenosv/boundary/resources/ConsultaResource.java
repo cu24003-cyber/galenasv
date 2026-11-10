@@ -48,7 +48,7 @@ public class ConsultaResource extends AbstractResource<Consulta, ConsultaDto> {
             throw new ApiException(Response.Status.BAD_REQUEST, "campos.servidor", "Las fechas de la consulta las genera el servidor.");
         }
         Consulta consulta = atencion.crear(datos.getIdPersonaRol(), datos.getReferenciaExterna(), datos.getObservaciones());
-        sesion.setConsulta(consulta.getIdConsulta());
+        if (!"ADMINISTRACION".equals(sesion.getRolActivo().getIdRol().getCodigo())) sesion.setConsulta(consulta.getIdConsulta());
         return consulta;
     }
 

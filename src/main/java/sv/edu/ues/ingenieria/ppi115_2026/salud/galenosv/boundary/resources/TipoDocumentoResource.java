@@ -52,7 +52,7 @@ public class TipoDocumentoResource extends AbstractResource<TipoDocumento, TipoD
     protected void aplicar(TipoDocumentoDto dto, TipoDocumento entidad) {
         entidad.setNombre(dto.getNombre());
         entidad.setIndicaciones(dto.getIndicaciones());
-        entidad.setExpresionRegular(dto.getExpresionRegular());
+        entidad.setExpresionRegular(validarExpresionRegular(dto.getExpresionRegular()));
         entidad.setActivo(dto.getActivo());
     }
 }

@@ -12,6 +12,15 @@ public class PersonaDto implements IdentifiableDto {
 
     private UUID idPersona;
 
+    @jakarta.validation.constraints.AssertTrue(message = "Los nombres solo admiten letras y espacios.")
+    @jakarta.json.bind.annotation.JsonbTransient
+    public boolean isNombresValidos() { return nombres == null || nombres.isBlank()
+            || sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaService.nombreValido(nombres); }
+    @jakarta.validation.constraints.AssertTrue(message = "Los apellidos solo admiten letras y espacios.")
+    @jakarta.json.bind.annotation.JsonbTransient
+    public boolean isApellidosValidos() { return apellidos == null || apellidos.isBlank()
+            || sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.PersonaService.nombreValido(apellidos); }
+
     @NotBlank(message = "nombres es obligatorio.")
     @Size(max = 255, message = "nombres admite hasta 255 caracteres.")
     private String nombres;

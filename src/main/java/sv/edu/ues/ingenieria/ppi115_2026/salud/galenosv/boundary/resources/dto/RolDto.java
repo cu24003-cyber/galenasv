@@ -8,6 +8,9 @@ import java.util.UUID;
 public class RolDto implements IdentifiableDto {
 
     private UUID idRol;
+    private String codigo;
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 
     @NotBlank(message = "nombre es obligatorio.")
     @Size(max = 155, message = "nombre admite hasta 155 caracteres.")

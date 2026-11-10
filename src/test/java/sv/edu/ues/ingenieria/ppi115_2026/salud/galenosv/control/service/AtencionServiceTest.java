@@ -468,4 +468,15 @@ class AtencionServiceTest {
         assertNull(paso.getIdPersonaRol());
     }
 
+    @Test void administracionAbreConsultaSinObtenerPermisosMedicos() {
+        medico.getIdRol().setCodigo("ADMINISTRACION"); medico.getIdRol().setNombre("Secretaría");
+        PersonaRol paciente = new PersonaRol(UUID.randomUUID()); Rol rol = new Rol(UUID.randomUUID());
+        rol.setNombre("Paciente"); rol.setActivo(true); paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
+        when(em.find(PersonaRol.class,paciente.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
+        query(Consulta.class,List.of());
+        Consulta consulta=servicio.crear(paciente.getIdPersonaRol(),"REF","Control");
+        assertEquals(paciente,consulta.getIdPersonaRol()); assertNotNull(consulta.getFechaInicio());
+        assertEquals("Control",consulta.getObservaciones()); verify(em).persist(consulta);
+        assertThrows(ServiceException.class,()->servicio.historial());
+    }
 }

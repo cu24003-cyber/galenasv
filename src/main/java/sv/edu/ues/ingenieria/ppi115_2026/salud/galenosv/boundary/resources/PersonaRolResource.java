@@ -84,8 +84,8 @@ public class PersonaRolResource extends AbstractResource<PersonaRol, PersonaRolD
         UUID idRol = dto.getIdRol();
         if (flujo && idRol == null && entidad.getIdRol() != null) idRol = entidad.getIdRol().getIdRol();
         var rol = relacion(rolService, idRol, "idRol");
-        if (flujo && (!Boolean.TRUE.equals(clinica.getActivo())
-                || (rol != null && !Boolean.TRUE.equals(rol.getActivo())))) {
+        if (!Boolean.TRUE.equals(clinica.getActivo())
+                || (rol != null && !Boolean.TRUE.equals(rol.getActivo()))) {
             throw new ApiException(
                     Response.Status.BAD_REQUEST, "registro.seleccionInvalida", "Seleccione una clínica y un rol activos.");
         }
