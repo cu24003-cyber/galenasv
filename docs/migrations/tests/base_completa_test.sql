@@ -39,6 +39,50 @@ BEGIN
     END IF;
 END $$;
 
+-- Comprobar cada JoinColumn del modelo por su origen y destino, no solo por nombre.
+DO $$
+DECLARE faltantes text;
+BEGIN
+    SELECT string_agg(e.tabla || '.' || e.columna || ' -> ' || e.referencia || '.' || e.columna_referencia, ', ')
+    INTO faltantes
+    FROM (VALUES
+        ('consulta', 'id_persona_rol', 'persona_rol', 'id_persona_rol'),
+        ('consulta_procedimiento', 'id_consulta', 'consulta', 'id_consulta'),
+        ('consulta_procedimiento', 'id_procedimiento', 'procedimiento', 'id_procedimiento'),
+        ('consulta_procedimiento_paso', 'id_consulta_procedimiento', 'consulta_procedimiento', 'id_consulta_procedimiento'),
+        ('consulta_procedimiento_paso', 'id_persona_rol', 'persona_rol', 'id_persona_rol'),
+        ('consulta_procedimiento_paso', 'id_procedimiento_paso', 'procedimiento_paso', 'id_procedimiento_paso'),
+        ('documento', 'id_persona', 'persona', 'id_persona'),
+        ('documento', 'id_tipo_documento', 'tipo_documento', 'id_tipo_documento'),
+        ('examen_resultado', 'id_orden_examen', 'orden_examen', 'id_orden_examen'),
+        ('examen_tipo_examen', 'id_examen', 'examen', 'id_examen'),
+        ('examen_tipo_examen', 'id_tipo_examen', 'tipo_examen', 'id_tipo_examen'),
+        ('medio_contacto', 'id_persona', 'persona', 'id_persona'),
+        ('medio_contacto', 'id_tipo_medio_contacto', 'tipo_medio_contacto', 'id_tipo_medio_contacto'),
+        ('orden_examen', 'id_consulta_procedimiento_paso', 'consulta_procedimiento_paso', 'id_consulta_procedimiento_paso'),
+        ('persona_rol', 'id_clinica', 'clinica', 'id_clinica'),
+        ('persona_rol', 'id_persona', 'persona', 'id_persona'),
+        ('persona_rol', 'id_rol', 'rol', 'id_rol'),
+        ('procedimiento_paso', 'id_procedimiento', 'procedimiento', 'id_procedimiento'),
+        ('procedimiento_paso', 'id_rol', 'rol', 'id_rol'),
+        ('procedimiento_paso_examen', 'id_examen', 'examen', 'id_examen'),
+        ('procedimiento_paso_examen', 'id_procedimiento_paso', 'procedimiento_paso', 'id_procedimiento_paso'),
+        ('procedimiento_paso_secuencia', 'id_procedimiento_paso', 'procedimiento_paso', 'id_procedimiento_paso'),
+        ('procedimiento_paso_secuencia', 'id_procedimiento_paso_referencia', 'procedimiento_paso', 'id_procedimiento_paso'),
+        ('usuario', 'id_persona', 'persona', 'id_persona')
+    ) AS e(tabla, columna, referencia, columna_referencia)
+    WHERE NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_attribute origen ON origen.attrelid=c.conrelid AND origen.attname=e.columna
+        JOIN pg_attribute destino ON destino.attrelid=c.confrelid AND destino.attname=e.columna_referencia
+        WHERE c.contype='f' AND c.convalidated
+          AND c.conrelid=('public.' || e.tabla)::regclass
+          AND c.confrelid=('public.' || e.referencia)::regclass
+          AND c.conkey=ARRAY[origen.attnum] AND c.confkey=ARRAY[destino.attnum]
+    );
+    IF faltantes IS NOT NULL THEN RAISE EXCEPTION 'Faltan claves foráneas del modelo: %', faltantes; END IF;
+END $$;
+
 -- Un recorrido clínico completo con datos sintéticos; se revierte al terminar.
 DO $$
 DECLARE
@@ -71,6 +115,11 @@ BEGIN
         VALUES(id,id,medico,id,'FINALIZADO','95 mg/dL');
     INSERT INTO public.orden_examen (id_orden_examen,id_consulta_procedimiento_paso,indicaciones) VALUES(id,id,'Orden de prueba');
     INSERT INTO public.examen_resultado (id_examen_resultado,id_orden_examen,resultado) VALUES(id,id,'95 mg/dL');
+    BEGIN
+        INSERT INTO public.consulta_procedimiento (id_consulta_procedimiento,id_procedimiento) VALUES(inexistente,inexistente);
+        RAISE EXCEPTION 'Se admitió una consulta con un procedimiento inexistente.';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
     BEGIN
         INSERT INTO public.consulta_procedimiento_paso (id_consulta_procedimiento_paso,id_procedimiento_paso) VALUES(inexistente,inexistente);
         RAISE EXCEPTION 'Se admitió un paso de procedimiento inexistente.';

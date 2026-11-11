@@ -273,6 +273,7 @@ BEGIN
     FOR clave IN SELECT * FROM (VALUES
         ('consulta', 'consulta_persona_rol', 'FOREIGN KEY (id_persona_rol) REFERENCES public.persona_rol(id_persona_rol) ON UPDATE CASCADE ON DELETE RESTRICT'),
         ('consulta_procedimiento', 'fk_consulta_procedimiento_consulta', 'FOREIGN KEY (id_consulta) REFERENCES public.consulta(id_consulta) ON UPDATE CASCADE ON DELETE RESTRICT'),
+        ('consulta_procedimiento', 'fk_consulta_procedimiento_procedimiento', 'FOREIGN KEY (id_procedimiento) REFERENCES public.procedimiento(id_procedimiento) ON UPDATE CASCADE ON DELETE RESTRICT'),
         ('consulta_procedimiento_paso', 'fk_consulta_procedimiento_paso_consulta_paso', 'FOREIGN KEY (id_procedimiento_paso) REFERENCES public.procedimiento_paso(id_procedimiento_paso) ON UPDATE CASCADE ON DELETE RESTRICT'),
         ('consulta_procedimiento_paso', 'fk_consulta_procedimiento_paso_consulta_procedimiento', 'FOREIGN KEY (id_consulta_procedimiento) REFERENCES public.consulta_procedimiento(id_consulta_procedimiento) ON UPDATE CASCADE ON DELETE RESTRICT'),
         ('consulta_procedimiento_paso', 'fk_consulta_procedimiento_paso_persona_rol', 'FOREIGN KEY (id_persona_rol) REFERENCES public.persona_rol(id_persona_rol) ON UPDATE CASCADE ON DELETE RESTRICT'),
