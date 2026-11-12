@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.Instant;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -16,45 +17,90 @@ class AutenticacionServiceTest {
     @Mock ContrasenaService contrasenas;
     @InjectMocks AutenticacionService servicio;
     private final UUID idUsuario = UUID.randomUUID(), idPersona = UUID.randomUUID();
+    private final UUID dui = UUID.randomUUID();
+    private static final String MENSAJE = "Documento no registrado o sin acceso autorizado.";
 
     private Usuario usuario(boolean activo) {
         Usuario u = new Usuario(); u.setIdUsuario(idUsuario); u.setActivo(activo);
         u.setPasswordHash("hash-almacenado"); u.setPersona(new Persona(idPersona)); return u;
     }
-    private PersonaRol asignacion() {
-        PersonaRol r = new PersonaRol(UUID.randomUUID()); r.setIdPersona(new Persona(idPersona)); return r;
+    private PersonaRol asignacion() { return asignacion("DOCTOR", 0); }
+    private PersonaRol asignacion(String codigo, int dias) {
+        PersonaRol r = new PersonaRol(UUID.randomUUID()); r.setIdPersona(new Persona(idPersona));
+        Rol rol = new Rol(UUID.randomUUID()); rol.setCodigo(codigo); rol.setActivo(true); r.setIdRol(rol);
+        r.setFechaCreacion(Date.from(Instant.parse("2026-01-01T00:00:00Z").plusSeconds(86400L * dias))); return r;
+    }
+    private void credencialesInvalidas(Runnable accion) {
+        AccesoException error = assertThrows(AccesoException.class, accion::run);
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
+        assertEquals(MENSAJE, error.getMessage());
     }
 
+    // --- Login por documento (HU2) ---
+    @Test void documentoInexistenteSeRechazaSinConsultarAsignaciones() {
+        credencialesInvalidas(() -> servicio.iniciar(dui, "00000000-9"));
+        verify(usuarios).buscarPorDocumento(dui, "00000000-9"); verify(usuarios, never()).asignaciones(any());
+    }
+    @Test void documentoDeOtroTipoSeBuscaConElTipoRecibidoYSeRechaza() {
+        UUID pasaporte = UUID.randomUUID();
+        lenient().when(usuarios.buscarPorDocumento(dui, "00000000-1")).thenReturn(usuario(true));
+        credencialesInvalidas(() -> servicio.iniciar(pasaporte, "00000000-1"));
+        verify(usuarios).buscarPorDocumento(pasaporte, "00000000-1");
+    }
+    @Test void usuarioInactivoSeRechazaConElMismoMensaje() {
+        when(usuarios.buscarPorDocumento(dui, "00000000-1")).thenReturn(usuario(false));
+        credencialesInvalidas(() -> servicio.iniciar(dui, "00000000-1"));
+        verify(usuarios, never()).asignaciones(any());
+    }
+    @Test void pacienteNoPuedeEntrarYRecibeElMismoMensaje() {
+        when(usuarios.buscarPorDocumento(dui, "00000000-3")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(asignacion("PACIENTE", 0)));
+        credencialesInvalidas(() -> servicio.iniciar(dui, "00000000-3"));
+    }
+    @Test void personaSinAsignacionActivaRecibeElMismoMensaje() {
+        when(usuarios.buscarPorDocumento(dui, "00000000-1")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of());
+        credencialesInvalidas(() -> servicio.iniciar(dui, "00000000-1"));
+    }
+    @Test void elRolInicialEsLaAsignacionDeEmpleadoMasAntiguaNuncaPaciente() {
+        PersonaRol paciente = asignacion("PACIENTE", 0), doctor = asignacion("DOCTOR", 1), admin = asignacion("ADMINISTRACION", 2);
+        Usuario u = usuario(true);
+        when(usuarios.buscarPorDocumento(dui, "00000000-2")).thenReturn(u);
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(paciente, doctor, admin));
+        var contexto = servicio.iniciar(dui, "00000000-2");
+        assertSame(u, contexto.usuario()); assertSame(doctor, contexto.asignacion());
+    }
+    @Test void numeroVacioOTipoNuloSeRechazanSinConsultar() {
+        credencialesInvalidas(() -> servicio.iniciar((UUID) null, "00000000-1"));
+        credencialesInvalidas(() -> servicio.iniciar(dui, "  "));
+        verifyNoInteractions(usuarios);
+    }
+    @Test void elLoginPorDocumentoNoUsaContrasenas() {
+        when(usuarios.buscarPorDocumento(dui, "00000000-1")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(asignacion()));
+        servicio.iniciar(dui, "00000000-1");
+        verifyNoInteractions(contrasenas);
+    }
+
+    // --- Login por contraseña (se elimina en el siguiente paso) ---
     @Test void rechazaDesconocidoConElMismoMensajeYVerificaHashDummy() {
         when(contrasenas.hashAusente()).thenReturn("dummy");
         AccesoException error = assertThrows(AccesoException.class, () -> servicio.iniciar("desconocido", "prueba"));
-        assertEquals(401, error.getStatus()); assertEquals("Usuario o contraseña incorrectos.", error.getMessage());
+        assertEquals(401, error.getStatus());
         verify(contrasenas).verificar("prueba", "dummy"); verify(usuarios, never()).asignaciones(any());
     }
-    @Test void cuentaDeshabilitadaYPasswordIncorrectoNoCreanContexto() {
-        when(usuarios.buscarAcceso("julio")).thenReturn(usuario(false));
-        when(contrasenas.verificar("prueba", "hash-almacenado")).thenReturn(true);
-        assertEquals(401, assertThrows(AccesoException.class, () -> servicio.iniciar("julio", "prueba")).getStatus());
-        verify(usuarios, never()).asignaciones(any());
-    }
-    @Test void iniciaSoloConUnaAsignacionPropiaDevueltaPorElRepositorio() {
-        Usuario u = usuario(true); PersonaRol rol = asignacion();
-        when(usuarios.buscarAcceso("julio")).thenReturn(u);
-        when(contrasenas.verificar(" prueba ", "hash-almacenado")).thenReturn(true);
-        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(rol));
-        var contexto = servicio.iniciar("julio", " prueba ");
-        assertSame(u, contexto.usuario()); assertSame(rol, contexto.asignacion());
-    }
-    @Test void cuentaSinRolOClinicaActivosNoPuedeIniciar() {
-        when(usuarios.buscarAcceso("julio")).thenReturn(usuario(true));
-        when(contrasenas.verificar(any(), any())).thenReturn(true);
-        when(usuarios.asignaciones(idPersona)).thenReturn(List.of());
-        assertEquals(403, assertThrows(AccesoException.class, () -> servicio.iniciar("julio", "prueba")).getStatus());
-    }
+
+    // --- Sesión existente ---
     @Test void noAdmiteUnaAsignacionAjenaAunqueElClienteConozcaSuUuid() {
         when(usuarios.buscarSesion(idUsuario)).thenReturn(usuario(true));
         when(usuarios.asignaciones(idPersona)).thenReturn(List.of(asignacion()));
         assertEquals(403, assertThrows(AccesoException.class, () -> servicio.contexto(idUsuario, UUID.randomUUID())).getStatus());
+    }
+    @Test void unaSesionNoPuedeTenerActivaUnaAsignacionDePaciente() {
+        PersonaRol paciente = asignacion("PACIENTE", 0);
+        when(usuarios.buscarSesion(idUsuario)).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(paciente));
+        assertEquals(403, assertThrows(AccesoException.class, () -> servicio.contexto(idUsuario, paciente.getIdPersonaRol())).getStatus());
     }
     @Test void revalidaLaCuentaEnCadaConsultaDeSesion() {
         when(usuarios.buscarSesion(idUsuario)).thenReturn(usuario(false));

@@ -46,7 +46,7 @@ class AuthResourceTest {
         assertSame(contexto.asignacion(), atencion.getRolActivo()); assertNotNull(acceso.getCsrfToken());
     }
     @Test void credencialesInvalidasNoCreanNiReemplazanUnaSesion() {
-        when(servicio.iniciar(any(), any())).thenThrow(new AccesoException(401,"auth.credenciales","Usuario o contraseña incorrectos."));
+        when(servicio.iniciar(anyString(), anyString())).thenThrow(new AccesoException(401,"auth.credenciales","Usuario o contraseña incorrectos."));
         var datos = new AuthResource.Credenciales(); datos.identificador = "julio"; datos.password = "incorrecta";
         assertThrows(AccesoException.class, () -> resource.login(datos));
         verify(request, never()).getSession(anyBoolean()); assertFalse(acceso.vigente()); assertNull(atencion.getRolActivo());
