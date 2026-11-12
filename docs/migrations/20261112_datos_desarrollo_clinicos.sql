@@ -97,6 +97,56 @@ SELECT id_consulta, CASE WHEN tipo='P' THEN inicio + interval '60 minutes' END A
        CASE WHEN tipo='P' THEN 'Demostración: control sin complicaciones.' END AS observaciones
 FROM demo_consulta;
 
+\if :{?reiniciar}
+-- MODO REINICIO (psql -v reiniciar=1 o scripts/reiniciar-demo.sh). Borra solo lo que cuelga
+-- de las seis consultas demo y no forma parte de su estado inicial: resultados, órdenes,
+-- pasos y procedimientos agregados desde la app. Nada fuera de esas consultas se toca.
+CREATE TEMP TABLE demo_cp_actual ON COMMIT DROP AS
+SELECT cp.id_consulta_procedimiento FROM public.consulta_procedimiento cp
+WHERE cp.id_consulta IN (SELECT id_consulta FROM demo_consulta);
+CREATE TEMP TABLE demo_paso_actual ON COMMIT DROP AS
+SELECT x.id_consulta_procedimiento_paso FROM public.consulta_procedimiento_paso x
+WHERE x.id_consulta_procedimiento IN (SELECT id_consulta_procedimiento FROM demo_cp_actual);
+
+DELETE FROM public.examen_resultado WHERE id_orden_examen IN (
+    SELECT id_orden_examen FROM public.orden_examen
+    WHERE id_consulta_procedimiento_paso IN (SELECT id_consulta_procedimiento_paso FROM demo_paso_actual));
+DELETE FROM public.orden_examen
+WHERE id_consulta_procedimiento_paso IN (SELECT id_consulta_procedimiento_paso FROM demo_paso_actual);
+DELETE FROM public.consulta_procedimiento_paso
+WHERE id_consulta_procedimiento_paso IN (SELECT id_consulta_procedimiento_paso FROM demo_paso_actual)
+  AND id_consulta_procedimiento_paso NOT IN (SELECT id FROM demo_paso);
+DELETE FROM public.consulta_procedimiento
+WHERE id_consulta_procedimiento IN (SELECT id_consulta_procedimiento FROM demo_cp_actual)
+  AND id_consulta_procedimiento NOT IN (SELECT id_cp FROM demo_consulta);
+
+-- Restaura todos los campos de las filas fijas.
+INSERT INTO public.consulta (id_consulta,fecha_inicio,fecha_fin,referencia_externa,observaciones,id_persona_rol)
+SELECT d.id_consulta, d.inicio, k.fin, NULL, k.observaciones, d.paciente
+FROM demo_consulta d JOIN demo_cierre k USING (id_consulta)
+ON CONFLICT (id_consulta) DO UPDATE SET fecha_inicio=EXCLUDED.fecha_inicio, fecha_fin=EXCLUDED.fecha_fin,
+    referencia_externa=NULL, observaciones=EXCLUDED.observaciones, id_persona_rol=EXCLUDED.id_persona_rol;
+INSERT INTO public.consulta_procedimiento (id_consulta_procedimiento,id_consulta,id_procedimiento,fecha_inicio,fecha_fin,observaciones)
+SELECT d.id_cp, d.id_consulta, 'de110006-0000-4000-8000-000000000001', d.inicio, k.fin, NULL
+FROM demo_consulta d JOIN demo_cierre k USING (id_consulta)
+ON CONFLICT (id_consulta_procedimiento) DO UPDATE SET id_consulta=EXCLUDED.id_consulta, id_procedimiento=EXCLUDED.id_procedimiento,
+    fecha_inicio=EXCLUDED.fecha_inicio, fecha_fin=EXCLUDED.fecha_fin, observaciones=NULL;
+INSERT INTO public.consulta_procedimiento_paso
+    (id_consulta_procedimiento_paso,id_consulta_procedimiento,id_persona_rol,fecha_inicio,fecha_fin,estado,id_procedimiento_paso,valor)
+SELECT id, id_cp, doctor, inicio, fin, estado, id_paso_def, valor FROM demo_paso
+ON CONFLICT (id_consulta_procedimiento_paso) DO UPDATE SET id_consulta_procedimiento=EXCLUDED.id_consulta_procedimiento,
+    id_persona_rol=EXCLUDED.id_persona_rol, fecha_inicio=EXCLUDED.fecha_inicio, fecha_fin=EXCLUDED.fecha_fin,
+    estado=EXCLUDED.estado, id_procedimiento_paso=EXCLUDED.id_procedimiento_paso, valor=EXCLUDED.valor;
+
+DO $$ BEGIN
+    IF (SELECT count(*) FROM public.consulta_procedimiento_paso x JOIN public.consulta_procedimiento cp USING (id_consulta_procedimiento)
+        WHERE cp.id_consulta IN (SELECT id_consulta FROM demo_consulta)) <> (SELECT count(*) FROM demo_paso) THEN
+        RAISE EXCEPTION 'El reinicio no dejó exactamente los pasos iniciales; no se guardó ningún cambio.';
+    END IF;
+END $$;
+\echo 'Modo reinicio: consultas demo devueltas a su estado inicial.'
+\endif
+
 -- Volver a anclar las fechas: desplaza consulta, procedimientos y pasos existentes (incluidos
 -- los que haya creado la app) en la diferencia con el día deseado. No cambia estados.
 CREATE TEMP TABLE demo_desfase ON COMMIT DROP AS
