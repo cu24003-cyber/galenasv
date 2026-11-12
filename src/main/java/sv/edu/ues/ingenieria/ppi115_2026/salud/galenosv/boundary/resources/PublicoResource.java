@@ -18,6 +18,7 @@ import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.CitaPublicaService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.IntentosAcceso;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TicketCitaService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TipoDocumentoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento;
 
@@ -33,6 +34,7 @@ public class PublicoResource {
     @Inject TipoDocumentoService tipos;
     @Inject CitaPublicaService citas;
     @Inject IntentosAcceso intentos;
+    @Inject TicketCitaService tickets;
     @Inject Validator validador;
     @Context HttpServletRequest request;
 
@@ -78,6 +80,26 @@ public class PublicoResource {
         citas.citas(datos.idTipoDocumento, datos.numeroDocumento, datos.idClinica, datos.desde, datos.hasta)
                 .forEach(c -> arreglo.add(cita(c)));
         return Response.ok(arreglo.build().toString()).build();
+    }
+
+    /**
+     * HU1: ticket PDF de la cita. Consulta inexistente, ajena, id inválido o documento
+     * inexistente devuelven el mismo 404 para no revelar qué existe.
+     */
+    @POST @Path("citas/{idConsulta}/ticket") @Consumes(MediaType.APPLICATION_JSON)
+    @Produces({"application/pdf", MediaType.APPLICATION_JSON})
+    public Response ticket(@PathParam("idConsulta") String idConsulta, BusquedaDocumento datos) {
+        validar(datos);
+        UUID id;
+        try { id = UUID.fromString(idConsulta); } catch (IllegalArgumentException | NullPointerException e) { throw citaNoExiste(); }
+        var cita = citas.cita(datos.idTipoDocumento, datos.numeroDocumento, id).orElseThrow(PublicoResource::citaNoExiste);
+        return Response.ok(tickets.generar(cita), "application/pdf")
+                .header("Content-Disposition", "attachment; filename=\"" + TicketCitaService.nombreArchivo(cita.idConsulta()) + "\"")
+                .build();
+    }
+
+    private static AccesoException citaNoExiste() {
+        return new AccesoException(404, "cita.noExiste", "No encontramos esa cita para el documento indicado.");
     }
 
     static JsonObjectBuilder cita(CitaPublicaService.CitaPublica c) {

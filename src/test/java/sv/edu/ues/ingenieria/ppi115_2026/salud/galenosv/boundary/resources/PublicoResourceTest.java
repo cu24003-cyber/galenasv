@@ -24,6 +24,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.CitaPubl
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.CitaPublicaService.CitaPublica;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.CitaPublicaService.ClinicaPublica;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.IntentosAcceso;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TicketCitaService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TipoDocumentoService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento;
 
@@ -33,6 +34,7 @@ class PublicoResourceTest {
     @Mock CitaPublicaService citas;
     @Mock IntentosAcceso intentos;
     @Mock HttpServletRequest request;
+    @Mock TicketCitaService tickets;
     @InjectMocks PublicoResource resource;
     private final UUID dui = UUID.randomUUID(), clinica = UUID.randomUUID(), idConsulta = UUID.randomUUID();
     private static final List<String> PROHIBIDOS = List.of("observaciones", "valor", "estado", "responsable",
@@ -132,6 +134,33 @@ class PublicoResourceTest {
         assertThrows(ConstraintViolationException.class, () -> resource.citas(sinClinica));
         assertThrows(ConstraintViolationException.class, () -> resource.citas(sinFecha));
         verifyNoInteractions(citas);
+    }
+
+    // --- POST /publico/citas/{id}/ticket ---
+    @Test void ticketDevuelvePdfComoAdjunto() {
+        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", List.of());
+        when(citas.cita(dui, "00000000-3", idConsulta)).thenReturn(java.util.Optional.of(cita));
+        when(tickets.generar(cita)).thenReturn("%PDF-1.4".getBytes());
+        var r = resource.ticket(idConsulta.toString(), documento(dui, "00000000-3"));
+        assertEquals(200, r.getStatus()); assertEquals("application/pdf", r.getMediaType().toString());
+        assertEquals("attachment; filename=\"" + TicketCitaService.nombreArchivo(idConsulta) + "\"", r.getHeaderString("Content-Disposition"));
+        assertArrayEquals("%PDF-1.4".getBytes(), (byte[]) r.getEntity());
+        verify(intentos).registrar(IntentosAcceso.Ambito.BUSQUEDA_PUBLICA, "192.0.2.20");
+    }
+    @Test void ticketDeCitaAjenaDocumentoInexistenteOIdInvalidoEsElMismo404() {
+        when(citas.cita(any(), anyString(), any())).thenReturn(java.util.Optional.empty());
+        AccesoException ajena = assertThrows(AccesoException.class, () -> resource.ticket(idConsulta.toString(), documento(dui, "00000000-1")));
+        AccesoException inexistente = assertThrows(AccesoException.class, () -> resource.ticket(idConsulta.toString(), documento(dui, "99999999-9")));
+        AccesoException idInvalido = assertThrows(AccesoException.class, () -> resource.ticket("no-es-uuid", documento(dui, "00000000-3")));
+        for (AccesoException e : List.of(ajena, inexistente, idInvalido)) {
+            assertEquals(404, e.getStatus()); assertEquals("cita.noExiste", e.getMessageKey()); assertEquals(ajena.getMessage(), e.getMessage());
+        }
+        verify(intentos, times(3)).registrar(IntentosAcceso.Ambito.BUSQUEDA_PUBLICA, "192.0.2.20");
+        verifyNoInteractions(tickets);
+    }
+    @Test void ticketConCuerpoInvalidoEs400() {
+        assertThrows(ConstraintViolationException.class, () -> resource.ticket(idConsulta.toString(), documento(dui, "")));
+        verifyNoInteractions(citas, tickets);
     }
 
     @Test void laRutaEsPublicaYNoUsaLaSesion() {

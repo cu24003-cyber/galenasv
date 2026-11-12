@@ -53,6 +53,7 @@ class PermisosApiHttpTest extends JerseyTest {
         assertEquals(200,target("publico/tipos-documento").request().get().getStatus());
         assertEquals(200,target("publico/clinicas").request().post(Entity.json("{}")).getStatus());
         assertEquals(200,target("publico/citas").request().post(Entity.json("{}")).getStatus());
+        assertEquals(200,target("publico/citas/"+UUID.randomUUID()+"/ticket").request().post(Entity.json("{}")).getStatus());
         verify(auth, never()).contexto(any(), any());
         assertEquals(401,target("tipos-documento").request().get().getStatus());
     }
