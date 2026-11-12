@@ -111,6 +111,21 @@ class AutenticacionFilterTest {
         filtro.doFilter(request, response, chain);
         verify(response).setStatus(401); verifyNoInteractions(chain);
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/publico/clinicas", "/publico/citas"})
+    void busquedaPublicaPorPostNoExigeSesionNiCsrfPeroSiOrigen(String ruta) throws Exception {
+        when(request.getRequestURI()).thenReturn("/galenosv/api"+ruta); when(request.getPathInfo()).thenReturn(ruta);
+        when(request.getMethod()).thenReturn("POST"); when(request.getHeader("Origin")).thenReturn("http://localhost:9080");
+        filtro.doFilter(request, response, chain);
+        verify(chain).doFilter(request, response); verifyNoInteractions(acceso);
+    }
+    @Test void busquedaPublicaDesdeOtroOrigenSeRechaza() throws Exception {
+        // El origen se rechaza antes de mirar la ruta: la exclusión pública no lo salta.
+        when(request.getRequestURI()).thenReturn("/galenosv/api/publico/citas");
+        when(request.getMethod()).thenReturn("POST"); when(request.getHeader("Origin")).thenReturn("https://ajeno.example");
+        filtro.doFilter(request, response, chain);
+        verify(response).setStatus(403); verifyNoInteractions(chain);
+    }
     @Test void filtroCubreTodaLaApi() {
         assertArrayEquals(new String[]{"/api/*"},AutenticacionFilter.class.getAnnotation(jakarta.servlet.annotation.WebFilter.class).urlPatterns());
     }
