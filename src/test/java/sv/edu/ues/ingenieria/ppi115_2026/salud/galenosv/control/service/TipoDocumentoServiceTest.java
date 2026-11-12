@@ -22,6 +22,13 @@ class TipoDocumentoServiceTest {
     private TipoDocumentoService tipoDocumentoService;
 
     @Test
+    void listarActivos_delegaAlRepository() {
+        var activos = java.util.List.of(new TipoDocumento(UUID.randomUUID()));
+        when(tipoDocumentoRepository.listarActivos()).thenReturn(activos);
+        assertSame(activos, tipoDocumentoService.listarActivos());
+    }
+
+    @Test
     void buscarPorId_delegaAlRepository() {
         UUID id = UUID.randomUUID();
         TipoDocumento esperada = new TipoDocumento();

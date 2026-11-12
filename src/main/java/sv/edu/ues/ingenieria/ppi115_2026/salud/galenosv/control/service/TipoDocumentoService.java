@@ -3,6 +3,7 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 import jakarta.ejb.LocalBean;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.RepositoryInterface;
@@ -31,6 +32,10 @@ public class TipoDocumentoService extends AbstractService<TipoDocumento, UUID> {
             entidad.setIdTipoDocumento(UUID.randomUUID());
         }
         super.crear(entidad);
+    }
+
+    public List<TipoDocumento> listarActivos() {
+        return tipoDocumentoRepository.listarActivos();
     }
 
     public boolean estaEnUso(UUID id) {

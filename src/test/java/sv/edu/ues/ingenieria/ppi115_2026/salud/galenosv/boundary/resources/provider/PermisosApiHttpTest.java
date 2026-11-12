@@ -48,6 +48,21 @@ class PermisosApiHttpTest extends JerseyTest {
     @Override protected TestContainerFactory getTestContainerFactory() { return new InMemoryTestContainerFactory(); }
     @BeforeEach void iniciar() throws Exception { super.setUp(); }
     @AfterEach void cerrar() throws Exception { super.tearDown(); }
+    @Test void rutaPublicaNoConsultaLaSesion() {
+        when(auth.contexto(any(),any())).thenThrow(new AccesoException(401,"auth.sesion","Vuelva a iniciar sesión."));
+        assertEquals(200,target("publico/tipos-documento").request().get().getStatus());
+        verify(auth, never()).contexto(any(), any());
+        assertEquals(401,target("tipos-documento").request().get().getStatus());
+    }
+    @Test void segmentosPuntoNoHeredanLaExclusionPublica() {
+        Consulta consulta=new Consulta(UUID.randomUUID()); consulta.setIdPersonaRol(ajeno);
+        when(em.find(Consulta.class,consulta.getIdConsulta())).thenReturn(consulta);
+        for (String ruta : new String[]{"publico/../consultas/", "publico/%2e%2e/consultas/", "publico/./../consultas/"}) {
+            try (Response r = client().target(getBaseUri().toString() + ruta + consulta.getIdConsulta()).request().get()) {
+                assertNotEquals(200, r.getStatus(), ruta);
+            }
+        }
+    }
     @Test void pacienteSoloLeeSuExpediente() {
         rol.setCodigo("PACIENTE");
         assertEquals(200,target("personas/"+activo.getIdPersona().getIdPersona()+"/documentos").request().get().getStatus());

@@ -30,6 +30,9 @@ public class AutenticacionFilter implements Filter {
         if (req.getRequestURI().equals(req.getContextPath() + "/api/auth/login") && "POST".equals(req.getMethod())) {
             chain.doFilter(request, response); return;
         }
+        if (rutaPublica(req)) {
+            chain.doFilter(request, response); return;
+        }
         var sesion = req.getSession(false);
         if (sesion == null || !acceso.vigente()) {
             if (sesion != null) sesion.invalidate();
@@ -39,6 +42,15 @@ public class AutenticacionFilter implements Filter {
             error(req, res, 403, "auth.csrf", "No se pudo verificar la solicitud."); return;
         }
         chain.doFilter(request, response);
+    }
+
+    /**
+     * /api/publico/* no requiere sesión. Se usa pathInfo, que el contenedor decodifica y
+     * normaliza, para que "/api/publico/../personas" no herede la exclusión.
+     */
+    static boolean rutaPublica(HttpServletRequest request) {
+        String ruta = request.getPathInfo();
+        return "/api".equals(request.getServletPath()) && ruta != null && ruta.startsWith("/publico/");
     }
 
     static boolean tokenValido(String recibido, String esperado) {

@@ -24,6 +24,8 @@ class AutenticacionFilterTest {
     @BeforeEach void preparar() throws Exception {
         lenient().when(request.getContextPath()).thenReturn("/galenosv");
         lenient().when(request.getRequestURI()).thenReturn("/galenosv/api/auth/me");
+        lenient().when(request.getServletPath()).thenReturn("/api");
+        lenient().when(request.getPathInfo()).thenReturn("/auth/me");
         lenient().when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost:9080/galenosv/api/auth/me"));
         lenient().when(request.getMethod()).thenReturn("GET");
         lenient().when(response.getWriter()).thenReturn(new PrintWriter(cuerpo));
@@ -86,6 +88,28 @@ class AutenticacionFilterTest {
         when(request.getSession(false)).thenReturn(sesion); when(acceso.vigente()).thenReturn(true); when(acceso.getCsrfToken()).thenReturn("secreto");
         filtro.doFilter(request,response,chain);
         verify(response).setStatus(403); verifyNoInteractions(chain);
+    }
+    @Test void rutaPublicaNoExigeSesionNiLaCrea() throws Exception {
+        when(request.getRequestURI()).thenReturn("/galenosv/api/publico/tipos-documento");
+        when(request.getPathInfo()).thenReturn("/publico/tipos-documento");
+        filtro.doFilter(request, response, chain);
+        verify(chain).doFilter(request, response); verifyNoInteractions(acceso);
+        verify(request, never()).getSession(anyBoolean()); verify(request, never()).getSession();
+        verify(response).setHeader("Cache-Control", "no-store"); verify(response).setHeader("X-Content-Type-Options", "nosniff");
+    }
+    @Test void segmentosPuntoNoSaltanLaSesionDesdeLaRutaPublica() throws Exception {
+        // El contenedor normaliza pathInfo; la URI cruda conserva los "..".
+        when(request.getRequestURI()).thenReturn("/galenosv/api/publico/../personas");
+        when(request.getPathInfo()).thenReturn("/personas");
+        filtro.doFilter(request, response, chain);
+        verify(response).setStatus(401); verifyNoInteractions(chain);
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/publicoX/tipos-documento", "/publico", "/personas/publico/x"})
+    void soloElPrefijoPublicoExactoQuedaExcluido(String ruta) throws Exception {
+        when(request.getRequestURI()).thenReturn("/galenosv/api"+ruta); when(request.getPathInfo()).thenReturn(ruta);
+        filtro.doFilter(request, response, chain);
+        verify(response).setStatus(401); verifyNoInteractions(chain);
     }
     @Test void filtroCubreTodaLaApi() {
         assertArrayEquals(new String[]{"/api/*"},AutenticacionFilter.class.getAnnotation(jakarta.servlet.annotation.WebFilter.class).urlPatterns());

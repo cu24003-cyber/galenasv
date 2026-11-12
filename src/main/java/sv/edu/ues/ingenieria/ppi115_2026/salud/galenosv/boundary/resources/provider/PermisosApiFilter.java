@@ -31,8 +31,11 @@ public class PermisosApiFilter implements ContainerRequestFilter {
     @Override public void filter(ContainerRequestContext request) throws IOException {
         List<String> partes = request.getUriInfo().getPathSegments().stream().map(p -> p.getPath()).toList();
         if (partes.isEmpty()) throw denegado();
+        // Sin esto "publico/../consultas/{id}" saltaría las comprobaciones con la raíz "publico".
+        if (partes.stream().anyMatch(p -> p.equals(".") || p.equals(".."))) throw new AccesoException(400, "ruta.invalida", "La ruta no es válida.");
         String raiz = partes.getFirst();
-        if (Set.of("auth", "atencion").contains(raiz)) return;
+        // publico: rutas sin sesión (HU1/HU2); AutenticacionFilter también las excluye.
+        if (Set.of("auth", "atencion", "publico").contains(raiz)) return;
         var actual = atencion.getRolActivo();
         var contexto = autenticacion.contexto(acceso.getIdUsuario(), actual == null ? null : actual.getIdPersonaRol());
         PersonaRol activo = contexto.asignacion();
