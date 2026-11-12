@@ -1,6 +1,7 @@
 \set ON_ERROR_STOP on
 -- Opcional: solo para el entorno de desarrollo de cada compañero.
 -- password_hash debe proceder de ContrasenaService, nunca de una contraseña sin hash.
+-- Desde la HU2 el login es por documento y la columna no se usa; el script genera un hash aleatorio.
 \if :{?password_hash}
 \else
 DO $$ BEGIN RAISE EXCEPTION 'Falta password_hash. Utilice scripts/preparar-bd-desarrollo.sh o genere el hash con ContrasenaService.'; END $$;
@@ -42,7 +43,27 @@ SELECT ('de110002-0000-4000-8000-' || lpad(numero::text,12,'0'))::uuid,
 FROM cuentas_desarrollo c JOIN public.rol r ON r.codigo=c.codigo
 ON CONFLICT (id_persona_rol) DO NOTHING;
 
--- Repetir el script conserva las contraseñas y el estado de las cuentas existentes.
+-- HU2: tipo de documento DUI. Si ya existe uno con ese nombre se reutiliza.
+INSERT INTO public.tipo_documento (id_tipo_documento,nombre,indicaciones,expresion_regular,activo)
+SELECT 'de110004-0000-4000-8000-000000000001','DUI',
+       'Ocho dígitos, guion y dígito verificador. Ejemplo: 00000000-0','^[0-9]{8}-[0-9]$',true
+WHERE NOT EXISTS (SELECT 1 FROM public.tipo_documento WHERE lower(btrim(nombre))='dui')
+ON CONFLICT (id_tipo_documento) DO NOTHING;
+
+-- Números ficticios (prefijo 00000000); no corresponden a ninguna persona real.
+CREATE TEMP TABLE documentos_desarrollo (numero integer, valor text) ON COMMIT DROP;
+INSERT INTO documentos_desarrollo VALUES (1,'00000000-1'),(2,'00000000-2'),(3,'00000000-3');
+
+INSERT INTO public.documento (id_documento,id_persona,id_tipo_documento,valor)
+SELECT ('de110005-0000-4000-8000-' || lpad(d.numero::text,12,'0'))::uuid,
+       ('de110001-0000-4000-8000-' || lpad(d.numero::text,12,'0'))::uuid,
+       (SELECT id_tipo_documento FROM public.tipo_documento WHERE lower(btrim(nombre))='dui'
+        ORDER BY id_tipo_documento='de110004-0000-4000-8000-000000000001' DESC, id_tipo_documento LIMIT 1),
+       d.valor
+FROM documentos_desarrollo d
+ON CONFLICT DO NOTHING;
+
+-- Repetir el script conserva el hash y el estado de las cuentas existentes.
 INSERT INTO public.usuario (id_usuario,id_persona,nombre_usuario,password_hash,activo)
 SELECT ('de110003-0000-4000-8000-' || lpad(numero::text,12,'0'))::uuid,
        ('de110001-0000-4000-8000-' || lpad(numero::text,12,'0'))::uuid,
@@ -60,5 +81,15 @@ DO $$ BEGIN
         RAISE EXCEPTION 'Las cuentas de demostración existentes no coinciden con los tres perfiles activos; no se sobrescribió ningún dato.';
     END IF;
 END $$;
+
+DO $$ BEGIN
+    IF (SELECT count(*) FROM documentos_desarrollo d
+        JOIN public.documento x ON x.id_persona=('de110001-0000-4000-8000-' || lpad(d.numero::text,12,'0'))::uuid
+                               AND x.valor=d.valor
+        JOIN public.tipo_documento t ON t.id_tipo_documento=x.id_tipo_documento
+                                    AND lower(btrim(t.nombre))='dui' AND t.activo=true) <> 3 THEN
+        RAISE EXCEPTION 'Los documentos de demostración no coinciden (tipo DUI activo y números 00000000-1/2/3); no se sobrescribió ningún dato.';
+    END IF;
+END $$;
 COMMIT;
-\echo 'Disponibles: admin.demo, doctor.demo y paciente.demo. Las cuentas nuevas usan la contraseña elegida; las existentes conservan la suya.'
+\echo 'Login por DUI: admin.demo 00000000-1 (ADMINISTRACION), doctor.demo 00000000-2 (DOCTOR). paciente.demo 00000000-3 es PACIENTE y debe ser rechazado.'

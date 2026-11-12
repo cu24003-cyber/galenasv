@@ -14,18 +14,10 @@ if [[ ! -f "$raiz/target/classes/sv/edu/ues/ingenieria/ppi115_2026/salud/galenos
     printf 'Primero ejecuta: mvn -DskipTests package\n' >&2
     exit 1
 fi
-printf 'Se crearán tres cuentas de prueba; las existentes conservan su contraseña.\n'
-read -r -s -p 'Contraseña para las cuentas nuevas (mínimo 12 caracteres): ' clave
-printf '\n'
-read -r -s -p 'Repite la contraseña: ' confirmacion
-printf '\n'
-if [[ "$clave" != "$confirmacion" ]]; then
-    printf 'Las contraseñas no coinciden. No se modificó la base.\n' >&2
-    exit 1
-fi
-hash=$(printf '%s\n' "$clave" | java -cp "$raiz/target/classes:$raiz/target/galenosv/WEB-INF/lib/*" \
+# HU2: el login es por documento. password_hash sigue siendo obligatorio en el esquema,
+# así que se llena con el hash de una clave aleatoria que nadie conoce ni necesita.
+hash=$(head -c 48 /dev/urandom | base64 -w0 | java -cp "$raiz/target/classes:$raiz/target/galenosv/WEB-INF/lib/*" \
     sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContrasenaService --stdin)
-unset clave confirmacion
 # CREATE DATABASE queda fuera de la transacción de la migración.
 docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d postgres -v "base=$base_datos" <<'SQL'
 SELECT format('CREATE DATABASE %I', :'base')
@@ -33,9 +25,11 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname=:'base') \gexec
 SQL
 docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
     < "$raiz/docs/migrations/20261111_base_completa.sql"
+docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
+    < "$raiz/docs/migrations/20261112_documento_tipo_valor_unico.sql"
 {
     printf '\\set password_hash %s\n' "$hash"
     cat "$raiz/docs/migrations/20261111_datos_desarrollo.sql"
 } | docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos"
 unset hash
-printf 'Base preparada: %s. Configura el mismo nombre y credenciales de conexión en Liberty y reinicia el backend.\n' "$base_datos"
+printf 'Base preparada: %s. Entra con tipo DUI y 00000000-1 (admin.demo) o 00000000-2 (doctor.demo). Configura el mismo nombre y credenciales de conexión en Liberty y reinicia el backend.\n' "$base_datos"
