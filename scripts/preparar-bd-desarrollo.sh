@@ -32,4 +32,6 @@ docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -
     cat "$raiz/docs/migrations/20261111_datos_desarrollo.sql"
 } | docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos"
 unset hash
+docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
+    < "$raiz/docs/migrations/20261112_datos_desarrollo_clinicos.sql"
 printf 'Base preparada: %s. Entra con tipo DUI y 00000000-1 (admin.demo) o 00000000-2 (doctor.demo). Configura el mismo nombre y credenciales de conexión en Liberty y reinicia el backend.\n' "$base_datos"
