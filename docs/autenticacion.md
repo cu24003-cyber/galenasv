@@ -1,8 +1,13 @@
 # Acceso de ChivoMed
 
-Requiere la migración `docs/migrations/20261104_usuarios_roles.sql` y una cuenta
-activa en `usuario`, vinculada a una persona con un rol y una clínica activos.
-No se crean cuentas ni contraseñas predeterminadas al iniciar el servidor.
+Requiere las migraciones `docs/migrations/20261111_base_completa.sql` y
+`docs/migrations/20261112_documento_tipo_valor_unico.sql`, y una cuenta activa en
+`usuario` vinculada a una persona que tenga un documento de un tipo activo y una
+asignación activa de ADMINISTRACION o DOCTOR en una clínica activa.
+No se crean cuentas predeterminadas al iniciar el servidor.
+
+**HU2:** el login es solo para empleados y se hace con tipo y número de documento,
+sin contraseña. Las personas que solo son PACIENTE no pueden iniciar sesión.
 
 ## Ejecución local
 
@@ -31,15 +36,26 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 
 | Operación | Entrada | Resultado |
 | --- | --- | --- |
-| `POST /api/auth/login` | JSON con `identificador` y `password` | 204 y cookie de sesión nueva. |
+| `GET /api/publico/tipos-documento` | Nada (sin cookie ni CSRF) | Tipos activos: `idTipoDocumento`, `nombre`, `indicaciones`, `expresionRegular`. |
+| `POST /api/auth/login` | JSON con `idTipoDocumento` (UUID) y `numeroDocumento` | 204 y cookie de sesión nueva. |
 | `GET /api/auth/me` | Cookie de sesión | Usuario, persona, rol, clínica y token CSRF. |
 | `POST /api/auth/logout` | Cookie y cabecera `X-CSRF-Token` | 204; invalida toda la sesión. |
 | `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. |
 
-El usuario/correo se resuelve sin distinguir mayúsculas. La contraseña conserva
-sus espacios. Un usuario inexistente, una contraseña incorrecta y una cuenta
-deshabilitada devuelven el mismo 401. Una cuenta sin asignación activa devuelve 403.
-La respuesta y el estado del acceso usan `Cache-Control: no-store`.
+El documento se busca por el par exacto (tipo, valor); el número se recorta pero
+no se normaliza de otra forma (el DUI se escribe con guion: `00000000-1`). El tipo
+debe estar activo. `numeroDocumento` admite hasta 50 caracteres sin saltos de línea;
+un UUID inválido o un cuerpo mal formado devuelven 400.
+
+Todos los rechazos devuelven el mismo 401 `auth.credenciales` con el mensaje
+"Documento no registrado o sin acceso autorizado.": documento inexistente, documento
+de otro tipo, tipo inactivo, usuario inactivo, persona sin asignación activa y
+persona que solo es PACIENTE. Así la respuesta no revela qué documentos existen ni a
+quién pertenecen. La respuesta y el estado del acceso usan `Cache-Control: no-store`.
+
+Rol inicial: la asignación de ADMINISTRACION o DOCTOR más antigua (`fecha_creacion`,
+después `id_persona_rol`), nunca PACIENTE. `GET /auth/me`, el cambio de rol y
+PermisosApiFilter tampoco aceptan una asignación PACIENTE como rol de sesión.
 
 `/auth/me` devuelve exactamente el contrato utilizado por el frontend:
 
@@ -52,32 +68,48 @@ csrfToken: token aleatorio asociado a la sesión
 No devuelve hashes ni contraseñas. Cada consulta de sesión comprueba de nuevo
 la cuenta y la asignación en PostgreSQL. Si fueron deshabilitadas o revocadas,
 invalida la sesión. Se conservan los límites del flujo clínico al cambiar de rol.
-Cuando una persona tiene varias asignaciones, el login usa la más antigua; el
-selector de roles del frontend queda para la etapa de navegación por módulos.
+Cuando una persona tiene varias asignaciones de empleado, el login usa la más
+antigua; el selector de roles del frontend queda para la etapa del dashboard (HU3).
 
 La sesión expira tras 30 minutos de inactividad o un máximo de ocho horas.
-El límite inicial de acceso es de diez solicitudes de login por dirección en cinco
-minutos; devuelve 429 y `Retry-After: 300`. Se mantiene en memoria por instancia y
+Como no hay contraseña, este límite es la principal protección contra
+la enumeración de números de documento. Son diez solicitudes de login por dirección
+en cinco minutos; devuelve 429 y `Retry-After: 300`. Se mantiene en memoria por instancia y
 no confía en cabeceras de IP enviadas por el cliente. Con BrowserSync, las conexiones
 al backend comparten la dirección del proxy.
 
-## Hashes y alta de cuentas
+## Rutas públicas
 
-Se usa Password4j 1.8.4 con Argon2id v19, 19 MiB, dos iteraciones, un hilo y una sal
-aleatoria de 16 bytes. Los parámetros de los hashes se validan antes de reservar
-memoria. El alta de cuentas debe hacerse con un responsable autorizado; no se
-expone un endpoint público que permita asignarse roles.
+`AutenticacionFilter` deja pasar `/api/publico/*` sin cookie. Para decidirlo usa
+`getServletPath()` y `getPathInfo()`, que el contenedor decodifica y normaliza, y no
+la URI cruda: `/api/publico/../personas` exige sesión. `PermisosApiFilter` excluye la
+raíz `publico` y rechaza con 400 `ruta.invalida` cualquier segmento `.` o `..`.
+Las rutas públicas nunca devuelven notas, valores clínicos ni resultados.
 
-Para obtener un hash desde una terminal local, después de `mvn package`:
+## Alta de cuentas y `password_hash`
 
-```bash
-java -cp 'target/classes:target/galenosv/WEB-INF/lib/*' sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContrasenaService
-```
+`usuario.password_hash` sigue siendo obligatorio en el esquema (Argon2id en formato
+PHC), pero el login ya no lo usa. `ContrasenaService` se conserva solo para llenar
+esa columna. `scripts/preparar-bd-desarrollo.sh` genera el hash de una clave
+aleatoria que nadie conoce; ya no pide contraseña.
 
-La herramienta pide la contraseña sin mostrarla y emite únicamente su hash.
-Insertar ese hash en `usuario.password_hash`, vincular `id_persona` y activar la
-cuenta solo después de verificar su asignación en `persona_rol`. No enviar
-contraseñas como argumentos de consola ni guardarlas en scripts o archivos versionados.
+Para dar de alta un empleado: crear la persona, su documento (tipo activo y número
+único dentro del tipo, restricción `uq_documento_tipo_valor`), su asignación de
+ADMINISTRACION o DOCTOR en `persona_rol` y la cuenta en `usuario` con un hash
+aleatorio, y activarla solo después de verificar la asignación. El alta debe hacerla
+un responsable autorizado; no hay endpoint público para asignarse roles.
+
+### Entorno de desarrollo
+
+Después de `mvn -DskipTests package`, `bash scripts/preparar-bd-desarrollo.sh` aplica
+la base completa, la migración de unicidad y los datos de desarrollo. Deja el tipo
+DUI (`^[0-9]{8}-[0-9]$`) y estas cuentas con números ficticios:
+
+| Cuenta | DUI | Resultado del login |
+| --- | --- | --- |
+| admin.demo | `00000000-1` | 204, rol ADMINISTRACION |
+| doctor.demo | `00000000-2` | 204, rol DOCTOR |
+| paciente.demo | `00000000-3` | 401, porque es PACIENTE |
 
 ## Alcance de esta etapa
 
@@ -97,9 +129,12 @@ Los archivos Java de implementación están bajo
 | --- | --- | --- |
 | Nuevo | `entity/Usuario.java` | Mapea la cuenta y evita serializar su hash. |
 | Modificado | `entity/Rol.java` | Mapea el código estable del rol. |
-| Nuevo | `entity/repository/UsuarioRepository.java` | Busca cuentas y asignaciones propias activas. |
-| Nuevo | `control/service/AutenticacionService.java` | Valida credenciales, cuenta y contexto autorizado. |
-| Nuevo | `control/service/ContrasenaService.java` | Genera y verifica Argon2id; incluye herramienta local de hashes. |
+| Nuevo | `entity/repository/UsuarioRepository.java` | Busca la cuenta por documento y las asignaciones de empleado activas. |
+| Nuevo | `control/service/AutenticacionService.java` | Login por documento, cuenta y contexto de empleado autorizado. |
+| Nuevo | `control/service/ContrasenaService.java` | Genera hashes Argon2id para `password_hash`; el login ya no lo usa. |
+| Nuevo | `boundary/resources/PublicoResource.java` | `GET /api/publico/tipos-documento` sin sesión. |
+| Modificado | `boundary/resources/provider/PermisosApiFilter.java` | Excluye `publico` y rechaza segmentos `.` y `..`. |
+| Nuevo | `docs/migrations/20261112_documento_tipo_valor_unico.sql` | UNIQUE (id_tipo_documento, valor) con detección previa de duplicados. |
 | Nuevo | `control/service/AccesoSesion.java` | Identidad, token CSRF y duración máxima de la sesión. |
 | Nuevo | `control/service/AccesoException.java` | Errores seguros de autenticación y autorización. |
 | Nuevo | `control/service/IntentosAcceso.java` | Límite de solicitudes de login por dirección. |
@@ -117,11 +152,12 @@ Los archivos Java de implementación están bajo
 | Nuevo | `src/test/.../boundary/resources/AuthResourceTest.java` | Contrato de sesión, renovación e invalidación. |
 | Nuevo | `src/test/.../boundary/web/AutenticacionFilterTest.java` | Origen, cookies, expiración y CSRF. |
 | Nuevo | `src/test/.../control/service/AccesoSesionTest.java` | Tokens independientes y vencimiento absoluto. |
-| Nuevo | `src/test/.../control/service/AutenticacionServiceTest.java` | Credenciales, cuenta deshabilitada y roles ajenos. |
+| Nuevo | `src/test/.../control/service/AutenticacionServiceTest.java` | Documento inexistente o de otro tipo, usuario inactivo, PACIENTE, rol inicial y roles ajenos. |
 | Nuevo | `src/test/.../control/service/ContextoRolServiceTest.java` | Listado propio y rechazo de asignaciones ajenas. |
 | Nuevo | `src/test/.../control/service/ContrasenaServiceTest.java` | Hashes reales, sal aleatoria y parámetros corruptos. |
 | Nuevo | `src/test/.../control/service/IntentosAccesoTest.java` | Límite y renovación de la ventana de intentos. |
-| Nuevo | `src/test/.../entity/repository/UsuarioRepositoryTest.java` | Normalización de usuario/correo como parámetro. |
+| Nuevo | `src/test/.../entity/repository/UsuarioRepositoryTest.java` | Búsqueda por tipo y número como parámetros; asignaciones sin PACIENTE. |
+| Nuevo | `src/test/.../boundary/resources/PublicoResourceTest.java` | Solo tipos activos y solo los cuatro campos públicos. |
 | Nuevo | `docs/autenticacion.md` | Instrucciones, contrato y alcance de esta etapa. |
 
 La configuración `src/main/liberty/config/server.xml` y las credenciales

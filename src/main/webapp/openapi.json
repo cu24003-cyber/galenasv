@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "GalenoSV REST API",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "CRUD existente de las 20 entidades, filtros UUID, nuevas escrituras en rutas relacionadas y cambios parciales. Las nuevas operaciones clínicas usan los servicios del flujo de GalenoSV y su sesión de rol y clínica."
   },
   "servers": [
@@ -76,6 +76,10 @@
     },
     {
       "name": "Autenticación"
+    },
+    {
+      "name": "Público",
+      "description": "Rutas bajo /publico/ que no requieren sesión."
     }
   ],
   "paths": {
@@ -13680,7 +13684,7 @@
         "tags": [
           "Autenticación"
         ],
-        "summary": "Iniciar sesión por usuario o correo",
+        "summary": "Iniciar sesión de empleado por tipo y número de documento (HU2)",
         "requestBody": {
           "required": true,
           "content": {
@@ -13696,7 +13700,7 @@
             "description": "Sesión iniciada; cookie de sesión renovada."
           },
           "400": {
-            "description": "Credenciales con formato inválido.",
+            "description": "Cuerpo inválido: idTipoDocumento no es UUID, número vacío, mayor de 50 caracteres o con saltos de línea.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13706,7 +13710,7 @@
             }
           },
           "401": {
-            "description": "Credenciales o sesión no válidas.",
+            "description": "Documento no registrado o sin acceso autorizado (auth.credenciales).",
             "content": {
               "application/json": {
                 "schema": {
@@ -13716,7 +13720,7 @@
             }
           },
           "403": {
-            "description": "Origen, CSRF o asignación no autorizados.",
+            "description": "Origen de la solicitud no autorizado (auth.origen).",
             "content": {
               "application/json": {
                 "schema": {
@@ -13735,7 +13739,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Sin contraseña. Solo personas con una asignación activa de ADMINISTRACION o DOCTOR; el rol inicial es la asignación de empleado más antigua. Documento inexistente, de otro tipo, tipo inactivo, usuario inactivo o persona sin rol de empleado (incluido PACIENTE) devuelven el mismo 401 auth.credenciales."
       }
     },
     "/auth/me": {
@@ -13827,6 +13832,35 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/publico/tipos-documento": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "operationId": "listarTiposDocumentoPublico",
+        "summary": "Tipos de documento activos para el login, sin sesión",
+        "description": "No requiere cookie ni CSRF. Nunca devuelve notas, valores clínicos ni resultados.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Tipos activos ordenados por nombre; [] si no hay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoDocumentoPublico"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -15079,20 +15113,22 @@
       "CredencialesAcceso": {
         "type": "object",
         "required": [
-          "identificador",
-          "password"
+          "idTipoDocumento",
+          "numeroDocumento"
         ],
         "properties": {
-          "identificador": {
+          "idTipoDocumento": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 254
+            "format": "uuid",
+            "description": "Tipo de documento activo, de GET /publico/tipos-documento."
           },
-          "password": {
+          "numeroDocumento": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 1024,
-            "writeOnly": true
+            "maxLength": 50,
+            "pattern": "^[^\\r\\n]*$",
+            "description": "Se compara exacto después de recortar espacios.",
+            "example": "00000000-1"
           }
         }
       },
@@ -15162,6 +15198,33 @@
           "csrfToken": {
             "type": "string",
             "description": "Enviar en X-CSRF-Token al cerrar sesión o cambiar de rol."
+          }
+        }
+      },
+      "TipoDocumentoPublico": {
+        "type": "object",
+        "required": [
+          "idTipoDocumento",
+          "nombre",
+          "indicaciones",
+          "expresionRegular"
+        ],
+        "properties": {
+          "idTipoDocumento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "indicaciones": {
+            "type": "string",
+            "nullable": true
+          },
+          "expresionRegular": {
+            "type": "string",
+            "nullable": true,
+            "description": "Expresión para validar el número en el cliente."
           }
         }
       }

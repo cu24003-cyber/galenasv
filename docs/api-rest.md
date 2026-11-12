@@ -45,6 +45,28 @@ El CRUD existente se conserva: cada colección admite GET y POST, y cada registr
 
 `GET /api/jakartaee11` devuelve `{"message":"ping Jakarta EE"}` para comprobar que REST responde.
 
+## Autenticación y rutas públicas
+
+Detalle completo en `docs/autenticacion.md`. Resumen del contrato (HU1, HU2):
+
+| Operación | Sesión | Cuerpo / respuesta |
+| --- | --- | --- |
+| `GET /api/publico/tipos-documento` | No | 200 con `[{idTipoDocumento, nombre, indicaciones, expresionRegular}]`, solo tipos activos, ordenados por nombre. `indicaciones` y `expresionRegular` pueden ser `null`. |
+| `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"00000000-1"}` → 204 y cookie nueva. |
+| `GET /api/auth/me` | Sí | Usuario, rol activo y `csrfToken`. |
+| `POST /api/auth/logout` | Sí + `X-CSRF-Token` | 204. |
+
+Errores de `POST /api/auth/login`:
+
+| Código | Caso |
+| --- | --- |
+| 400 `json.invalido` / validación | `idTipoDocumento` no es UUID; número vacío, mayor de 50 caracteres o con saltos de línea. |
+| 401 `auth.credenciales` | Mismo mensaje para documento inexistente, documento de otro tipo, tipo inactivo, usuario inactivo, persona sin asignación activa y persona que solo es PACIENTE. |
+| 403 `auth.origen` | `Origin`/`Referer` no permitido. |
+| 429 `auth.demasiadosIntentos` | Más de diez intentos por dirección en cinco minutos. |
+
+Las rutas bajo `/api/publico/` no requieren sesión ni CSRF y nunca devuelven notas, valores clínicos ni resultados. Cualquier ruta con un segmento `.` o `..` devuelve 400 `ruta.invalida`.
+
 ## Filtros y colecciones relacionadas
 
 Los listados admiten filtros por los identificadores de sus relaciones. Se ejecutan en la base de datos y pueden combinarse mediante `AND`. Cada parámetro se envía una sola vez y contiene un UUID canónico. Los filtros desconocidos, repetidos, vacíos o con UUID inválidos devuelven 400. Sin filtros se conserva el listado completo; sin coincidencias se devuelve 200 con `[]`, incluso si el UUID usado como filtro no corresponde a un registro existente.
