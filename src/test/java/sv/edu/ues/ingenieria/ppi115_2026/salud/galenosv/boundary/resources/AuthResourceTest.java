@@ -37,23 +37,46 @@ class AuthResourceTest {
         PersonaRol asignacion = new PersonaRol(UUID.randomUUID()); asignacion.setIdPersona(persona); asignacion.setIdRol(rol); asignacion.setIdClinica(clinica);
         return new AutenticacionService.Contexto(usuario, asignacion);
     }
-    @Test void loginRenuevaLaSesionYSoloGuardaIdentidadYContexto() {
-        var contexto = contexto("ADMINISTRACION"); when(servicio.iniciar("julio", " prueba ")).thenReturn(contexto);
+    private AuthResource.Credenciales credenciales(UUID tipo, String numero) {
+        var datos = new AuthResource.Credenciales(); datos.idTipoDocumento = tipo; datos.numeroDocumento = numero; return datos;
+    }
+    @Test void loginPorDocumentoRenuevaLaSesionYSoloGuardaIdentidadYContexto() {
+        UUID dui = UUID.randomUUID(); var contexto = contexto("ADMINISTRACION");
+        when(servicio.iniciar(dui, "00000000-1")).thenReturn(contexto);
+        when(request.getRemoteAddr()).thenReturn("192.0.2.10");
         when(request.getSession(false)).thenReturn(http); when(request.getSession(true)).thenReturn(http);
-        var datos = new AuthResource.Credenciales(); datos.identificador = "julio"; datos.password = " prueba ";
-        assertEquals(204, resource.login(datos).getStatus()); verify(http).invalidate(); verify(request).changeSessionId();
+        assertEquals(204, resource.login(credenciales(dui, "00000000-1")).getStatus());
+        verify(intentos).registrar("192.0.2.10"); verify(http).invalidate(); verify(request).changeSessionId();
         assertTrue(acceso.vigente()); assertEquals(idUsuario, acceso.getIdUsuario());
         assertSame(contexto.asignacion(), atencion.getRolActivo()); assertNotNull(acceso.getCsrfToken());
     }
-    @Test void credencialesInvalidasNoCreanNiReemplazanUnaSesion() {
-        when(servicio.iniciar(anyString(), anyString())).thenThrow(new AccesoException(401,"auth.credenciales","Usuario o contraseña incorrectos."));
-        var datos = new AuthResource.Credenciales(); datos.identificador = "julio"; datos.password = "incorrecta";
-        assertThrows(AccesoException.class, () -> resource.login(datos));
+    @Test void documentoRechazadoCuentaElIntentoPeroNoCreaNiReemplazaSesion() {
+        when(request.getRemoteAddr()).thenReturn("192.0.2.10");
+        when(servicio.iniciar(any(UUID.class), anyString())).thenThrow(new AccesoException(401,"auth.credenciales","Documento no registrado o sin acceso autorizado."));
+        assertEquals(401, assertThrows(AccesoException.class, () -> resource.login(credenciales(UUID.randomUUID(), "00000000-9"))).getStatus());
+        verify(intentos).registrar("192.0.2.10");
         verify(request, never()).getSession(anyBoolean()); assertFalse(acceso.vigente()); assertNull(atencion.getRolActivo());
     }
-    @Test void meDevuelveLosTresRolesSinHashNiCorreoYConElContratoDelFrontend() {
+    @Test void demasiadosIntentosNoLleganAlServicio() {
+        when(request.getRemoteAddr()).thenReturn("192.0.2.10");
+        doThrow(new AccesoException(429, "auth.demasiadosIntentos", "Espere.")).when(intentos).registrar("192.0.2.10");
+        assertEquals(429, assertThrows(AccesoException.class, () -> resource.login(credenciales(UUID.randomUUID(), "00000000-1"))).getStatus());
+        verifyNoInteractions(servicio);
+    }
+    @Test void elCuerpoDelLoginNoTieneContrasenaYValidaTipoYNumero() {
+        assertThrows(NoSuchFieldException.class, () -> AuthResource.Credenciales.class.getField("password"));
+        try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var validador = factory.getValidator();
+            assertTrue(validador.validate(credenciales(UUID.randomUUID(), "00000000-1")).isEmpty());
+            assertFalse(validador.validate(credenciales(null, "00000000-1")).isEmpty());
+            assertFalse(validador.validate(credenciales(UUID.randomUUID(), " ")).isEmpty());
+            assertFalse(validador.validate(credenciales(UUID.randomUUID(), "1".repeat(51))).isEmpty());
+            assertFalse(validador.validate(credenciales(UUID.randomUUID(), "00000000-1\r\nX")).isEmpty());
+        }
+    }
+    @Test void meDevuelveLosRolesDeEmpleadoSinHashNiCorreoYConElContratoDelFrontend() {
         when(request.getSession(false)).thenReturn(http); acceso.autenticar(idUsuario);
-        for (String codigo : new String[]{"ADMINISTRACION", "DOCTOR", "PACIENTE"}) {
+        for (String codigo : new String[]{"ADMINISTRACION", "DOCTOR"}) {
             var contexto = contexto(codigo); atencion.cambiarRol(contexto.asignacion());
             when(servicio.contexto(idUsuario, contexto.asignacion().getIdPersonaRol())).thenReturn(contexto);
             String body = (String) resource.me().getEntity();

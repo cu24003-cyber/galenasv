@@ -13,21 +13,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.Usuari
 @Stateless
 public class AutenticacionService {
     @Inject UsuarioRepository usuarios;
-    @Inject ContrasenaService contrasenas;
     public record Contexto(Usuario usuario, PersonaRol asignacion) {}
     private static final Set<String> ROLES_EMPLEADO = Set.of("ADMINISTRACION", "DOCTOR");
-
-    public Contexto iniciar(String identificador, String password) {
-        Usuario usuario = usuarios.buscarAcceso(identificador);
-        boolean correcta = contrasenas.verificar(password, usuario == null ? contrasenas.hashAusente() : usuario.getPasswordHash());
-        if (!correcta || usuario == null || !Boolean.TRUE.equals(usuario.getActivo())) {
-            throw new AccesoException(401, "auth.credenciales", "Usuario o contraseña incorrectos.");
-        }
-        List<PersonaRol> roles = usuarios.asignaciones(usuario.getPersona().getIdPersona());
-        if (roles.isEmpty()) throw sinAsignacion();
-        // Se usa la asignación más antigua; cambiar de rol solo admite asignaciones propias.
-        return new Contexto(usuario, roles.getFirst());
-    }
 
     /**
      * HU2: login de empleados por tipo y número de documento, sin contraseña. Todo rechazo

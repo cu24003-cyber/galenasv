@@ -21,13 +21,8 @@ class UsuarioRepositoryTest {
     @InjectMocks UsuarioRepository repositorio;
     private final UUID tipo = UUID.randomUUID();
 
-    @Test void usuarioOCorreoSeNormalizanYSeEnvianComoParametro() {
-        Usuario usuario = new Usuario();
-        when(em.createQuery(anyString(), eq(Usuario.class))).thenReturn(consulta);
-        when(consulta.setParameter("identificador", "julio@example.invalid")).thenReturn(consulta);
-        when(consulta.getResultStream()).thenReturn(Stream.of(usuario));
-        assertSame(usuario, repositorio.buscarAcceso("  JULIO@EXAMPLE.INVALID  "));
-        verify(consulta).setParameter("identificador", "julio@example.invalid");
+    @Test void yaNoExisteLaBusquedaPorUsuarioOCorreo() {
+        assertTrue(java.util.Arrays.stream(UsuarioRepository.class.getDeclaredMethods()).noneMatch(m -> m.getName().equals("buscarAcceso")));
     }
 
     @Test void buscarPorDocumentoEnviaTipoYNumeroRecortadoComoParametros() {

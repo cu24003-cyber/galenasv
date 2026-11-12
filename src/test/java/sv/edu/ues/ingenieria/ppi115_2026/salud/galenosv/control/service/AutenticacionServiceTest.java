@@ -14,7 +14,6 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.Usuari
 @ExtendWith(MockitoExtension.class)
 class AutenticacionServiceTest {
     @Mock UsuarioRepository usuarios;
-    @Mock ContrasenaService contrasenas;
     @InjectMocks AutenticacionService servicio;
     private final UUID idUsuario = UUID.randomUUID(), idPersona = UUID.randomUUID();
     private final UUID dui = UUID.randomUUID();
@@ -71,23 +70,12 @@ class AutenticacionServiceTest {
         assertSame(u, contexto.usuario()); assertSame(doctor, contexto.asignacion());
     }
     @Test void numeroVacioOTipoNuloSeRechazanSinConsultar() {
-        credencialesInvalidas(() -> servicio.iniciar((UUID) null, "00000000-1"));
+        credencialesInvalidas(() -> servicio.iniciar(null, "00000000-1"));
         credencialesInvalidas(() -> servicio.iniciar(dui, "  "));
         verifyNoInteractions(usuarios);
     }
-    @Test void elLoginPorDocumentoNoUsaContrasenas() {
-        when(usuarios.buscarPorDocumento(dui, "00000000-1")).thenReturn(usuario(true));
-        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(asignacion()));
-        servicio.iniciar(dui, "00000000-1");
-        verifyNoInteractions(contrasenas);
-    }
-
-    // --- Login por contraseña (se elimina en el siguiente paso) ---
-    @Test void rechazaDesconocidoConElMismoMensajeYVerificaHashDummy() {
-        when(contrasenas.hashAusente()).thenReturn("dummy");
-        AccesoException error = assertThrows(AccesoException.class, () -> servicio.iniciar("desconocido", "prueba"));
-        assertEquals(401, error.getStatus());
-        verify(contrasenas).verificar("prueba", "dummy"); verify(usuarios, never()).asignaciones(any());
+    @Test void elServicioYaNoDependeDeContrasenas() {
+        assertTrue(Arrays.stream(AutenticacionService.class.getDeclaredFields()).noneMatch(f -> f.getType() == ContrasenaService.class));
     }
 
     // --- Sesión existente ---

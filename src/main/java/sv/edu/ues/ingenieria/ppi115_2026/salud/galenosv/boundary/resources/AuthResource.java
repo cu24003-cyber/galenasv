@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.*;
 
 @Path("auth")
@@ -20,15 +21,16 @@ public class AuthResource {
     @Inject IntentosAcceso intentos;
     @Context HttpServletRequest request;
 
+    /** HU2: el empleado se identifica con tipo y número de documento, sin contraseña. */
     public static class Credenciales {
-        @NotBlank @Size(max = 254) public String identificador;
-        @NotBlank @Size(max = 1024) public String password;
+        @NotNull public UUID idTipoDocumento;
+        @NotBlank @Size(max = 50) @Pattern(regexp = "[^\\r\\n]*") public String numeroDocumento;
     }
 
     @POST @Path("login") @Consumes(MediaType.APPLICATION_JSON)
     public Response login(@Valid @NotNull Credenciales datos) {
         intentos.registrar(request.getRemoteAddr());
-        var contexto = servicio.iniciar(datos.identificador, datos.password);
+        var contexto = servicio.iniciar(datos.idTipoDocumento, datos.numeroDocumento);
         var anterior = request.getSession(false);
         if (anterior != null) anterior.invalidate();
         request.getSession(true);

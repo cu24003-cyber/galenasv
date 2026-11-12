@@ -2,7 +2,6 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository;
 
 import jakarta.ejb.Stateless;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Usuario;
@@ -10,13 +9,6 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Usuario;
 @Stateless
 public class UsuarioRepository extends AbstractRepository<Usuario, UUID> {
     public UsuarioRepository() { super(Usuario.class); }
-
-    public Usuario buscarAcceso(String identificador) {
-        return em.createQuery("SELECT u FROM Usuario u JOIN FETCH u.persona WHERE "
-                + "LOWER(u.nombreUsuario)=:identificador OR LOWER(u.correo)=:identificador", Usuario.class)
-                .setParameter("identificador", identificador.strip().toLowerCase(Locale.ROOT))
-                .getResultStream().findFirst().orElse(null);
-    }
 
     /** HU2: identifica al usuario por un documento cuyo tipo esté activo; el valor se compara exacto tras recortarlo. */
     public Usuario buscarPorDocumento(UUID idTipoDocumento, String numero) {
