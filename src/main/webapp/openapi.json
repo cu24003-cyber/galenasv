@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "GalenoSV REST API",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "CRUD existente de las 20 entidades, filtros UUID, nuevas escrituras en rutas relacionadas y cambios parciales. Las nuevas operaciones clínicas usan los servicios del flujo de GalenoSV y su sesión de rol y clínica."
   },
   "servers": [
@@ -13864,6 +13864,240 @@
           }
         }
       }
+    },
+    "/publico/clinicas": {
+      "post": {
+        "tags": [
+          "Público"
+        ],
+        "operationId": "buscarClinicasPaciente",
+        "security": [],
+        "summary": "Clínicas donde el dueño del documento es paciente (HU1)",
+        "description": "Sin sesión ni CSRF; exige Origin permitido. Documento inexistente y documento sin registro devuelven el mismo 200 [].",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusquedaDocumento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clínicas activas ordenadas por nombre; [] si no hay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClinicaPublica"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido (json.invalido o validación).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen de la solicitud no autorizado (auth.origen).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Más de 60 búsquedas por IP en 5 minutos (publico.demasiadasSolicitudes); Retry-After: 300.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/publico/citas": {
+      "post": {
+        "tags": [
+          "Público"
+        ],
+        "operationId": "buscarCitasPublicas",
+        "security": [],
+        "summary": "Citas del documento en una clínica y rango de fechas (HU1)",
+        "description": "Solo idConsulta, fechaInicio, nombreClinica y procedimientos; nunca notas, valores, responsables ni resultados. Documento inexistente y documento sin citas devuelven el mismo 200 [].",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusquedaCitas"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Citas ordenadas por fechaInicio; [] si no hay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CitaPublica"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido o rango de fechas inválido (citas.rango).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen de la solicitud no autorizado (auth.origen).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Más de 60 búsquedas por IP en 5 minutos (publico.demasiadasSolicitudes); Retry-After: 300.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/publico/citas/{idConsulta}/ticket": {
+      "parameters": [
+        {
+          "name": "idConsulta",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Público"
+        ],
+        "operationId": "descargarTicketCita",
+        "security": [],
+        "summary": "Ticket PDF de la cita (HU1)",
+        "description": "El PDF contiene código, fecha y hora, clínica y procedimientos. Cita ajena, inexistente, id inválido o documento inexistente devuelven el mismo 404 cita.noExiste.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusquedaDocumento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF adjunto.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "attachment; filename=\"ticket-cita-de110009.pdf\""
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "cita.noExiste",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido (json.invalido o validación).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origen de la solicitud no autorizado (auth.origen).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Más de 60 búsquedas por IP en 5 minutos (publico.demasiadasSolicitudes); Retry-After: 300.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15225,6 +15459,108 @@
             "type": "string",
             "nullable": true,
             "description": "Expresión para validar el número en el cliente."
+          }
+        }
+      },
+      "BusquedaDocumento": {
+        "type": "object",
+        "required": [
+          "idTipoDocumento",
+          "numeroDocumento"
+        ],
+        "properties": {
+          "idTipoDocumento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "^[^\\r\\n]*$",
+            "example": "00000000-3"
+          }
+        }
+      },
+      "BusquedaCitas": {
+        "type": "object",
+        "required": [
+          "idTipoDocumento",
+          "numeroDocumento",
+          "idClinica",
+          "desde",
+          "hasta"
+        ],
+        "properties": {
+          "idTipoDocumento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "^[^\\r\\n]*$",
+            "example": "00000000-3"
+          },
+          "idClinica": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "desde": {
+            "type": "string",
+            "format": "date",
+            "description": "Día local de El Salvador."
+          },
+          "hasta": {
+            "type": "string",
+            "format": "date",
+            "description": "Día local de El Salvador, incluido. Máximo 366 días después de desde."
+          }
+        }
+      },
+      "ClinicaPublica": {
+        "type": "object",
+        "required": [
+          "idClinica",
+          "nombre"
+        ],
+        "properties": {
+          "idClinica": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        }
+      },
+      "CitaPublica": {
+        "type": "object",
+        "required": [
+          "idConsulta",
+          "fechaInicio",
+          "nombreClinica",
+          "procedimientos"
+        ],
+        "properties": {
+          "idConsulta": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-12T08:00:00-06:00"
+          },
+          "nombreClinica": {
+            "type": "string"
+          },
+          "procedimientos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

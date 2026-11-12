@@ -67,6 +67,47 @@ Errores de `POST /api/auth/login`:
 
 Las rutas bajo `/api/publico/` no requieren sesión ni CSRF y nunca devuelven notas, valores clínicos ni resultados. Cualquier ruta con un segmento `.` o `..` devuelve 400 `ruta.invalida`.
 
+### Búsqueda pública de citas (HU1)
+
+Las tres rutas son `POST` con cuerpo JSON: el número de documento nunca viaja en la URL. Como toda escritura, exigen un `Origin` (o `Referer`) permitido, pero no sesión ni CSRF.
+
+| Operación | Cuerpo | Respuesta |
+| --- | --- | --- |
+| `POST /api/publico/clinicas` | `{idTipoDocumento, numeroDocumento}` | `200 [{idClinica, nombre}]`: clínicas activas donde el dueño del documento es PACIENTE, ordenadas por nombre. |
+| `POST /api/publico/citas` | `{idTipoDocumento, numeroDocumento, idClinica, desde, hasta}` | `200 [{idConsulta, fechaInicio, nombreClinica, procedimientos: [String]}]` ordenado por `fechaInicio`. |
+| `POST /api/publico/citas/{idConsulta}/ticket` | `{idTipoDocumento, numeroDocumento}` | `200 application/pdf` con `Content-Disposition: attachment; filename="ticket-cita-<8 primeros>.pdf"`. |
+
+- `desde` y `hasta` son fechas `yyyy-MM-dd` en hora de El Salvador; `hasta` se incluye completo. `hasta < desde` o más de 366 días: 400 `citas.rango`.
+- `fechaInicio` va en ISO-8601 con offset de El Salvador, p. ej. `2026-11-12T08:00:00-06:00`.
+- Nunca se devuelven `observaciones`, `referenciaExterna`, `valor`, estados, responsables, órdenes ni resultados, ni tampoco nombre o documento del paciente. El PDF contiene lo mismo que la card: código, fecha y hora, clínica y procedimientos.
+- `numeroDocumento`: obligatorio, hasta 50 caracteres, sin saltos de línea. Se compara exacto después de recortar espacios.
+
+Respuestas iguales, para no revelar qué documentos existen:
+
+| Ruta | Documento inexistente, de otro tipo o con tipo inactivo | Documento válido sin datos |
+| --- | --- | --- |
+| `clinicas` | `200 []` | `200 []` |
+| `citas` | `200 []` | `200 []` (sin citas en el rango o clínica donde no es paciente) |
+| `ticket` | `404 cita.noExiste` | `404 cita.noExiste` (cita ajena, inexistente o id inválido) |
+
+Límite: las tres rutas comparten **60 solicitudes por IP cada 5 minutos** (`IntentosAcceso.Ambito.BUSQUEDA_PUBLICA`), separadas de las 10 del login. Cada solicitud cuenta antes de validar el cuerpo. Al superarlo: `429 publico.demasiadasSolicitudes` con `Retry-After: 300`. `GET /api/publico/tipos-documento` no cuenta.
+
+Ejemplo:
+
+```http
+POST /galenosv/api/publico/citas
+Origin: http://localhost:9080
+Content-Type: application/json
+
+{"idTipoDocumento":"de110004-0000-4000-8000-000000000001","numeroDocumento":"00000000-3",
+ "idClinica":"de110000-0000-4000-8000-000000000001","desde":"2026-11-01","hasta":"2026-11-30"}
+```
+
+```json
+[{"idConsulta":"de110009-0000-4000-8000-000000000002","fechaInicio":"2026-11-12T08:00:00-06:00",
+  "nombreClinica":"Clínica de demostración","procedimientos":["Consulta general de demostración"]}]
+```
+
 ## Filtros y colecciones relacionadas
 
 Los listados admiten filtros por los identificadores de sus relaciones. Se ejecutan en la base de datos y pueden combinarse mediante `AND`. Cada parámetro se envía una sola vez y contiene un UUID canónico. Los filtros desconocidos, repetidos, vacíos o con UUID inválidos devuelven 400. Sin filtros se conserva el listado completo; sin coincidencias se devuelve 200 con `[]`, incluso si el UUID usado como filtro no corresponde a un registro existente.

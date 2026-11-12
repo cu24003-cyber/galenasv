@@ -86,6 +86,12 @@ la URI cruda: `/api/publico/../personas` exige sesión. `PermisosApiFilter` excl
 raíz `publico` y rechaza con 400 `ruta.invalida` cualquier segmento `.` o `..`.
 Las rutas públicas nunca devuelven notas, valores clínicos ni resultados.
 
+La búsqueda de citas (HU1: `POST /api/publico/clinicas`, `/citas` y `/citas/{id}/ticket`)
+lleva el documento en el cuerpo, comparte un límite de 60 solicitudes por IP cada 5 minutos,
+separado del login (10), y responde igual para un documento inexistente que para uno sin
+datos. Detalle en `docs/api-rest.md`. Los límites viven en memoria por instancia y detrás de
+un proxy todas las solicitudes comparten la IP.
+
 ## Alta de cuentas y `password_hash`
 
 `usuario.password_hash` sigue siendo obligatorio en el esquema (Argon2id en formato
@@ -110,6 +116,30 @@ DUI (`^[0-9]{8}-[0-9]$`) y estas cuentas con números ficticios:
 | admin.demo | `00000000-1` | 204, rol ADMINISTRACION |
 | doctor.demo | `00000000-2` | 204, rol DOCTOR |
 | paciente.demo | `00000000-3` | 401, porque es PACIENTE |
+
+`scripts/preparar-bd-desarrollo.sh` también aplica
+`docs/migrations/20261112_datos_desarrollo_clinicos.sql`:
+
+- Segunda clínica "Clínica de demostración Norte".
+- paciente.demo es PACIENTE en ambas clínicas.
+- doctor.demo tiene DOCTOR en ambas y ADMINISTRACION en la clínica 1. Su rol inicial sigue
+  siendo DOCTOR en la clínica 1.
+- Procedimiento "Consulta general de demostración" de 3 pasos DOCTOR (SIGUIENTE 1→2→3).
+- Seis consultas de paciente.demo, una pasada, una de hoy y una futura por clínica, con fechas
+  relativas al día local. La de hoy en la clínica 1 tiene el paso 1 COMPLETADO con valor y el
+  paso 2 PENDIENTE.
+
+Si se vuelve a ejecutar, inserta lo que falte y ancla de nuevo las fechas a hoy sin cambiar
+estados. Para devolver la demo a su estado inicial después de usarla:
+
+```bash
+bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
+# equivale a: psql -v reiniciar=1 -f docs/migrations/20261112_datos_desarrollo_clinicos.sql
+```
+
+El reinicio pide confirmación y solo afecta las seis consultas con UUID `de110009-…`: borra
+las órdenes, los resultados y los pasos o procedimientos que se les hayan agregado desde la
+app, y restaura fechas, estados, valores y notas. No toca ningún otro dato.
 
 ## Alcance de esta etapa
 
