@@ -55,6 +55,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.AppConfig;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContextoRolService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DashboardService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol;
 import jakarta.servlet.http.HttpServletRequest;
@@ -111,6 +113,7 @@ class RestApiTest extends JerseyTest {
     private ConfiguracionProcedimientoService configuracion;
     private RegistroPersonaService registro;
     private ContextoRolService roles;
+    private DashboardService dashboard;
     private AccesoSesion acceso;
     private HttpServletRequest peticion;
 
@@ -178,6 +181,8 @@ class RestApiTest extends JerseyTest {
         when(acceso.vigente()).thenReturn(true);
         roles = mock(ContextoRolService.class);
         bindings.put(ContextoRolService.class, roles);
+        dashboard = mock(DashboardService.class);
+        bindings.put(DashboardService.class, dashboard);
         peticion = mock(HttpServletRequest.class);
         when(autenticacion.contexto(eq(ID), any())).thenAnswer(i ->
                 new AutenticacionService.Contexto(null, (PersonaRol) records.get(PersonaRol.class).get(i.getArgument(1))));
@@ -853,6 +858,121 @@ class RestApiTest extends JerseyTest {
             assertEquals("rolCambio.cerrarAntesCambiar", json(response).getString("code"));
         }
         verify(peticion, never()).changeSessionId();
+    }
+
+    private static final java.time.ZoneOffset SV = java.time.ZoneOffset.ofHours(-6);
+
+    private static DashboardService.ConsultaDashboard consultaDashboard() {
+        var responsable = new DashboardService.Responsable("Luis Gómez", "Doctor");
+        var completado = new DashboardService.PasoDashboard(A1, "Signos", 1, 0, "COMPLETADO", responsable,
+                OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), true);
+        var pendiente = new DashboardService.PasoDashboard(A2, "Evaluación", 2, 1, "PENDIENTE", null,
+                OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), null, false);
+        var procedimiento = new DashboardService.ProcedimientoDashboard(A3, "Consulta general",
+                OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), null, List.of(completado, pendiente));
+        var paciente = new DashboardService.Paciente("Ana", "Pérez", java.time.LocalDate.of(1990, 5, 2), 36,
+                List.of(new DashboardService.DocumentoPaciente("DUI", "00000000-3")));
+        return new DashboardService.ConsultaDashboard(ID, OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), null, true,
+                paciente, List.of(procedimiento));
+    }
+
+    @Test
+    void dashboardSinParametrosPasaNulosYConParametrosLosPasaTalCual() {
+        when(dashboard.consultas(any(), any())).thenReturn(List.of());
+        try (Response response = target("atencion/dashboard").request().get()) {
+            assertEquals(200, response.getStatus());
+            assertEquals("[]", response.readEntity(String.class));
+        }
+        try (Response response = target("atencion/dashboard").queryParam("desde", "2026-11-01")
+                .queryParam("hasta", "2026-11-13").request().get()) {
+            assertEquals(200, response.getStatus());
+        }
+        verify(dashboard).consultas(null, null);
+        verify(dashboard).consultas("2026-11-01", "2026-11-13");
+    }
+
+    @Test
+    void dashboardDevuelveLasLlavesExactasConNulosYSinValor() {
+        when(dashboard.consultas(null, null)).thenReturn(List.of(consultaDashboard()));
+        try (Response response = target("atencion/dashboard").request().get()) {
+            assertEquals(200, response.getStatus());
+            String texto = response.readEntity(String.class);
+            for (String prohibida : List.of("\"valor\"", "observaciones", "referenciaExterna", "rutaFisica")) {
+                assertFalse(texto.contains(prohibida), prohibida);
+            }
+            JsonObject c = Json.createReader(new StringReader(texto)).readArray().getJsonObject(0);
+            assertEquals(java.util.Set.of("idConsulta", "fechaInicio", "fechaFin", "pendienteParaMi", "paciente", "procedimientos"), c.keySet());
+            assertEquals("2026-11-13T08:00:00-06:00", c.getString("fechaInicio"));
+            assertTrue(c.isNull("fechaFin"));
+            assertTrue(c.getBoolean("pendienteParaMi"));
+            JsonObject paciente = c.getJsonObject("paciente");
+            assertEquals(java.util.Set.of("nombres", "apellidos", "fechaNacimiento", "edad", "documentos"), paciente.keySet());
+            assertEquals("1990-05-02", paciente.getString("fechaNacimiento"));
+            assertEquals(36, paciente.getInt("edad"));
+            assertEquals(java.util.Set.of("tipoDocumento", "numero"), paciente.getJsonArray("documentos").getJsonObject(0).keySet());
+            JsonObject procedimiento = c.getJsonArray("procedimientos").getJsonObject(0);
+            assertEquals(java.util.Set.of("idConsultaProcedimiento", "nombre", "fechaInicio", "fechaFin", "pasos"), procedimiento.keySet());
+            JsonObject paso = procedimiento.getJsonArray("pasos").getJsonObject(0);
+            assertEquals(java.util.Set.of("idConsultaProcedimientoPaso", "nombre", "orden", "nivel", "estado", "responsable",
+                    "fechaInicio", "fechaFin", "tieneValor"), paso.keySet());
+            assertEquals("2026-11-13T08:30:00-06:00", paso.getString("fechaFin"));
+            assertTrue(paso.getBoolean("tieneValor"));
+            assertEquals(java.util.Set.of("nombre", "rol"), paso.getJsonObject("responsable").keySet());
+            JsonObject pendiente = procedimiento.getJsonArray("pasos").getJsonObject(1);
+            assertTrue(pendiente.isNull("responsable"));
+            assertTrue(pendiente.isNull("fechaFin"));
+            assertEquals(1, pendiente.getInt("nivel"));
+        }
+    }
+
+    @Test
+    void dashboardPropagaLosErroresDelServicioConSuCodigo() {
+        for (var error : List.of(new AccesoException(401, "auth.sesion", "Vuelva a iniciar sesión."),
+                new AccesoException(403, "auth.rolActivo", "Seleccione un rol."),
+                new AccesoException(400, "dashboard.rangoExcedido", "Máximo 31 días."))) {
+            reset(dashboard);
+            when(dashboard.consultas(any(), any())).thenThrow(error);
+            try (Response response = target("atencion/dashboard").request().get()) {
+                assertEquals(error.getStatus(), response.getStatus());
+                assertEquals(error.getMessageKey(), json(response).getString("code"));
+            }
+        }
+    }
+
+    @Test
+    void valorDePasoDevuelveSusCincoCampos() {
+        when(dashboard.valor(A1)).thenReturn(new DashboardService.ValorPaso(A1, "Signos", "COMPLETADO",
+                OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), "120/80"));
+        try (Response response = target("atencion/dashboard/pasos/" + A1 + "/valor").request().get()) {
+            assertEquals(200, response.getStatus());
+            JsonObject v = json(response);
+            assertEquals(java.util.Set.of("idConsultaProcedimientoPaso", "nombre", "estado", "fechaFin", "valor"), v.keySet());
+            assertEquals("120/80", v.getString("valor"));
+            assertEquals("2026-11-13T08:30:00-06:00", v.getString("fechaFin"));
+        }
+    }
+
+    @Test
+    void valorDePasoPendienteConservaNulos() {
+        when(dashboard.valor(A1)).thenReturn(new DashboardService.ValorPaso(A1, null, "PENDIENTE", null, null));
+        try (Response response = target("atencion/dashboard/pasos/" + A1 + "/valor").request().get()) {
+            JsonObject v = json(response);
+            assertTrue(v.isNull("valor")); assertTrue(v.isNull("fechaFin")); assertTrue(v.isNull("nombre"));
+        }
+    }
+
+    @Test
+    void valorDePasoAjenoDa404YUnIdInvalidoNoLlegaAlServicio() {
+        when(dashboard.valor(A2)).thenThrow(new AccesoException(404, "consulta.pasoNoExiste", "El paso no existe."));
+        try (Response response = target("atencion/dashboard/pasos/" + A2 + "/valor").request().get()) {
+            assertEquals(404, response.getStatus());
+            assertEquals("consulta.pasoNoExiste", json(response).getString("code"));
+        }
+        try (Response response = target("atencion/dashboard/pasos/no-es-uuid/valor").request().get()) {
+            assertEquals(404, response.getStatus());
+        }
+        verify(dashboard, never()).valor(isNull());
+        verify(dashboard, times(1)).valor(any());
     }
 
     @Test

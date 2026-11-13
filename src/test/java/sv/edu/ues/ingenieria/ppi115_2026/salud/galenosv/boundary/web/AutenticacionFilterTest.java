@@ -74,7 +74,7 @@ class AutenticacionFilterTest {
         when(request.getHeader("Origin")).thenReturn("null"); assertFalse(AutenticacionFilter.origenPermitido(request));
     }
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas", "/api/consultas", "/api/ordenes-examen", "/api/recepcion/pacientes", "/api/atencion/asignaciones"})
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas", "/api/consultas", "/api/ordenes-examen", "/api/recepcion/pacientes", "/api/atencion/asignaciones", "/api/atencion/dashboard"})
     void recursosClinicosNoAdmitenAnonimos(String ruta) throws Exception {
         when(request.getRequestURI()).thenReturn("/galenosv"+ruta);
         filtro.doFilter(request,response,chain);

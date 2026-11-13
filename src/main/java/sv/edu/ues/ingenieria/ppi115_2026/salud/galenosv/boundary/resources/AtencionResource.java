@@ -6,6 +6,10 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSe
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContextoRolService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DashboardService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.DashboardDto;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import java.util.List;
 import java.util.UUID;
 import jakarta.enterprise.context.RequestScoped;
@@ -35,6 +39,7 @@ public class AtencionResource {
     @Inject private AccesoSesion acceso;
     @Inject private AutenticacionService autenticacion;
     @Inject private ContextoRolService roles;
+    @Inject private DashboardService dashboardService;
     @Context private HttpServletRequest request;
 
     @GET
@@ -62,6 +67,23 @@ public class AtencionResource {
         var activo = sesion.getRolActivo();
         UUID idActivo = activo == null ? null : activo.getIdPersonaRol();
         return roles.listar().stream().map(a -> AtencionDto.Asignacion.de(a, idActivo)).toList();
+    }
+
+    /**
+     * HU3: consultas de la clínica del rol activo. desde/hasta son días yyyy-MM-dd de El Salvador;
+     * se reciben como texto para que una fecha mal escrita dé 400 dashboard.fecha del servicio.
+     */
+    @GET
+    @Path("dashboard")
+    public Response dashboard(@QueryParam("desde") String desde, @QueryParam("hasta") String hasta) {
+        return Response.ok(DashboardDto.consultas(dashboardService.consultas(desde, hasta)).toString()).build();
+    }
+
+    /** HU3: lo que se registró en un paso, solo cuando el usuario lo abre. */
+    @GET
+    @Path("dashboard/pasos/{idPaso}/valor")
+    public Response valorPaso(@PathParam("idPaso") UUID idPaso) {
+        return Response.ok(DashboardDto.valor(dashboardService.valor(idPaso)).toString()).build();
     }
 
     @PUT
