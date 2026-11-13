@@ -353,6 +353,35 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | `PUT /api/consultas-procedimientos-pasos/{id}/responsable` | `idPersonaRol` | Cambia el responsable de un paso pendiente, respetando rol activo y clínica. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/finalizacion` | `valor` opcional | Completa el paso y genera sus sucesores cuando se cumplen los predecesores. |
 | `POST /api/consultas-procedimientos-pasos/{id}/examenes` | `nombre`, `idTipoExamen`, `observaciones` opcionales | Crea examen, clasificación y asociación al paso en una transacción. |
+| `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | Sin cuerpo | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
+
+**Retroceso (HU4).** Lo puede hacer solo DOCTOR, sobre un paso de la clínica del rol activo y
+de una consulta abierta; ADMINISTRACION recibe 403 `auth.permiso`. También funciona en la ruta
+anidada `/api/consultas-procedimientos/{cp}/pasos/{id}/retroceso`.
+
+Condiciones:
+- el paso está PENDIENTE;
+- tiene un único paso anterior por secuencia `SIGUIENTE`, y ese anterior está COMPLETADO;
+- el paso no tiene valor ni órdenes de examen.
+
+Si se cumplen, en una sola transacción se borra el paso y el anterior queda PENDIENTE con
+`fechaFin` null, **conservando su `valor` y su responsable**. Si algo falla, no cambia nada.
+El campo `message` explica el motivo, para mostrarlo en la vista.
+
+| Código | Caso |
+| --- | --- |
+| 409 `consulta.retrocesoPrimerPaso` | El paso no tiene un paso anterior: es el primero del procedimiento. |
+| 409 `consulta.retrocesoConRegistros` | El paso actual tiene `valor` (no en blanco) u órdenes de examen. |
+| 409 `consulta.retrocesoAnteriorPendiente` | El paso anterior no se ejecutó o no está COMPLETADO. |
+| 409 `consulta.retrocesoRamificado` | El paso tiene varios anteriores, o del anterior salió otro paso además de este. |
+| 409 `consulta.pasoYaCompletado` | El paso actual ya está completado. |
+| 409 `consulta.yaCerrada` | La consulta está cerrada. |
+| 400 `consulta.pasoSinDefinicionHistorica` | El paso no tiene definición de catálogo. |
+
+Después del retroceso, `PUT …/finalizacion` sobre el paso reabierto **reemplaza** su valor con
+el que se envíe; si se envía vacío o null, el valor se borra. Para conservarlo, la vista debe
+precargarlo y reenviarlo. Al completarlo, el paso siguiente se crea de nuevo con un id nuevo y
+el responsable automático.
 
 El cierre conserva la referencia y las observaciones existentes cuando se omiten o se envían null. El cierre repetido no altera las fechas de una consulta ya cerrada. Los conflictos de estado, como editar una consulta cerrada, crear órdenes de pasos completados o cerrar con pendientes, devuelven 409. Las acciones de un paso también funcionan sobre su ruta anidada y comprueban que pertenezca al procedimiento indicado.
 

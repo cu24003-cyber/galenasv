@@ -13755,6 +13755,57 @@
         }
       ]
     },
+    "/consultas-procedimientos-pasos/{id}/retroceso": {
+      "put": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "retrocederPaso",
+        "summary": "HU4: eliminar este paso vacío y reabrir el anterior",
+        "description": "Solo DOCTOR, paso de la clínica activa y consulta abierta. El paso debe estar PENDIENTE, sin valor ni órdenes, con un único anterior SIGUIENTE COMPLETADO. El anterior queda PENDIENTE conservando su valor. 409: consulta.retrocesoPrimerPaso, consulta.retrocesoConRegistros, consulta.retrocesoAnteriorPendiente, consulta.retrocesoRamificado, consulta.pasoYaCompletado, consulta.yaCerrada.",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Paso anterior reabierto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaProcedimientoPasoDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
     "/consultas-procedimientos-pasos/{id}/examenes": {
       "post": {
         "tags": [
