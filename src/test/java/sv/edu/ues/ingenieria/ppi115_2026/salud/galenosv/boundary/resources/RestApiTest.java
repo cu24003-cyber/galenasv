@@ -1000,6 +1000,54 @@ class RestApiTest extends JerseyTest {
         verify(atencion, never()).completar(any(), any(), any());
     }
 
+    private ConsultaProcedimientoPaso anteriorReabierto() {
+        ConsultaProcedimientoPaso anterior = new ConsultaProcedimientoPaso(A1);
+        anterior.setEstado("PENDIENTE");
+        anterior.setValor("PA 120/80");
+        anterior.setIdConsultaProcedimiento((ConsultaProcedimiento) records.get(ConsultaProcedimiento.class).get(ID));
+        return anterior;
+    }
+
+    @Test
+    void retrocesoLlamaAlServicioConLaConsultaDelPasoYDevuelveElAnterior() {
+        when(atencion.retroceder(ID, ID)).thenReturn(anteriorReabierto());
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+            assertEquals(200, response.getStatus());
+            JsonObject paso = json(response);
+            assertEquals(A1.toString(), paso.getString("idConsultaProcedimientoPaso"));
+            assertEquals("PENDIENTE", paso.getString("estado"));
+            assertEquals("PA 120/80", paso.getString("valor"));
+        }
+        verify(atencion).retroceder(ID, ID);
+    }
+
+    @Test
+    void retrocesoFuncionaEnLaRutaAnidadaYRechazaPasosDeOtroProcedimiento() {
+        when(atencion.retroceder(ID, ID)).thenReturn(anteriorReabierto());
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+            assertEquals(200, response.getStatus());
+        }
+        when(services.get(ConsultaProcedimientoPaso.class).perteneceAFiltros(eq(ID), anyMap())).thenReturn(false);
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+            assertError(response, 404);
+        }
+        verify(atencion, times(1)).retroceder(any(), any());
+    }
+
+    @Test
+    void retrocesoDevuelve409ConElCodigoDelServicio() {
+        for (String codigo : List.of("consulta.retrocesoPrimerPaso", "consulta.retrocesoConRegistros",
+                "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado", "consulta.pasoYaCompletado")) {
+            reset(atencion);
+            when(atencion.retroceder(ID, ID)).thenThrow(ServiceException.localizada(codigo, "Motivo legible."));
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+                JsonObject error = assertError(response, 409);
+                assertEquals(codigo, error.getString("code"));
+                assertEquals("Motivo legible.", error.getString("message"));
+            }
+        }
+    }
+
     @Test
     void valorDePasoConservaLaLongitudAdmitidaEnLaApp() {
         String valor = "x".repeat(600);

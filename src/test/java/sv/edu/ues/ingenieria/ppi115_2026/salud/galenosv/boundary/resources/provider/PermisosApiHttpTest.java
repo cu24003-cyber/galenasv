@@ -120,6 +120,25 @@ class PermisosApiHttpTest extends JerseyTest {
         when(em.find(Consulta.class,consulta.getIdConsulta())).thenReturn(consulta);
         assertEquals(403,target("consultas/"+consulta.getIdConsulta()).request().put(Entity.json("{}" )).getStatus());
     }
+    private UUID pasoDe(PersonaRol dueno) {
+        Consulta consulta=new Consulta(UUID.randomUUID()); consulta.setIdPersonaRol(dueno);
+        ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(consulta);
+        ConsultaProcedimientoPaso paso=new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp);
+        when(em.find(ConsultaProcedimientoPaso.class,paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+        return paso.getIdConsultaProcedimientoPaso();
+    }
+    @Test void doctorRetrocedeUnPasoDeSuClinicaComoAccion() {
+        assertEquals(200,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/retroceso").request().put(Entity.json("")).getStatus());
+    }
+    @Test void retrocesoNoAdmiteAdministracionNiPasosDeOtraClinica() {
+        assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(ajeno)+"/retroceso").request().put(Entity.json("")).getStatus());
+        UUID propio=pasoDe(paciente);
+        rol.setCodigo("ADMINISTRACION");
+        assertEquals(403,target("consultas-procedimientos-pasos/"+propio+"/retroceso").request().put(Entity.json("")).getStatus());
+    }
+    @Test void soloRetrocesoSeAgregoALasAccionesDePaso() {
+        assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/otra-cosa").request().put(Entity.json("")).getStatus());
+    }
     @Test void administracionNoLeeExpedientesNiAsignaPersonalEnOtraClinica() {
         rol.setCodigo("ADMINISTRACION");
         assertEquals(403,target("consultas").request().get().getStatus());

@@ -57,6 +57,15 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
         return Response.ok(toDto(paso)).build();
     }
 
+    /** HU4: reabre el paso anterior y elimina este paso vacío. Responde con el anterior reabierto. */
+    @PUT
+    @Path("{id}/retroceso")
+    public Response retroceder(@PathParam("id") String id) {
+        ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
+        ConsultaProcedimientoPaso anterior = atencion.retroceder(consultaDe(paso), paso.getIdConsultaProcedimientoPaso());
+        return Response.ok(toDto(anterior)).build();
+    }
+
     @POST
     @Path("{id}/examenes")
     public Response registrarExamen(@PathParam("id") String id, @Valid @NotNull AtencionDto.Examen datos,

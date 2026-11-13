@@ -81,7 +81,7 @@ class AutenticacionFilterTest {
         verify(response).setStatus(401); verifyNoInteractions(chain);
     }
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas/uuid/documentos", "/api/consultas/uuid", "/api/atencion/rol-activo", "/api/recepcion/pacientes"})
+    @org.junit.jupiter.params.provider.ValueSource(strings={"/api/personas/uuid/documentos", "/api/consultas/uuid", "/api/atencion/rol-activo", "/api/recepcion/pacientes", "/api/consultas-procedimientos-pasos/uuid/retroceso"})
     void todaEscrituraDeLaApiExigeCsrf(String ruta) throws Exception {
         when(request.getRequestURI()).thenReturn("/galenosv"+ruta); when(request.getMethod()).thenReturn("POST");
         when(request.getHeader("Origin")).thenReturn("http://localhost:9080");
