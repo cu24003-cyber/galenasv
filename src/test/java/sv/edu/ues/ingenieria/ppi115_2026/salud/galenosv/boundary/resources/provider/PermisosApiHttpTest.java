@@ -145,6 +145,26 @@ class PermisosApiHttpTest extends JerseyTest {
         rol.setCodigo("ADMINISTRACION");
         assertEquals(403,target("consultas-procedimientos-pasos/"+propio+"/examenes-asignables").request().get().getStatus());
     }
+    @Test void accionesSinCuerpoAceptanUnCuerpoEnBlancoConContentTypeJson() {
+        UUID paso=pasoDe(paciente);
+        Consulta consulta=new Consulta(UUID.randomUUID()); consulta.setIdPersonaRol(paciente);
+        when(em.find(Consulta.class,consulta.getIdConsulta())).thenReturn(consulta);
+        for (String ruta : List.of("consultas-procedimientos-pasos/"+paso+"/retroceso", "consultas-procedimientos-pasos/"+paso+"/finalizacion",
+                "consultas/"+consulta.getIdConsulta()+"/sesion", "consultas/"+consulta.getIdConsulta()+"/cierre")) {
+            for (String cuerpo : List.of("", "  \n")) {
+                try (Response r=target(ruta).request().put(Entity.json(cuerpo))) {
+                    assertEquals(200,r.getStatus(),ruta);
+                    // Echo devuelve el cuerpo que recibió el recurso.
+                    if (!cuerpo.isEmpty()) assertEquals("{}",r.readEntity(String.class),ruta);
+                }
+            }
+        }
+    }
+    @Test void cuerpoMalFormadoSigueDando400() {
+        try (Response r=target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/finalizacion").request().put(Entity.json("x"))) {
+            assertEquals(400,r.getStatus());
+        }
+    }
     @Test void soloRetrocesoSeAgregoALasAccionesDePaso() {
         assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/otra-cosa").request().put(Entity.json("")).getStatus());
     }

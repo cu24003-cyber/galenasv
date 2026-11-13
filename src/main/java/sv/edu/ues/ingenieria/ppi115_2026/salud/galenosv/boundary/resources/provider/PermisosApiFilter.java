@@ -118,8 +118,14 @@ public class PermisosApiFilter implements ContainerRequestFilter {
         }
         if (!lectura && request.hasEntity()) {
             byte[] bytes = request.getEntityStream().readNBytes(1_048_577);
-            request.setEntityStream(new ByteArrayInputStream(bytes));
             if (bytes.length > 1_048_576) throw new AccesoException(413, "cuerpo.grande", "La solicitud es demasiado grande.");
+            // Una acción sin cuerpo puede llegar con Content-Type: application/json y el cuerpo
+            // vacío (en Liberty hasEntity() es true): se trata como {}, que no trae relaciones.
+            if (accion && new String(bytes, java.nio.charset.StandardCharsets.UTF_8).isBlank()) {
+                request.setEntityStream(new ByteArrayInputStream("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                return;
+            }
+            request.setEntityStream(new ByteArrayInputStream(bytes));
             try (var reader = Json.createReader(new ByteArrayInputStream(bytes))) {
                 JsonObject body = reader.readObject();
                 if (body.containsKey("idClinica") && !body.isNull("idClinica")) mismaClinica(uuid(body.getString("idClinica")), activo);

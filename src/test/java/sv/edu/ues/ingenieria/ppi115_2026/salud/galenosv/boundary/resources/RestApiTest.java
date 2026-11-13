@@ -1269,6 +1269,40 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void accionesSinCuerpoAceptanElObjetoVacioQueReenviaElFiltro() {
+        // PermisosApiFilter reemplaza un cuerpo vacío o en blanco de una acción por {}.
+        ((Consulta) records.get(Consulta.class).get(ID)).setFechaFin(null);
+        when(atencion.retroceder(ID, ID)).thenReturn(anteriorReabierto());
+        for (String cuerpo : List.of("{}", "{ }")) {
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json(cuerpo))) {
+                assertEquals(200, response.getStatus(), () -> "retroceso [" + cuerpo + "] " + response.readEntity(String.class));
+            }
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/finalizacion").request().put(Entity.json(cuerpo))) {
+                assertEquals(200, response.getStatus(), () -> "finalizacion [" + cuerpo + "] " + response.readEntity(String.class));
+            }
+            try (Response response = target("consultas/" + ID + "/sesion").request().put(Entity.json(cuerpo))) {
+                assertEquals(200, response.getStatus(), () -> "sesion [" + cuerpo + "] " + response.readEntity(String.class));
+            }
+            try (Response response = target("consultas/" + ID + "/cierre").request().put(Entity.json(cuerpo))) {
+                assertEquals(200, response.getStatus(), () -> "cierre [" + cuerpo + "] " + response.readEntity(String.class));
+            }
+        }
+        verify(atencion, times(2)).retroceder(ID, ID);
+        verify(atencion, times(2)).completar(ID, ID, null);
+        verify(atencion, times(2)).cerrar(ID, "Texto", "Texto");
+    }
+
+    @Test
+    void cuerposMalFormadosSiguenDando400EnLasAcciones() {
+        for (String cuerpo : List.of("{", "[]", "x")) {
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/finalizacion").request().put(Entity.json(cuerpo))) {
+                assertError(response, 400);
+            }
+        }
+        verify(atencion, never()).completar(any(), any(), any());
+    }
+
+    @Test
     void uuidInvalidoDevuelve400SinConsultarElServicio() {
         try (Response response = target("clinicas/no-es-uuid").request().get()) {
             assertError(response, 400);
