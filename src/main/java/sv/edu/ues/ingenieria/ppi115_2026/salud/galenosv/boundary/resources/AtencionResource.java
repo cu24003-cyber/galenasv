@@ -79,6 +79,16 @@ public class AtencionResource {
         return Response.ok(DashboardDto.consultas(dashboardService.consultas(desde, hasta)).toString()).build();
     }
 
+    /**
+     * HU3/HU4: la consulta seleccionada, con la misma forma que su elemento del dashboard. Solo
+     * lee: para atenderla se sigue usando PUT /api/consultas/{id}/sesion.
+     */
+    @GET
+    @Path("consultas/{idConsulta}")
+    public Response consulta(@PathParam("idConsulta") UUID idConsulta) {
+        return Response.ok(DashboardDto.consulta(dashboardService.consulta(idConsulta)).toString()).build();
+    }
+
     /** HU3: lo que se registró en un paso, solo cuando el usuario lo abre. */
     @GET
     @Path("dashboard/pasos/{idPaso}/valor")

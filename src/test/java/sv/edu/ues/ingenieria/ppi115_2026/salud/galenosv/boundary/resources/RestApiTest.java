@@ -940,6 +940,44 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void consultaDeAtencionEsIgualASuElementoDelDashboard() {
+        var c = consultaDashboard();
+        when(dashboard.consultas(null, null)).thenReturn(List.of(c));
+        when(dashboard.consulta(c.idConsulta())).thenReturn(c);
+        JsonObject delDashboard;
+        try (Response response = target("atencion/dashboard").request().get()) {
+            delDashboard = Json.createReader(new StringReader(response.readEntity(String.class))).readArray().getJsonObject(0);
+        }
+        try (Response response = target("atencion/consultas/" + c.idConsulta()).request().get()) {
+            assertEquals(200, response.getStatus());
+            JsonObject sola = json(response);
+            assertEquals(delDashboard, sola);
+            assertTrue(sola.isNull("fechaFin"));
+            assertTrue(sola.getJsonArray("procedimientos").getJsonObject(0).getJsonArray("pasos").getJsonObject(1).isNull("responsable"));
+        }
+        verify(dashboard).consulta(c.idConsulta());
+    }
+
+    @Test
+    void consultaDeAtencionPropagaLosErroresYUnIdInvalidoNoLlegaAlServicio() {
+        for (var error : List.of(new AccesoException(404, "consulta.noExiste", "La consulta no existe."),
+                new AccesoException(401, "auth.sesion", "Vuelva a iniciar sesión."),
+                new AccesoException(403, "auth.rolActivo", "Seleccione un rol."))) {
+            reset(dashboard);
+            when(dashboard.consulta(A2)).thenThrow(error);
+            try (Response response = target("atencion/consultas/" + A2).request().get()) {
+                assertEquals(error.getStatus(), response.getStatus());
+                assertEquals(error.getMessageKey(), json(response).getString("code"));
+            }
+        }
+        reset(dashboard);
+        try (Response response = target("atencion/consultas/no-es-uuid").request().get()) {
+            assertEquals(404, response.getStatus());
+        }
+        verifyNoInteractions(dashboard);
+    }
+
+    @Test
     void valorDePasoDevuelveSusCincoCampos() {
         when(dashboard.valor(A1)).thenReturn(new DashboardService.ValorPaso(A1, "Signos", "COMPLETADO",
                 OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), "120/80"));

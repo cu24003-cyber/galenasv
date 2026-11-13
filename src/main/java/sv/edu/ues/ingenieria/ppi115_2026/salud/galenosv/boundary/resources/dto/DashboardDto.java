@@ -24,7 +24,7 @@ public final class DashboardDto {
         return arreglo.build();
     }
 
-    static JsonObject consulta(DashboardService.ConsultaDashboard c) {
+    public static JsonObject consulta(DashboardService.ConsultaDashboard c) {
         JsonArrayBuilder procedimientos = Json.createArrayBuilder();
         c.procedimientos().forEach(p -> procedimientos.add(procedimiento(p)));
         JsonObjectBuilder json = Json.createObjectBuilder().add("idConsulta", c.idConsulta().toString());
