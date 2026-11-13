@@ -195,10 +195,46 @@ Las tres rutas son `POST` con cuerpo JSON: el número de documento nunca viaja e
 | `POST /api/publico/citas` | `{idTipoDocumento, numeroDocumento, idClinica, desde, hasta}` | `200 [{idConsulta, fechaInicio, nombreClinica, procedimientos: [String]}]` ordenado por `fechaInicio`. |
 | `POST /api/publico/citas/{idConsulta}/ticket` | `{idTipoDocumento, numeroDocumento}` | `200 application/pdf` con `Content-Disposition: attachment; filename="ticket-cita-<8 primeros>.pdf"`. |
 
-- `desde` y `hasta` son fechas `yyyy-MM-dd` en hora de El Salvador; `hasta` se incluye completo. `hasta < desde` o más de 366 días: 400 `citas.rango`.
+- `desde` y `hasta` son fechas `yyyy-MM-dd` en hora de El Salvador; `hasta` se incluye completo.
+- Rango: se rechaza con 400 `citas.rango` si `hasta < desde` o si `ChronoUnit.DAYS.between(desde, hasta) > 366`, es decir, se compara la **diferencia** entre fechas, no los días contados con ambos extremos. `hasta = desde + 366 días` se acepta (367 días calendario, contando ambos extremos); `desde + 367 días` da 400. Ejemplo: `2026-01-01`→`2027-01-02` se acepta; `2026-01-01`→`2027-01-03` no. `desde = hasta` es válido (un día). Este límite no es el del dashboard, que cuenta ambos extremos.
 - `fechaInicio` va en ISO-8601 con offset de El Salvador, p. ej. `2026-11-12T08:00:00-06:00`.
 - Nunca se devuelven `observaciones`, `referenciaExterna`, `valor`, estados, responsables, órdenes ni resultados, ni tampoco nombre o documento del paciente. El PDF contiene lo mismo que la card: código, fecha y hora, clínica y procedimientos.
 - `numeroDocumento`: obligatorio, hasta 50 caracteres, sin saltos de línea. Se compara exacto después de recortar espacios.
+
+Errores de validación del cuerpo (las tres rutas `POST`):
+
+| Error | Cuándo |
+| --- | --- |
+| 400 `json.invalido` | Cuerpo ausente o `null`. `details` va vacío. |
+| 400 `validacion.invalida` | Falla alguna restricción del cuerpo. `details` trae un elemento `{field, message}` por cada restricción violada, ordenados por `field` y luego por `message`. |
+| 400 `citas.rango` | Solo `citas`: el cuerpo es válido pero el rango no (ver arriba). `details` va vacío. |
+
+Restricciones que producen `validacion.invalida` (el `field` es el nombre de la propiedad del cuerpo, sin prefijos):
+
+| `field` | Rutas | Restricción |
+| --- | --- | --- |
+| `idTipoDocumento` | las tres | obligatorio (`@NotNull`) |
+| `numeroDocumento` | las tres | obligatorio y no en blanco (`@NotBlank`), máximo 50 caracteres (`@Size`), sin `\r` ni `\n` (`@Pattern`) |
+| `idClinica` | `citas` | obligatorio (`@NotNull`) |
+| `desde`, `hasta` | `citas` | obligatorios (`@NotNull`) |
+
+- Un mismo campo puede aparecer varias veces en `details` si viola varias restricciones. `message` es el texto de Bean Validation (puede depender del idioma del servidor); el frontend debe guiarse por `field`, no por `message`. Nunca se copia el valor rechazado.
+- La validación ocurre antes de cualquier consulta: en `ticket`, un cuerpo inválido da 400 aunque `idConsulta` no sea UUID o no exista. En `citas`, `citas.rango` solo se evalúa si no hubo `validacion.invalida`.
+- Un cuerpo inválido también cuenta para el límite de solicitudes.
+
+```json
+{
+  "status": 400,
+  "code": "validacion.invalida",
+  "message": "Los datos de la solicitud no son válidos.",
+  "path": "/galenosv/api/publico/citas",
+  "timestamp": "2026-11-13T17:00:00Z",
+  "details": [
+    {"field": "idClinica", "message": "no debe ser nulo"},
+    {"field": "numeroDocumento", "message": "no debe estar vacío"}
+  ]
+}
+```
 
 Respuestas iguales, para no revelar qué documentos existen:
 
