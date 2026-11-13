@@ -1,6 +1,7 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.persistence.Id;
@@ -53,6 +54,9 @@ import static org.mockito.Mockito.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.AppConfig;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContextoRolService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol;
 import jakarta.servlet.http.HttpServletRequest;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider.ApiExceptionMapper;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.provider.JsonBodyReaderInterceptor;
@@ -106,6 +110,9 @@ class RestApiTest extends JerseyTest {
     private AtencionSesion sesion;
     private ConfiguracionProcedimientoService configuracion;
     private RegistroPersonaService registro;
+    private ContextoRolService roles;
+    private AccesoSesion acceso;
+    private HttpServletRequest peticion;
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -165,14 +172,18 @@ class RestApiTest extends JerseyTest {
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento) records.get(entityType(TipoDocumentoResource.class)).get(ID)).setExpresionRegular(".");
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto) records.get(entityType(TipoMedioContactoResource.class)).get(ID)).setExpresionRegular(".");
         when(sesion.getRolActivo()).thenReturn((PersonaRol) records.get(PersonaRol.class).get(ID));
-        AccesoSesion acceso = mock(AccesoSesion.class);
+        acceso = mock(AccesoSesion.class);
         AutenticacionService autenticacion = mock(AutenticacionService.class);
         when(acceso.getIdUsuario()).thenReturn(ID);
+        when(acceso.vigente()).thenReturn(true);
+        roles = mock(ContextoRolService.class);
+        bindings.put(ContextoRolService.class, roles);
+        peticion = mock(HttpServletRequest.class);
         when(autenticacion.contexto(eq(ID), any())).thenAnswer(i ->
                 new AutenticacionService.Contexto(null, (PersonaRol) records.get(PersonaRol.class).get(i.getArgument(1))));
         bindings.put(AccesoSesion.class, acceso);
         bindings.put(AutenticacionService.class, autenticacion);
-        bindings.put(HttpServletRequest.class, mock(HttpServletRequest.class));
+        bindings.put(HttpServletRequest.class, peticion);
         var documentos = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DocumentoService) bindings.get(
                 sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.DocumentoService.class);
         doAnswer(i -> { records.get(Documento.class).remove(i.getArgument(0)); return null; })
@@ -752,6 +763,96 @@ class RestApiTest extends JerseyTest {
         }
         verify(atencion).cargar(ID);
         verify(sesion).setConsulta(ID);
+    }
+
+    private static final UUID C1 = UUID.fromString("11111111-1111-4111-8111-111111111111");
+    private static final UUID C2 = UUID.fromString("22222222-2222-4222-8222-222222222222");
+    private static final UUID A1 = UUID.fromString("aaaaaaa1-0000-4000-8000-000000000001");
+    private static final UUID A2 = UUID.fromString("aaaaaaa2-0000-4000-8000-000000000002");
+    private static final UUID A3 = UUID.fromString("aaaaaaa3-0000-4000-8000-000000000003");
+
+    private static PersonaRol asignacion(UUID id, String codigo, String nombreRol, UUID idClinica, String nombreClinica) {
+        Rol rol = new Rol(UUID.randomUUID());
+        rol.setCodigo(codigo);
+        rol.setNombre(nombreRol);
+        rol.setActivo(true);
+        PersonaRol a = new PersonaRol(id);
+        a.setIdRol(rol);
+        a.setIdClinica(new Clinica(idClinica, nombreClinica));
+        a.setIdPersona(new Persona(UUID.randomUUID()));
+        return a;
+    }
+
+    private JsonArray asignaciones(Response response) {
+        assertEquals(200, response.getStatus());
+        return Json.createReader(new StringReader(response.readEntity(String.class))).readArray();
+    }
+
+    @Test
+    void asignacionesDevuelveLosSeisCamposEnElOrdenDelServicio() {
+        var doctorC1 = asignacion(A1, "DOCTOR", "Doctor", C1, "Clínica Uno");
+        var adminC1 = asignacion(A2, "ADMINISTRACION", "Administración", C1, "Clínica Uno");
+        var doctorC2 = asignacion(A3, "DOCTOR", "Doctor", C2, "Clínica Dos");
+        when(roles.listar()).thenReturn(List.of(doctorC2, doctorC1, adminC1));
+        when(sesion.getRolActivo()).thenReturn(doctorC1);
+        try (Response response = target("atencion/asignaciones").request().get()) {
+            JsonArray datos = asignaciones(response);
+            assertEquals(3, datos.size());
+            assertEquals(List.of(A3.toString(), A1.toString(), A2.toString()),
+                    datos.stream().map(v -> v.asJsonObject().getString("idPersonaRol")).toList());
+            for (var valor : datos) {
+                assertEquals(java.util.Set.of("idPersonaRol", "codigoRol", "nombreRol", "idClinica", "nombreClinica", "activa"),
+                        valor.asJsonObject().keySet());
+            }
+            JsonObject primera = datos.getJsonObject(0);
+            assertEquals("DOCTOR", primera.getString("codigoRol"));
+            assertEquals("Doctor", primera.getString("nombreRol"));
+            assertEquals(C2.toString(), primera.getString("idClinica"));
+            assertEquals("Clínica Dos", primera.getString("nombreClinica"));
+            assertEquals(List.of(false, true, false),
+                    datos.stream().map(v -> v.asJsonObject().getBoolean("activa")).toList());
+        }
+    }
+
+    @Test
+    void asignacionesSinRolActivoMarcaTodasFalse() {
+        when(roles.listar()).thenReturn(List.of(asignacion(A1, "DOCTOR", "Doctor", C1, "Clínica Uno"),
+                asignacion(A2, "ADMINISTRACION", "Administración", C1, "Clínica Uno")));
+        when(sesion.getRolActivo()).thenReturn(null);
+        try (Response response = target("atencion/asignaciones").request().get()) {
+            JsonArray datos = asignaciones(response);
+            assertEquals(2, datos.size());
+            assertTrue(datos.stream().noneMatch(v -> v.asJsonObject().getBoolean("activa")));
+        }
+    }
+
+    @Test
+    void asignacionesVaciasDevuelveListaVacia() {
+        when(roles.listar()).thenReturn(List.of());
+        try (Response response = target("atencion/asignaciones").request().get()) {
+            assertEquals(0, asignaciones(response).size());
+        }
+    }
+
+    @Test
+    void asignacionesSinSesionDa401() {
+        when(acceso.vigente()).thenReturn(false);
+        try (Response response = target("atencion/asignaciones").request().get()) {
+            assertEquals(401, response.getStatus());
+            assertEquals("auth.sesion", json(response).getString("code"));
+        }
+        verify(roles, never()).listar();
+    }
+
+    @Test
+    void cambiarRolConConsultaAbiertaDevuelveSuCodigoSinRenovarLaSesion() {
+        doThrow(ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta antes de cambiar de médico o rol."))
+                .when(sesion).cambiarRol(any());
+        try (Response response = target("atencion/rol-activo").request().put(Entity.json("{\"idPersonaRol\":\"" + ID + "\"}"))) {
+            assertEquals(400, response.getStatus());
+            assertEquals("rolCambio.cerrarAntesCambiar", json(response).getString("code"));
+        }
+        verify(peticion, never()).changeSessionId();
     }
 
     @Test

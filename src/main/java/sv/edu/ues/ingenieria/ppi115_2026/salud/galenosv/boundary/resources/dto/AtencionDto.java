@@ -4,10 +4,21 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
 
 /** Cuerpos de las acciones del flujo; las fechas y los estados los fija el servicio. */
 public final class AtencionDto {
     private AtencionDto() {}
+
+    /** Asignación de empleado de la cuenta; {@code activa} indica si es el rol activo de la sesión. */
+    public record Asignacion(UUID idPersonaRol, String codigoRol, String nombreRol,
+            UUID idClinica, String nombreClinica, boolean activa) {
+        public static Asignacion de(PersonaRol a, UUID idActivo) {
+            return new Asignacion(a.getIdPersonaRol(), a.getIdRol().getCodigo(), a.getIdRol().getNombre(),
+                    a.getIdClinica().getIdClinica(), a.getIdClinica().getNombre(),
+                    a.getIdPersonaRol().equals(idActivo));
+        }
+    }
 
     public static class Responsable {
         @NotNull private UUID idPersonaRol;
