@@ -179,7 +179,7 @@ Los archivos Java de implementación están bajo
 | Modificado | `pom.xml` | Dependencia Password4j. |
 | Modificado | `src/main/resources/META-INF/persistence.xml` | Registra Usuario en JPA. |
 | Modificado | `src/main/webapp/WEB-INF/web.xml` | Cookie HttpOnly y seguimiento de sesión solo por cookie. |
-| Modificado | `src/main/liberty/config/server.xml.example` | Ejemplo de SameSite y ruta de cookie. |
+| Modificado | `src/main/liberty/config/server.xml.example` (hoy `server.xml.ejemplo`) | Ejemplo de SameSite y ruta de cookie. |
 | Modificado | `src/main/webapp/openapi.json` | Documenta el contrato de autenticación y CSRF. |
 | Modificado | `src/test/.../boundary/resources/RestApiTest.java` | Adapta el contexto autenticado y comprueba que el código del rol no sea editable. |
 | Nuevo | `src/test/.../boundary/resources/AuthResourceTest.java` | Contrato de sesión, renovación e invalidación. |

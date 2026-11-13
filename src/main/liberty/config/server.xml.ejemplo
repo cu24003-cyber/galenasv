@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Plantilla de configuración de Open Liberty para GalenoSV. Sin credenciales reales.
+  Copiar a server.xml (excluido de Git) y reemplazar los valores CAMBIAR_*:
+      cp src/main/liberty/config/server.xml.ejemplo src/main/liberty/config/server.xml
+  Ver docs/LEVANTAR.md.
+-->
+<server description="Servidor Open Liberty para GalenoSV">
+    <featureManager>
+        <!-- La misma feature que declara el liberty-maven-plugin en pom.xml. -->
+        <feature>jakartaee-11.0</feature>
+    </featureManager>
+
+    <ltpa keysPassword="CAMBIAR_CLAVE_LTPA" />
+    <!-- Cookie de sesión HttpOnly con SameSite=Lax y ruta del contexto (docs/autenticacion.md). -->
+    <httpSession cookieSameSite="Lax" useContextRootAsCookiePath="true" />
+    <httpEndpoint httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint" />
+
+    <!-- PostgreSQL en Docker: databaseName es el mismo nombre de base que se pasa a
+         scripts/preparar-bd-desarrollo.sh (por defecto galenasv), y portNumber el puerto
+         publicado por el contenedor (-p 5432:5432). -->
+    <dataSource id="postgresDS" jndiName="jdbc/postgres">
+        <jdbcDriver libraryRef="PostgreSQL-Library" />
+        <properties.postgresql databaseName="galenasv"
+                               serverName="localhost"
+                               portNumber="5432"
+                               user="CAMBIAR_USUARIO"
+                               password="CAMBIAR_CONTRASENA" />
+    </dataSource>
+
+    <!-- Driver JDBC versionado en src/main/liberty/config/lib/global. -->
+    <library id="PostgreSQL-Library">
+        <fileset dir="${server.config.dir}/lib/global" includes="postgresql-*.jar" />
+    </library>
+</server>
