@@ -314,6 +314,23 @@ public class AtencionService {
         cargar(consulta);
         return em.createQuery("SELECT DISTINCT e FROM ProcedimientoPasoExamen e JOIN FETCH e.idExamen JOIN FETCH e.idProcedimientoPaso WHERE e.idProcedimientoPaso IN (SELECT p.idProcedimientoPaso FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id)",ProcedimientoPasoExamen.class).setParameter("id",consulta).getResultList();
     }
+    /** Examen que se puede ordenar en un paso: asociación con su definición y examen, ambos activos. */
+    public record ExamenAsignable(UUID idExamen, String nombre) {}
+    /**
+     * HU4: exámenes asignables al paso, en una sola proyección. Solo lee, así que se lista en
+     * cualquier estado del paso o de la consulta. Un paso sin definición no tiene asignables.
+     */
+    public List<ExamenAsignable> examenesAsignables(UUID consulta, UUID pasoId) {
+        cargar(consulta);
+        ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        if (paso.getIdProcedimientoPaso() == null) return List.of();
+        return em.createQuery("SELECT DISTINCT e.idExamen, e.nombre FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
+                        + " ProcedimientoPasoExamen pe JOIN pe.idExamen e"
+                        + " WHERE p.idConsultaProcedimientoPaso=:paso AND pe.idProcedimientoPaso=def AND pe.activo=true AND e.activo=true"
+                        + " ORDER BY e.nombre, e.idExamen", Object[].class)
+                .setParameter("paso", pasoId).getResultList().stream()
+                .map(fila -> new ExamenAsignable((UUID) fila[0], (String) fila[1])).toList();
+    }
     public OrdenExamen ordenar(UUID consulta,UUID paso,String indicaciones) {
         abierta(consulta); ConsultaProcedimientoPaso p=pasoPropio(consulta,paso);
         if(indicaciones==null || indicaciones.isBlank() || indicaciones.trim().length()>255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");

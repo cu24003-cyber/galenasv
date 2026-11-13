@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -15,6 +16,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -64,6 +66,14 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
         ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
         ConsultaProcedimientoPaso anterior = atencion.retroceder(consultaDe(paso), paso.getIdConsultaProcedimientoPaso());
         return Response.ok(toDto(anterior)).build();
+    }
+
+    /** HU4: exámenes activos que se pueden ordenar en este paso, por nombre. */
+    @GET
+    @Path("{id}/examenes-asignables")
+    public List<AtencionService.ExamenAsignable> examenesAsignables(@PathParam("id") String id) {
+        ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
+        return atencion.examenesAsignables(consultaDe(paso), paso.getIdConsultaProcedimientoPaso());
     }
 
     @POST

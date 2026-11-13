@@ -1049,6 +1049,45 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void examenesAsignablesDevuelvenIdYNombreEnElOrdenDelServicio() {
+        when(atencion.examenesAsignables(ID, ID)).thenReturn(List.of(
+                new AtencionService.ExamenAsignable(A1, "Glucosa en ayunas"),
+                new AtencionService.ExamenAsignable(ID, "Hemograma completo")));
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/examenes-asignables").request().get()) {
+            assertEquals(200, response.getStatus());
+            JsonArray datos = Json.createReader(new StringReader(response.readEntity(String.class))).readArray();
+            assertEquals(2, datos.size());
+            assertEquals(java.util.Set.of("idExamen", "nombre"), datos.getJsonObject(0).keySet());
+            assertEquals(A1.toString(), datos.getJsonObject(0).getString("idExamen"));
+            assertEquals("Glucosa en ayunas", datos.getJsonObject(0).getString("nombre"));
+            assertEquals("Hemograma completo", datos.getJsonObject(1).getString("nombre"));
+        }
+        verify(atencion).examenesAsignables(ID, ID);
+    }
+
+    @Test
+    void examenesAsignablesFuncionanEnLaRutaAnidadaYRechazanPasosDeOtroProcedimiento() {
+        when(atencion.examenesAsignables(ID, ID)).thenReturn(List.of());
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/examenes-asignables").request().get()) {
+            assertEquals(200, response.getStatus());
+            assertEquals("[]", response.readEntity(String.class));
+        }
+        when(services.get(ConsultaProcedimientoPaso.class).perteneceAFiltros(eq(ID), anyMap())).thenReturn(false);
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/examenes-asignables").request().get()) {
+            assertError(response, 404);
+        }
+        verify(atencion, times(1)).examenesAsignables(any(), any());
+    }
+
+    @Test
+    void examenesAsignablesDevuelvenElCodigoDelServicio() {
+        when(atencion.examenesAsignables(ID, ID)).thenThrow(ServiceException.localizada("consulta.pasoPropio", "Seleccione un paso de esta consulta."));
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/examenes-asignables").request().get()) {
+            assertEquals("consulta.pasoPropio", assertError(response, 400).getString("code"));
+        }
+    }
+
+    @Test
     void valorDePasoConservaLaLongitudAdmitidaEnLaApp() {
         String valor = "x".repeat(600);
         String body = Json.createObjectBuilder().add("valor", valor).build().toString();

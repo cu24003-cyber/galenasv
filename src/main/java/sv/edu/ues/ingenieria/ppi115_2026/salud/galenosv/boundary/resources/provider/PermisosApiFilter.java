@@ -60,7 +60,7 @@ public class PermisosApiFilter implements ContainerRequestFilter {
         for (int i = 0; i < partes.size(); i += 2) {
             if (i > 0) {
                 String siguiente = partes.get(i);
-                if (i == partes.size()-1 && Set.of("cierre", "sesion", "responsable", "finalizacion", "examenes", "retroceso").contains(siguiente)
+                if (i == partes.size()-1 && Set.of("cierre", "sesion", "responsable", "finalizacion", "examenes", "retroceso", "examenes-asignables").contains(siguiente)
                         && (recurso.equals("consultas") || recurso.equals("consultas-procedimientos-pasos"))) { accion = true; break; }
                 recurso = switch (recurso + "/" + siguiente) {
                     case "consultas/procedimientos" -> "consultas-procedimientos";

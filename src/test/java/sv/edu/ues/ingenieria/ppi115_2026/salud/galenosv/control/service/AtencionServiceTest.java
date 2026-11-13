@@ -617,4 +617,81 @@ class AtencionServiceTest {
         Retroceso r = new Retroceso(); r.b.setIdProcedimientoPaso(null);
         assertEquals("consulta.pasoSinDefinicionHistorica", r.codigo());
     }
+
+    // ---- B5: exámenes asignables a un paso (HU4)
+
+    /** Un paso PENDIENTE de la consulta {@code id} con definición de catálogo. */
+    private final class Asignables {
+        final Consulta c = abierta();
+        final ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID());
+        final ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID());
+        final UUID hemograma = UUID.randomUUID(), glucosa = UUID.randomUUID();
+        List<Object[]> filas = new ArrayList<>(List.of(new Object[]{glucosa, "Glucosa en ayunas"}, new Object[]{hemograma, "Hemograma completo"}));
+        final List<String> jpql = new ArrayList<>();
+        final Map<String, Object> parametros = new HashMap<>();
+        Asignables() {
+            cp.setIdConsulta(c);
+            paso.setIdConsultaProcedimiento(cp); paso.setIdProcedimientoPaso(new ProcedimientoPaso(UUID.randomUUID())); paso.setEstado("PENDIENTE");
+            when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+            when(em.createQuery(anyString(), eq(Object[].class))).thenAnswer(inv -> {
+                jpql.add(inv.getArgument(0));
+                @SuppressWarnings("unchecked") TypedQuery<Object[]> t = mock(TypedQuery.class);
+                when(t.setParameter(anyString(), any())).thenAnswer(x -> { parametros.put(x.getArgument(0), x.getArgument(1)); return t; });
+                when(t.getResultList()).thenAnswer(x -> filas);
+                return t;
+            });
+        }
+        List<AtencionService.ExamenAsignable> listar() { return servicio.examenesAsignables(id, paso.getIdConsultaProcedimientoPaso()); }
+        String codigo() {
+            ServiceException e = assertThrows(ServiceException.class, this::listar);
+            assertTrue(jpql.isEmpty());
+            return e.getMessageKey();
+        }
+    }
+
+    @Test void asignablesUsanUnaSolaProyeccionFiltradaPorPasoDefinicionYActividad() {
+        Asignables a = new Asignables();
+        a.listar();
+        assertEquals(1, a.jpql.size());
+        String q = a.jpql.get(0);
+        assertTrue(q.startsWith("SELECT DISTINCT e.idExamen, e.nombre FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def"), q);
+        assertTrue(q.contains("ProcedimientoPasoExamen pe JOIN pe.idExamen e"), q);
+        assertTrue(q.contains("p.idConsultaProcedimientoPaso=:paso"), q);
+        assertTrue(q.contains("pe.idProcedimientoPaso=def"), q);
+        assertTrue(q.contains("pe.activo=true") && q.contains("e.activo=true"), q);
+        assertTrue(q.endsWith("ORDER BY e.nombre, e.idExamen"), q);
+        assertEquals(Map.of("paso", a.paso.getIdConsultaProcedimientoPaso()), a.parametros);
+    }
+
+    @Test void asignablesDevuelvenLosRegistrosEnElOrdenDeLaConsulta() {
+        Asignables a = new Asignables();
+        assertEquals(List.of(new AtencionService.ExamenAsignable(a.glucosa, "Glucosa en ayunas"),
+                new AtencionService.ExamenAsignable(a.hemograma, "Hemograma completo")), a.listar());
+        a.filas.clear();
+        assertEquals(List.of(), a.listar());
+    }
+
+    @Test void asignablesDeUnPasoSinDefinicionSonVaciosSinConsultar() {
+        Asignables a = new Asignables(); a.paso.setIdProcedimientoPaso(null);
+        assertEquals(List.of(), a.listar());
+        assertTrue(a.jpql.isEmpty());
+    }
+
+    @Test void asignablesSeListanAunqueElPasoOLaConsultaEstenCerrados() {
+        Asignables a = new Asignables();
+        a.paso.setEstado("COMPLETADO"); a.paso.setFechaFin(OffsetDateTime.now()); a.c.setFechaFin(OffsetDateTime.now());
+        assertEquals(2, a.listar().size());
+    }
+
+    @Test void asignablesRechazanPasoAjenoOtraClinicaYRolNoMedico() {
+        Asignables a = new Asignables();
+        a.cp.setIdConsulta(new Consulta(UUID.randomUUID()));
+        assertEquals("consulta.pasoPropio", a.codigo());
+        a.cp.setIdConsulta(a.c);
+        a.c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
+        assertEquals("consulta.otraClinica", a.codigo());
+        a.c.getIdPersonaRol().setIdClinica(medico.getIdClinica());
+        medico.getIdRol().setNombre("Administración"); medico.getIdRol().setCodigo("ADMINISTRACION");
+        assertEquals("consulta.soloMedico", a.codigo());
+    }
 }

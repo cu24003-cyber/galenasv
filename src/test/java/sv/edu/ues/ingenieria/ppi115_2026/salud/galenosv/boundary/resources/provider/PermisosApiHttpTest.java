@@ -136,6 +136,15 @@ class PermisosApiHttpTest extends JerseyTest {
         rol.setCodigo("ADMINISTRACION");
         assertEquals(403,target("consultas-procedimientos-pasos/"+propio+"/retroceso").request().put(Entity.json("")).getStatus());
     }
+    @Test void doctorLeeExamenesAsignablesDeUnPasoDeSuClinica() {
+        assertEquals(200,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/examenes-asignables").request().get().getStatus());
+    }
+    @Test void examenesAsignablesNoAdmitenAdministracionNiPasosDeOtraClinica() {
+        assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(ajeno)+"/examenes-asignables").request().get().getStatus());
+        UUID propio=pasoDe(paciente);
+        rol.setCodigo("ADMINISTRACION");
+        assertEquals(403,target("consultas-procedimientos-pasos/"+propio+"/examenes-asignables").request().get().getStatus());
+    }
     @Test void soloRetrocesoSeAgregoALasAccionesDePaso() {
         assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/otra-cosa").request().put(Entity.json("")).getStatus());
     }
