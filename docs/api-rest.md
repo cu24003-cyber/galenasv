@@ -109,6 +109,7 @@ Errores:
 | --- | --- | --- |
 | `GET /api/atencion/dashboard?desde=yyyy-MM-dd&hasta=yyyy-MM-dd` | Sí (sin CSRF por ser GET) | 200 con las consultas de la clínica del rol activo, en orden ascendente por `fechaInicio` y luego `idConsulta`. |
 | `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}`. |
+| `GET /api/atencion/consultas/{idConsulta}` | Sí | 200 con **una** consulta, con el mismo JSON que su elemento del dashboard (HU3/HU4). |
 
 - **Roles:** DOCTOR y ADMINISTRACION, los dos roles de empleado. La clínica es la de la
   asignación activa, leída de la base. Ningún parámetro del cliente la cambia.
@@ -119,6 +120,10 @@ Errores:
 - **Fechas:** son días de El Salvador, con `hasta` incluido.
   - Sin `desde` ni `hasta` se usa hoy. Con uno solo, se usa ese día en los dos extremos.
   - El rango admite como máximo 31 días, contando ambos extremos.
+- **Una consulta:** `GET /api/atencion/consultas/{idConsulta}` devuelve la consulta seleccionada
+  con el mismo JSON, llave por llave, que su elemento en el dashboard, con las mismas validaciones
+  de sesión y clínica y los mismos roles. No tiene límite de fechas: sirve para consultas pasadas
+  y futuras. Solo lee; para atenderla se selecciona con `PUT /api/consultas/{id}/sesion`.
 - **Fechas devueltas:** van con offset `-06:00`. `fechaNacimiento` es el día en El Salvador,
   como en la vista JSF de personas.
 
@@ -162,7 +167,8 @@ Errores:
   se pide con la ruta `…/valor` cuando el usuario abre el paso.
 - No se envían `observaciones`, `referenciaExterna`, órdenes de examen ni resultados.
 
-Sin N+1: la respuesta usa 4 consultas a la base para todo el rango: consultas, pasos (con
+Sin N+1: la respuesta usa 4 consultas a la base para todo el rango (o para la consulta de
+`atencion/consultas/{idConsulta}`): consultas, pasos (con
 procedimientos), documentos y secuencias. Son proyecciones, nunca entidades, así que el valor
 de los pasos no se carga. A esas se suman las 2 de la validación de la asignación.
 
@@ -176,6 +182,7 @@ Errores:
 | 401 `auth.sesion` | Sin sesión, sesión vencida o usuario inactivo. |
 | 403 `auth.rolActivo` | La sesión no tiene un rol activo. |
 | 403 `auth.asignacion` | El rol activo ya no es una asignación de empleado activa de la cuenta. |
+| 404 `consulta.noExiste` | Ruta `atencion/consultas/{idConsulta}`: la consulta no existe o es de otra clínica (misma respuesta). Un id que no es UUID da 404 de la ruta. |
 | 404 `consulta.pasoNoExiste` | Ruta `…/valor`: el paso no existe o es de una consulta de otra clínica (misma respuesta). Un id que no es UUID da 404 de la ruta. |
 
 ### Búsqueda pública de citas (HU1)
@@ -266,19 +273,33 @@ También se pueden listar las colecciones de un recurso mediante rutas anidadas.
 | `/api/personas/{id}/personas-roles` | `PersonaRolDto` |
 | `/api/personas/{id}/consultas` | `ConsultaDto` |
 | `/api/personas-roles/{id}/consultas` | `ConsultaDto` |
-| `/api/personas-roles/{id}/pasos-consulta` | `ConsultaProcedimientoPasoDto` |
+| `/api/personas-roles/{id}/pasos-consulta` | `ConsultaProcedimientoPasoDto`. **Restringida**: 403, ver nota. |
 | `/api/procedimientos/{id}/pasos` | `ProcedimientoPasoDto` |
-| `/api/procedimientos/{id}/consultas-procedimientos` | `ConsultaProcedimientoDto` |
+| `/api/procedimientos/{id}/consultas-procedimientos` | `ConsultaProcedimientoDto`. **Restringida**: 403, ver nota. |
 | `/api/procedimientos-pasos/{id}/examenes-configurados` | `ProcedimientoPasoExamenDto` |
 | `/api/procedimientos-pasos/{id}/secuencias` | `ProcedimientoPasoSecuenciaDto` |
-| `/api/procedimientos-pasos/{id}/pasos-consulta` | `ConsultaProcedimientoPasoDto` |
+| `/api/procedimientos-pasos/{id}/pasos-consulta` | `ConsultaProcedimientoPasoDto`. **Restringida**: 403, ver nota. |
 | `/api/roles/{id}/personas` | `PersonaDto` |
 | `/api/roles/{id}/personas-roles` | `PersonaRolDto` |
 | `/api/roles/{id}/procedimientos-pasos` | `ProcedimientoPasoDto` |
-| `/api/tipos-documento/{id}/documentos` | `DocumentoDto` |
+| `/api/tipos-documento/{id}/documentos` | `DocumentoDto`. **Restringida**: 403, ver nota. |
 | `/api/tipos-examen/{id}/examenes` | `ExamenDto` |
 | `/api/tipos-examen/{id}/clasificaciones` | `ExamenTipoExamenDto` |
-| `/api/tipos-medio-contacto/{id}/medios-contacto` | `MedioContactoDto` |
+| `/api/tipos-medio-contacto/{id}/medios-contacto` | `MedioContactoDto`. **Restringida**: 403, ver nota. |
+
+**Rutas restringidas.** Las 5 rutas marcadas existen, pero `PermisosApiFilter` responde 403
+`auth.permiso`. Se verificó con DOCTOR; por cómo está escrito el filtro, la respuesta es la misma
+para cualquier rol. No se quitan porque el recurso las define. Son 403 porque listarían registros
+de otras consultas, personas o clínicas: el filtro solo deja leer estas colecciones cuando el
+padre identifica a su dueño.
+
+| Ruta restringida | Motivo | Alternativa |
+| --- | --- | --- |
+| `/api/personas-roles/{id}/pasos-consulta` | El filtro no reconoce el segmento `pasos-consulta`. | `/api/consultas-procedimientos/{id}/pasos` |
+| `/api/procedimientos-pasos/{id}/pasos-consulta` | Igual que la anterior. | `/api/consultas-procedimientos/{id}/pasos` |
+| `/api/procedimientos/{id}/consultas-procedimientos` | El padre es un catálogo; exige `idConsulta`. | `/api/consultas/{id}/procedimientos` |
+| `/api/tipos-documento/{id}/documentos` | El padre es un catálogo; exige `idPersona`. | `/api/personas/{id}/documentos` |
+| `/api/tipos-medio-contacto/{id}/medios-contacto` | El padre es un catálogo; exige `idPersona`. | `/api/personas/{id}/medios-contacto` |
 
 La colección `secuencias` de un paso lista sus transiciones salientes, usando `idProcedimientoPaso`; `idProcedimientoPasoReferencia` identifica el destino. Las rutas de procedimientos de consulta, clasificaciones y exámenes configurados devuelven los DTO de las asignaciones o ejecuciones indicados en la tabla.
 
@@ -356,8 +377,10 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | Sin cuerpo | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
 | `GET /api/consultas-procedimientos-pasos/{id}/examenes-asignables` | — | HU4: exámenes que se pueden ordenar en el paso. Ver abajo. |
 
-Las acciones sin cuerpo se envían sin `Content-Type: application/json`: un cuerpo vacío con ese tipo
-responde 400 `json.invalido`.
+Las acciones admiten el cuerpo vacío aunque lleguen con `Content-Type: application/json`: un
+cuerpo vacío o en blanco se trata como `{}`. Así, `…/retroceso` y `…/sesion` no lo usan,
+`…/finalizacion` completa el paso sin valor y `…/cierre` conserva la referencia y las
+observaciones. Un cuerpo que no es un objeto JSON sigue dando 400 `json.invalido`.
 
 **Retroceso (HU4).** Lo puede hacer solo DOCTOR, sobre un paso de la clínica del rol activo y
 de una consulta abierta; ADMINISTRACION recibe 403 `auth.permiso`. También funciona en la ruta

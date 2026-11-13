@@ -14354,6 +14354,56 @@
           }
         }
       ]
+    },
+    "/atencion/consultas/{idConsulta}": {
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "consultaAtencion",
+        "summary": "HU3/HU4: la consulta seleccionada, con la forma de un elemento del dashboard",
+        "description": "DOCTOR o ADMINISTRACION, clínica del rol activo, sin límite de fechas. El JSON es idéntico al elemento de esa consulta en GET /atencion/dashboard. Una consulta inexistente y una de otra clínica dan el mismo 404 consulta.noExiste. Solo lee: para atenderla se usa PUT /consultas/{id}/sesion.",
+        "parameters": [
+          {
+            "name": "idConsulta",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardConsulta"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
