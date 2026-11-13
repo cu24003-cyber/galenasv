@@ -15,14 +15,17 @@ import java.util.UUID;
 public class DashboardRepository {
     @PersistenceContext EntityManager em;
 
+    /** Columnas de la consulta y su paciente; las comparten consultas() y consulta(). */
+    private static final String CONSULTA = "SELECT c.idConsulta, c.fechaInicio, c.fechaFin, per.idPersona, per.nombres, per.apellidos, per.fechaNacimiento"
+            + " FROM Consulta c JOIN c.idPersonaRol pr JOIN pr.idPersona per";
+
     /**
      * [idConsulta, fechaInicio, fechaFin, idPersona, nombres, apellidos, fechaNacimiento] de las
      * consultas de la clínica con desde ≤ fechaInicio < hasta.
      */
     public List<Object[]> consultas(UUID clinica, OffsetDateTime desde, OffsetDateTime hasta) {
         if (clinica == null || desde == null || hasta == null) return List.of();
-        return em.createQuery("SELECT c.idConsulta, c.fechaInicio, c.fechaFin, per.idPersona, per.nombres, per.apellidos, per.fechaNacimiento"
-                + " FROM Consulta c JOIN c.idPersonaRol pr JOIN pr.idPersona per"
+        return em.createQuery(CONSULTA
                 + " WHERE pr.idClinica.idClinica=:clinica AND c.fechaInicio>=:desde AND c.fechaInicio<:hasta"
                 + " ORDER BY c.fechaInicio, c.idConsulta", Object[].class)
                 .setParameter("clinica", clinica).setParameter("desde", desde).setParameter("hasta", hasta)
@@ -51,6 +54,17 @@ public class DashboardRepository {
                 + " WHERE cp.idConsulta.idConsulta IN :consultas"
                 + " ORDER BY cp.fechaInicio, cp.idConsultaProcedimiento, p.fechaInicio, p.idConsultaProcedimientoPaso", Object[].class)
                 .setParameter("consultas", consultas)
+                .getResultList();
+    }
+
+    /**
+     * B6: las mismas columnas que consultas() para una consulta, solo si es de esa clínica y sin
+     * rango de fechas. Un id inexistente y uno de otra clínica dan la misma lista vacía.
+     */
+    public List<Object[]> consulta(UUID id, UUID clinica) {
+        if (id == null || clinica == null) return List.of();
+        return em.createQuery(CONSULTA + " WHERE c.idConsulta=:id AND pr.idClinica.idClinica=:clinica", Object[].class)
+                .setParameter("id", id).setParameter("clinica", clinica)
                 .getResultList();
     }
 

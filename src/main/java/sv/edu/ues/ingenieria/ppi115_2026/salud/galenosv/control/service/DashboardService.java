@@ -61,6 +61,17 @@ public class DashboardService {
         return armar(consultas, activo.getIdRol().getIdRol(), hoy);
     }
 
+    /**
+     * B6: una consulta de la clínica del rol activo, con la misma forma que su elemento del
+     * dashboard y sin límite de fechas. Inexistente o de otra clínica: el mismo 404.
+     */
+    public ConsultaDashboard consulta(UUID id) {
+        PersonaRol activo = asignacion(exigirSesion());
+        List<Object[]> filas = repositorio.consulta(id, activo.getIdClinica().getIdClinica());
+        if (filas.isEmpty()) throw new AccesoException(404, "consulta.noExiste", "La consulta no existe.");
+        return armar(filas, activo.getIdRol().getIdRol(), LocalDate.now(reloj)).getFirst();
+    }
+
     /** Valor completo de un paso de una consulta de la clínica del rol activo; si no, 404. */
     public ValorPaso valor(UUID idPaso) {
         PersonaRol activo = asignacion(exigirSesion());

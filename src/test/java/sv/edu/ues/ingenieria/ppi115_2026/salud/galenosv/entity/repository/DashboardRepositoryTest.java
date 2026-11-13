@@ -98,6 +98,29 @@ class DashboardRepositoryTest {
         verify(consulta).setParameter("clinica", clinica);
     }
 
+    // ---- B6: una sola consulta
+
+    @Test void consultaFiltraPorIdYClinicaEnElMismoWhereConLasColumnasDelDashboardYSinFechas() {
+        var jpql = preparar();
+        assertTrue(repositorio.consulta(id, clinica).isEmpty());
+        String q = jpql.getValue();
+        verify(consulta).setParameter("id", id);
+        verify(consulta).setParameter("clinica", clinica);
+        assertTrue(q.contains("c.idConsulta=:id AND pr.idClinica.idClinica=:clinica"), q);
+        assertFalse(q.contains("fechaInicio>=") || q.contains(":desde") || q.contains(":hasta"), q);
+        reset(em);
+        var rango = preparar();
+        repositorio.consultas(clinica, desde, hasta);
+        assertEquals(select(rango.getValue()), select(q));
+        assertFalse(q.contains(id.toString()) || q.contains(clinica.toString()));
+    }
+
+    @Test void consultaSinIdOClinicaNoConsulta() {
+        assertTrue(repositorio.consulta(null, clinica).isEmpty());
+        assertTrue(repositorio.consulta(id, null).isEmpty());
+        verifyNoInteractions(em);
+    }
+
     @Test void valorPasoSinIdOClinicaNoConsulta() {
         assertTrue(repositorio.valorPaso(null, clinica).isEmpty());
         assertTrue(repositorio.valorPaso(id, null).isEmpty());

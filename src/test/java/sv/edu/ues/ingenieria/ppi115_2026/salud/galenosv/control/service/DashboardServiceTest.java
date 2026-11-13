@@ -264,6 +264,81 @@ class DashboardServiceTest {
         assertNull(servicio.consultas(null, null).getFirst().procedimientos().getFirst().pasos().getFirst().responsable());
     }
 
+    // ---- B6: una sola consulta
+
+    /** Una consulta con dos procedimientos, pasos con ramificación, documento y edad. */
+    private UUID datosDeUnaConsulta() {
+        UUID c1 = UUID.randomUUID(), persona = UUID.randomUUID(), cp = UUID.randomUUID(), proc = UUID.randomUUID();
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID(), cc = UUID.randomUUID();
+        Object[] fila = consulta(c1, "2026-11-13T14:00Z", persona, Timestamp.from(Instant.parse("1990-05-02T06:00:00Z")));
+        lenient().when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(fila));
+        lenient().when(repositorio.consulta(c1, clinica)).thenReturn(List.<Object[]>of(fila));
+        when(repositorio.pasos(List.of(c1))).thenReturn(List.of(
+                paso(c1, cp, proc, UUID.randomUUID(), cc, "C", "PENDIENTE", "2026-11-13T15:00Z", null, rolDoctor, false),
+                paso(c1, cp, proc, UUID.randomUUID(), b, "B", "COMPLETADO", "2026-11-13T15:30Z", "2026-11-13T16:30Z", rolDoctor, true),
+                paso(c1, cp, proc, UUID.randomUUID(), a, "A", "COMPLETADO", "2026-11-13T14:00Z", "2026-11-13T15:00Z", rolDoctor, true)));
+        when(repositorio.documentos(List.of(persona))).thenReturn(List.<Object[]>of(new Object[]{persona, "DUI", "00000000-3"}));
+        when(repositorio.secuencias(List.of(proc))).thenReturn(List.of(new Object[]{a, b}, new Object[]{a, cc}));
+        return c1;
+    }
+
+    @Test void consultaEsIgualASuElementoDelDashboard() {
+        UUID c1 = datosDeUnaConsulta();
+        var delDashboard = servicio.consultas(null, null).getFirst();
+        var sola = servicio.consulta(c1);
+        assertEquals(delDashboard, sola);
+        assertTrue(sola.pendienteParaMi());
+        assertEquals(List.of(0, 1, 1), sola.procedimientos().getFirst().pasos().stream().map(DashboardService.PasoDashboard::nivel).toList());
+        assertEquals(36, sola.paciente().edad());
+        verify(repositorio).consulta(c1, clinica);
+    }
+
+    @Test void consultaUsaCuatroProyeccionesSinRangoDeFechas() {
+        UUID c1 = datosDeUnaConsulta();
+        servicio.consulta(c1);
+        verify(repositorio, times(1)).consulta(c1, clinica);
+        verify(repositorio, times(1)).pasos(any());
+        verify(repositorio, times(1)).documentos(any());
+        verify(repositorio, times(1)).secuencias(any());
+        verify(repositorio, never()).consultas(any(), any(), any());
+    }
+
+    @Test void consultaInexistenteODeOtraClinicaDa404() {
+        UUID id = UUID.randomUUID();
+        when(repositorio.consulta(id, clinica)).thenReturn(List.of());
+        var e = assertThrows(AccesoException.class, () -> servicio.consulta(id));
+        assertEquals(404, e.getStatus()); assertEquals("consulta.noExiste", e.getMessageKey());
+        verify(repositorio, never()).pasos(any());
+    }
+
+    @Test void consultaSinSesionSinRolOConAsignacionRevocadaNoConsulta() {
+        when(acceso.vigente()).thenReturn(false);
+        assertEquals(401, assertThrows(AccesoException.class, () -> servicio.consulta(UUID.randomUUID())).getStatus());
+        when(acceso.vigente()).thenReturn(true);
+        when(atencion.getRolActivo()).thenReturn(null);
+        assertEquals("auth.rolActivo", assertThrows(AccesoException.class, () -> servicio.consulta(UUID.randomUUID())).getMessageKey());
+        when(atencion.getRolActivo()).thenReturn(new PersonaRol(asignacionId));
+        when(autenticacion.contexto(usuario, asignacionId)).thenThrow(new AccesoException(403, "auth.asignacion", "x"));
+        assertEquals("auth.asignacion", assertThrows(AccesoException.class, () -> servicio.consulta(UUID.randomUUID())).getMessageKey());
+        verifyNoInteractions(repositorio);
+    }
+
+    @Test void consultaDeHaceUnAnioSeDevuelveSinValidarFechas() {
+        UUID vieja = UUID.randomUUID();
+        when(repositorio.consulta(vieja, clinica)).thenReturn(List.<Object[]>of(consulta(vieja, "2025-11-01T14:00Z", UUID.randomUUID(), null)));
+        var c = servicio.consulta(vieja);
+        assertEquals(vieja, c.idConsulta());
+        assertTrue(c.procedimientos().isEmpty());
+        assertFalse(c.pendienteParaMi());
+    }
+
+    @Test void consultaConAdministracionUsaSuClinicaYSuRol() {
+        activo = asignacion(asignacionId, "ADMINISTRACION", rolAdmin);
+        UUID c1 = datosDeUnaConsulta();
+        assertFalse(servicio.consulta(c1).pendienteParaMi());
+        verify(repositorio).consulta(c1, clinica);
+    }
+
     // ---- valor de un paso
 
     @Test void valorDevuelveLosCincoCamposConLaClinicaValidada() {
