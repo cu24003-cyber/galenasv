@@ -479,4 +479,142 @@ class AtencionServiceTest {
         assertEquals("Control",consulta.getObservaciones()); verify(em).persist(consulta);
         assertThrows(ServiceException.class,()->servicio.historial());
     }
+
+    // ---- B4: retroceso de un paso (HU4)
+
+    /** Escenario lineal A → B: A COMPLETADO con valor y B PENDIENTE vacío. */
+    private final class Retroceso {
+        final Consulta c = abierta();
+        final ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID());
+        final ProcedimientoPaso defA = new ProcedimientoPaso(UUID.randomUUID()), defB = new ProcedimientoPaso(UUID.randomUUID());
+        final ConsultaProcedimientoPaso a = new ConsultaProcedimientoPaso(UUID.randomUUID()), b = new ConsultaProcedimientoPaso(UUID.randomUUID());
+        List<ProcedimientoPasoSecuencia> previos;
+        List<ConsultaProcedimientoPaso> anteriores;
+        long ordenes = 0, hermanos = 0;
+        final List<String> jpql = new ArrayList<>();
+        final Map<String, Object> parametros = new HashMap<>();
+        Retroceso() {
+            cp.setIdConsulta(c);
+            a.setIdConsultaProcedimiento(cp); a.setIdProcedimientoPaso(defA); a.setEstado("COMPLETADO");
+            a.setFechaFin(OffsetDateTime.parse("2026-11-13T08:15:00-06:00")); a.setValor("PA 120/80");
+            b.setIdConsultaProcedimiento(cp); b.setIdProcedimientoPaso(defB); b.setEstado("PENDIENTE");
+            ProcedimientoPasoSecuencia s = new ProcedimientoPasoSecuencia(UUID.randomUUID());
+            s.setIdProcedimientoPaso(defA); s.setIdProcedimientoPasoReferencia(defB); s.setTipoSecuencia("SIGUIENTE");
+            previos = new ArrayList<>(List.of(s));
+            anteriores = new ArrayList<>(List.of(a));
+            when(em.find(ConsultaProcedimientoPaso.class, b.getIdConsultaProcedimientoPaso())).thenReturn(b);
+            when(em.createQuery(anyString(), eq(ProcedimientoPasoSecuencia.class))).thenAnswer(inv -> lista(inv.getArgument(0), previos));
+            when(em.createQuery(anyString(), eq(ConsultaProcedimientoPaso.class))).thenAnswer(inv -> lista(inv.getArgument(0), anteriores));
+            when(em.createQuery(anyString(), eq(Long.class))).thenAnswer(inv -> {
+                String q = inv.getArgument(0); jpql.add(q);
+                @SuppressWarnings("unchecked") TypedQuery<Long> t = mock(TypedQuery.class);
+                when(t.setParameter(anyString(), any())).thenAnswer(x -> { parametros.put(x.getArgument(0), x.getArgument(1)); return t; });
+                when(t.getSingleResult()).thenAnswer(x -> q.contains("OrdenExamen") ? ordenes : hermanos);
+                return t;
+            });
+        }
+        private <T> TypedQuery<T> lista(String q, List<T> datos) {
+            jpql.add(q);
+            @SuppressWarnings("unchecked") TypedQuery<T> t = mock(TypedQuery.class);
+            when(t.setParameter(anyString(), any())).thenAnswer(x -> { parametros.put(x.getArgument(0), x.getArgument(1)); return t; });
+            when(t.getResultList()).thenAnswer(x -> datos);
+            return t;
+        }
+        String codigo() {
+            ServiceException e = assertThrows(ServiceException.class, () -> servicio.retroceder(id, b.getIdConsultaProcedimientoPaso()));
+            verify(em, never()).remove(any());
+            assertEquals("COMPLETADO", a.getEstado()); assertNotNull(a.getFechaFin());
+            return e.getMessageKey();
+        }
+    }
+
+    @Test void retrocesoBorraElPasoActualYReabreElAnteriorConservandoSuValor() {
+        Retroceso r = new Retroceso();
+        assertSame(r.a, servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso()));
+        verify(em).remove(r.b);
+        assertEquals("PENDIENTE", r.a.getEstado());
+        assertNull(r.a.getFechaFin());
+        assertEquals("PA 120/80", r.a.getValor());
+        verify(em).find(Consulta.class, id, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test void retrocesoSoloConsideraSecuenciasSiguiente() {
+        Retroceso r = new Retroceso();
+        servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso());
+        assertTrue(r.jpql.stream().filter(q -> q.contains("ProcedimientoPasoSecuencia s")).allMatch(q -> q.contains("s.tipoSecuencia=:tipo")));
+        assertEquals("SIGUIENTE", r.parametros.get("tipo"));
+        assertTrue(r.jpql.stream().noneMatch(q -> q.contains("'SIGUIENTE'")));
+    }
+
+    @Test void retrocesoDelPrimerPasoDa409PropioSinCambios() {
+        Retroceso r = new Retroceso(); r.previos.clear();
+        assertEquals("consulta.retrocesoPrimerPaso", r.codigo());
+    }
+
+    @Test void retrocesoConValorEnElPasoActualDa409ConRegistros() {
+        Retroceso r = new Retroceso(); r.b.setValor("algo");
+        assertEquals("consulta.retrocesoConRegistros", r.codigo());
+    }
+
+    @Test void retrocesoConValorEnBlancoCuentaComoVacio() {
+        Retroceso r = new Retroceso(); r.b.setValor("   ");
+        assertSame(r.a, servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso()));
+    }
+
+    @Test void retrocesoConOrdenesEnElPasoActualDa409ConRegistros() {
+        Retroceso r = new Retroceso(); r.ordenes = 1;
+        assertEquals("consulta.retrocesoConRegistros", r.codigo());
+    }
+
+    @Test void retrocesoDeUnPasoCompletadoDa409PasoYaCompletado() {
+        Retroceso r = new Retroceso(); r.b.setEstado("COMPLETADO"); r.b.setFechaFin(OffsetDateTime.now());
+        assertEquals("consulta.pasoYaCompletado", r.codigo());
+    }
+
+    @Test void retrocesoConAnteriorSinCompletarOInexistenteDa409() {
+        Retroceso r = new Retroceso(); r.a.setFechaFin(null); r.a.setEstado("PENDIENTE");
+        ServiceException e = assertThrows(ServiceException.class, () -> servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso()));
+        assertEquals("consulta.retrocesoAnteriorPendiente", e.getMessageKey());
+        assertNull(r.a.getFechaFin()); assertEquals("PENDIENTE", r.b.getEstado());
+        r.a.setEstado("COMPLETADO"); r.a.setFechaFin(OffsetDateTime.now());
+        r.anteriores.clear();
+        assertEquals("consulta.retrocesoAnteriorPendiente", r.codigo());
+    }
+
+    @Test void retrocesoConDosAnterioresDa409Ramificado() {
+        Retroceso r = new Retroceso();
+        ProcedimientoPasoSecuencia otra = new ProcedimientoPasoSecuencia(UUID.randomUUID());
+        otra.setIdProcedimientoPaso(new ProcedimientoPaso(UUID.randomUUID())); otra.setIdProcedimientoPasoReferencia(r.defB);
+        r.previos.add(otra);
+        assertEquals("consulta.retrocesoRamificado", r.codigo());
+    }
+
+    @Test void retrocesoConUnHermanoYaCreadoDa409Ramificado() {
+        Retroceso r = new Retroceso(); r.hermanos = 1;
+        assertEquals("consulta.retrocesoRamificado", r.codigo());
+        assertTrue(r.jpql.stream().anyMatch(q -> q.contains("p<>:actual")));
+    }
+
+    @Test void retrocesoEnConsultaCerradaDa409YaCerrada() {
+        Retroceso r = new Retroceso(); r.c.setFechaFin(OffsetDateTime.now());
+        assertEquals("consulta.yaCerrada", r.codigo());
+    }
+
+    @Test void retrocesoEnConsultaDeOtraClinicaORolNoMedicoSeRechaza() {
+        Retroceso r = new Retroceso(); r.c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
+        assertEquals("consulta.otraClinica", r.codigo());
+        r.c.getIdPersonaRol().setIdClinica(medico.getIdClinica());
+        medico.getIdRol().setNombre("Administración"); medico.getIdRol().setCodigo("ADMINISTRACION");
+        assertEquals("consulta.soloMedico", r.codigo());
+    }
+
+    @Test void retrocesoDeUnPasoDeOtraConsultaDa400PasoPropio() {
+        Retroceso r = new Retroceso(); r.cp.setIdConsulta(new Consulta(UUID.randomUUID()));
+        assertEquals("consulta.pasoPropio", r.codigo());
+    }
+
+    @Test void retrocesoDeUnPasoSinDefinicionSeRechaza() {
+        Retroceso r = new Retroceso(); r.b.setIdProcedimientoPaso(null);
+        assertEquals("consulta.pasoSinDefinicionHistorica", r.codigo());
+    }
 }

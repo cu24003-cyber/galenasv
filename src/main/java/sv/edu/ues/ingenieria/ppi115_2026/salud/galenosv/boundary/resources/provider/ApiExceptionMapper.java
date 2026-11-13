@@ -38,7 +38,9 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             "persona.eliminar.historial", "procedimiento.examenYaAsociado", "consulta.pacienteEnCurso",
             "consulta.yaCerrada", "consulta.pasoYaCompletado", "consulta.ordenPasoCompletado",
             "consulta.examenPasoCompletado", "consulta.cerrarAntesCrear", "consulta.completeAntesCerrar",
-            "consulta.procedimientoSinFinal", "rolCambio.cerrarAntesCambiar");
+            "consulta.procedimientoSinFinal", "rolCambio.cerrarAntesCambiar",
+            "consulta.retrocesoPrimerPaso", "consulta.retrocesoConRegistros",
+            "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado");
 
     @Context
     private UriInfo uriInfo;

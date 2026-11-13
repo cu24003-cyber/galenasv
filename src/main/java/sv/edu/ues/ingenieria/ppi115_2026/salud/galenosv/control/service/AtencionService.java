@@ -253,6 +253,47 @@ public class AtencionService {
                     responsableAutomatico(paso.getIdConsultaProcedimiento().getIdConsulta(), destino), paso.getFechaFin());
         }
     }
+    /**
+     * HU4: retrocede al paso anterior. El paso actual debe estar PENDIENTE y vacío (sin valor ni
+     * órdenes), con un único anterior por secuencia SIGUIENTE ya COMPLETADO y sin otros sucesores
+     * creados. Borra el paso actual y reabre el anterior (PENDIENTE, sin fechaFin) conservando
+     * su valor. Todo en la transacción del EJB, con la consulta bloqueada por abierta().
+     */
+    public ConsultaProcedimientoPaso retroceder(UUID consulta, UUID pasoId) {
+        abierta(consulta);
+        ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        if (paso.getFechaFin() != null || !"PENDIENTE".equals(paso.getEstado()))
+            throw ServiceException.localizada("consulta.pasoYaCompletado", "El paso ya está completado.");
+        if (paso.getIdProcedimientoPaso() == null)
+            throw ServiceException.localizada("consulta.pasoSinDefinicionHistorica", "El paso histórico no tiene una definición de catálogo.");
+        List<ProcedimientoPasoSecuencia> previos = em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPasoReferencia=:p AND s.tipoSecuencia=:tipo", ProcedimientoPasoSecuencia.class)
+                .setParameter("p", paso.getIdProcedimientoPaso()).setParameter("tipo", SIGUIENTE).getResultList();
+        if (previos.isEmpty()) throw ServiceException.localizada("consulta.retrocesoPrimerPaso", "Es el primer paso del procedimiento; no hay un paso anterior al cual regresar.");
+        if (previos.size() > 1) throw ramificado();
+        Long ordenes = em.createQuery("SELECT COUNT(o) FROM OrdenExamen o WHERE o.idConsultaProcedimientoPaso=:paso", Long.class)
+                .setParameter("paso", paso).getSingleResult();
+        if ((paso.getValor() != null && !paso.getValor().isBlank()) || ordenes > 0)
+            throw ServiceException.localizada("consulta.retrocesoConRegistros", "El paso actual ya tiene registros (valor u órdenes de examen); no se puede retroceder.");
+        ProcedimientoPaso previo = previos.get(0).getIdProcedimientoPaso();
+        List<ConsultaProcedimientoPaso> ejecuciones = em.createQuery("SELECT p FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento=:cp AND p.idProcedimientoPaso=:previo", ConsultaProcedimientoPaso.class)
+                .setParameter("cp", paso.getIdConsultaProcedimiento()).setParameter("previo", previo).getResultList();
+        if (ejecuciones.isEmpty() || ejecuciones.stream().anyMatch(p -> p.getFechaFin() == null || !"COMPLETADO".equals(p.getEstado())))
+            throw ServiceException.localizada("consulta.retrocesoAnteriorPendiente", "El paso anterior no está completado.");
+        ConsultaProcedimientoPaso anterior = ejecuciones.stream().max(Comparator.comparing(ConsultaProcedimientoPaso::getFechaFin)).orElseThrow();
+        Long hermanos = em.createQuery("SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento=:cp AND p<>:actual"
+                + " AND p.idProcedimientoPaso IN (SELECT s.idProcedimientoPasoReferencia FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso=:previo AND s.tipoSecuencia=:tipo)", Long.class)
+                .setParameter("cp", paso.getIdConsultaProcedimiento()).setParameter("actual", paso)
+                .setParameter("previo", previo).setParameter("tipo", SIGUIENTE).getSingleResult();
+        if (hermanos > 0) throw ramificado();
+        em.remove(paso);
+        anterior.setEstado("PENDIENTE");
+        anterior.setFechaFin(null);
+        return anterior;
+    }
+    private static final String SIGUIENTE = "SIGUIENTE";
+    private static ServiceException ramificado() {
+        return ServiceException.localizada("consulta.retrocesoRamificado", "El paso forma parte de una ramificación del procedimiento; no se puede retroceder automáticamente.");
+    }
     private ConsultaProcedimientoPaso pasoPropio(UUID consulta,UUID id) {
         ConsultaProcedimientoPaso p=id==null?null:em.find(ConsultaProcedimientoPaso.class,id);
         if(p==null || !consulta.equals(p.getIdConsultaProcedimiento().getIdConsulta().getIdConsulta())) throw ServiceException.localizada("consulta.pasoPropio", "Seleccione un paso de esta consulta."); return p;
