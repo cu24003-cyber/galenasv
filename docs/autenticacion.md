@@ -40,7 +40,8 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 | `POST /api/auth/login` | JSON con `idTipoDocumento` (UUID) y `numeroDocumento` | 204 y cookie de sesión nueva. |
 | `GET /api/auth/me` | Cookie de sesión | Usuario, persona, rol, clínica y token CSRF. |
 | `POST /api/auth/logout` | Cookie y cabecera `X-CSRF-Token` | 204; invalida toda la sesión. |
-| `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. |
+| `GET /api/atencion/asignaciones` | Cookie de sesión | Asignaciones de empleado activas de la cuenta en todas sus clínicas; `activa` marca el rol activo. Sin sesión: 401 `auth.sesion`. |
+| `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. Con una consulta en curso y otra asignación: 400 `rolCambio.cerrarAntesCambiar`. |
 
 El documento se busca por el par exacto (tipo, valor); el número se recorta pero
 no se normaliza de otra forma (el DUI se escribe con guion: `00000000-1`). El tipo

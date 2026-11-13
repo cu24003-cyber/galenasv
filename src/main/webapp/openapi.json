@@ -13296,6 +13296,42 @@
         ]
       }
     },
+    "/atencion/asignaciones": {
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "asignacionesAtencion",
+        "summary": "Listar las asignaciones de empleado activas de la cuenta en todas sus clínicas",
+        "description": "Orden de UsuarioRepository.asignaciones(). activa es true solo en el rol activo de la sesión. Exige sesión aunque PermisosApiFilter no limite /atencion.",
+        "responses": {
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AtencionAsignacion"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/atencion/rol-activo": {
       "put": {
         "tags": [
@@ -13361,7 +13397,7 @@
             }
           }
         ],
-        "description": "La asignación debe pertenecer a la cuenta autenticada y tener rol y clínica activos."
+        "description": "La asignación debe pertenecer a la cuenta autenticada y tener rol y clínica activos; si no, 403 auth.asignacion. Con una consulta en curso y otra asignación responde 400 rolCambio.cerrarAntesCambiar y no renueva la sesión."
       }
     },
     "/consultas/{id}/sesion": {
@@ -15341,6 +15377,44 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          }
+        }
+      },
+      "AtencionAsignacion": {
+        "type": "object",
+        "required": [
+          "idPersonaRol",
+          "codigoRol",
+          "nombreRol",
+          "idClinica",
+          "nombreClinica",
+          "activa"
+        ],
+        "properties": {
+          "idPersonaRol": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigoRol": {
+            "type": "string",
+            "enum": [
+              "ADMINISTRACION",
+              "DOCTOR"
+            ]
+          },
+          "nombreRol": {
+            "type": "string"
+          },
+          "idClinica": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombreClinica": {
+            "type": "string"
+          },
+          "activa": {
+            "type": "boolean",
+            "description": "true solo en el rol activo de la sesión."
           }
         }
       },
