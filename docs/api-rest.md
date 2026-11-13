@@ -103,6 +103,81 @@ Errores:
 | `PUT rol-activo` | 403 `auth.asignacion` | La asignación no es una asignación de empleado activa de la cuenta. |
 | `PUT rol-activo` | 409 `rolCambio.cerrarAntesCambiar` | Hay una consulta en curso y se pide otra asignación. Primero se cierra la consulta; no se renueva la sesión. Es un conflicto de estado, igual que `consulta.cerrarAntesCrear`. |
 
+### Dashboard de consultas (HU3)
+
+| Operación | Sesión | Respuesta |
+| --- | --- | --- |
+| `GET /api/atencion/dashboard?desde=yyyy-MM-dd&hasta=yyyy-MM-dd` | Sí (sin CSRF por ser GET) | 200 con las consultas de la clínica del rol activo, en orden ascendente por `fechaInicio` y luego `idConsulta`. |
+| `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}`. |
+
+- **Roles:** DOCTOR y ADMINISTRACION, los dos roles de empleado. La clínica es la de la
+  asignación activa, leída de la base. Ningún parámetro del cliente la cambia.
+- **Sesión:** `PermisosApiFilter` no revisa `/atencion`, así que `DashboardService` comprueba,
+  antes de cualquier consulta, que haya sesión vigente y un rol activo, y que ese rol siga siendo
+  una asignación de empleado activa de la cuenta. No usa `AtencionService.historial`, que es de
+  la vista JSF y solo acepta DOCTOR.
+- **Fechas:** son días de El Salvador, con `hasta` incluido.
+  - Sin `desde` ni `hasta` se usa hoy. Con uno solo, se usa ese día en los dos extremos.
+  - El rango admite como máximo 31 días, contando ambos extremos.
+- **Fechas devueltas:** van con offset `-06:00`. `fechaNacimiento` es el día en El Salvador,
+  como en la vista JSF de personas.
+
+```json
+[{
+  "idConsulta": "…", "fechaInicio": "2026-11-13T08:00:00-06:00", "fechaFin": null,
+  "pendienteParaMi": true,
+  "paciente": {"nombres": "…", "apellidos": "…", "fechaNacimiento": "1999-12-31", "edad": 26,
+               "documentos": [{"tipoDocumento": "DUI", "numero": "00000000-3"}]},
+  "procedimientos": [{
+    "idConsultaProcedimiento": "…", "nombre": "Consulta general de demostración",
+    "fechaInicio": "…", "fechaFin": null,
+    "pasos": [{"idConsultaProcedimientoPaso": "…", "nombre": "Toma de signos vitales", "orden": 1, "nivel": 0,
+               "estado": "COMPLETADO", "responsable": {"nombre": "…", "rol": "Doctor"},
+               "fechaInicio": "…", "fechaFin": "…", "tieneValor": true}]
+  }]
+}]
+```
+
+**Campos de la consulta y el paciente**
+
+- `fechaFin` de la consulta es `null` mientras está abierta. Para atenderla, se selecciona con
+  `PUT /api/consultas/{id}/sesion`.
+- `pendienteParaMi` es `true` si la consulta tiene un paso PENDIENTE cuyo rol es el del rol
+  activo. Se toma el rol de la definición del paso y, si el paso no tiene definición, el rol
+  de su responsable.
+- `edad` son los años cumplidos a hoy, y es `null` si no hay fecha de nacimiento.
+- `documentos` lleva todos los documentos del paciente, ordenados por tipo, sin `rutaFisica`.
+
+**Campos del procedimiento y los pasos**
+
+- Un procedimiento sin pasos aparece con `pasos: []`.
+- Los pasos siguen el grafo de secuencias del catálogo:
+  - `nivel` es la profundidad del paso (0 para los iniciales) y sirve para la jerarquía.
+  - `orden` es la posición dentro del procedimiento. Los empates de nivel se resuelven por
+    `fechaInicio`.
+  - Un paso sin definición de catálogo va al final, con `nivel` 0.
+- `responsable` es la asignación del paso: en uno COMPLETADO, quién lo realizó; en uno
+  PENDIENTE, quién debe realizarlo. Es `null` si no hay responsable.
+- `tieneValor` indica si el paso tiene un valor registrado. El valor no viaja en el dashboard:
+  se pide con la ruta `…/valor` cuando el usuario abre el paso.
+- No se envían `observaciones`, `referenciaExterna`, órdenes de examen ni resultados.
+
+Sin N+1: la respuesta usa 4 consultas a la base para todo el rango: consultas, pasos (con
+procedimientos), documentos y secuencias. Son proyecciones, nunca entidades, así que el valor
+de los pasos no se carga. A esas se suman las 2 de la validación de la asignación.
+
+Errores:
+
+| Código | Caso |
+| --- | --- |
+| 400 `dashboard.fecha` | `desde` o `hasta` no tiene el formato `yyyy-MM-dd`. |
+| 400 `dashboard.rangoInvertido` | `desde` es posterior a `hasta`. |
+| 400 `dashboard.rangoExcedido` | Más de 31 días. |
+| 401 `auth.sesion` | Sin sesión, sesión vencida o usuario inactivo. |
+| 403 `auth.rolActivo` | La sesión no tiene un rol activo. |
+| 403 `auth.asignacion` | El rol activo ya no es una asignación de empleado activa de la cuenta. |
+| 404 `consulta.pasoNoExiste` | Ruta `…/valor`: el paso no existe o es de una consulta de otra clínica (misma respuesta). Un id que no es UUID da 404 de la ruta. |
+
 ### Búsqueda pública de citas (HU1)
 
 Las tres rutas son `POST` con cuerpo JSON: el número de documento nunca viaja en la URL. Como toda escritura, exigen un `Origin` (o `Referer`) permitido, pero no sesión ni CSRF.

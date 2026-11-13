@@ -13332,6 +13332,118 @@
         ]
       }
     },
+    "/atencion/dashboard": {
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "dashboardAtencion",
+        "summary": "HU3: consultas de la clínica del rol activo en un rango de días de El Salvador",
+        "description": "DOCTOR o ADMINISTRACION. Sin desde ni hasta: hoy; con uno: ese día. Máximo 31 días. Orden ascendente por fechaInicio. No incluye el valor de los pasos, solo tieneValor.",
+        "parameters": [
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DashboardConsulta"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/atencion/dashboard/pasos/{idPaso}/valor": {
+      "get": {
+        "tags": [
+          "Consulta"
+        ],
+        "operationId": "valorPasoDashboard",
+        "summary": "HU3: valor registrado en un paso de una consulta de la clínica del rol activo",
+        "description": "Un paso inexistente y uno de otra clínica dan el mismo 404 consulta.pasoNoExiste.",
+        "parameters": [
+          {
+            "name": "idPaso",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardValorPaso"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/atencion/rol-activo": {
       "put": {
         "tags": [
@@ -15415,6 +15527,226 @@
           "activa": {
             "type": "boolean",
             "description": "true solo en el rol activo de la sesión."
+          }
+        }
+      },
+      "DashboardConsulta": {
+        "type": "object",
+        "required": [
+          "idConsulta",
+          "fechaInicio",
+          "fechaFin",
+          "pendienteParaMi",
+          "paciente",
+          "procedimientos"
+        ],
+        "properties": {
+          "idConsulta": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "pendienteParaMi": {
+            "type": "boolean",
+            "description": "Hay un paso PENDIENTE cuyo rol es el del rol activo."
+          },
+          "paciente": {
+            "$ref": "#/components/schemas/DashboardPaciente"
+          },
+          "procedimientos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardProcedimiento"
+            }
+          }
+        }
+      },
+      "DashboardPaciente": {
+        "type": "object",
+        "required": [
+          "nombres",
+          "apellidos",
+          "fechaNacimiento",
+          "edad",
+          "documentos"
+        ],
+        "properties": {
+          "nombres": {
+            "type": "string",
+            "nullable": true
+          },
+          "apellidos": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "edad": {
+            "type": "integer",
+            "nullable": true
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tipoDocumento",
+                "numero"
+              ],
+              "properties": {
+                "tipoDocumento": {
+                  "type": "string"
+                },
+                "numero": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DashboardProcedimiento": {
+        "type": "object",
+        "required": [
+          "idConsultaProcedimiento",
+          "nombre",
+          "fechaInicio",
+          "fechaFin",
+          "pasos"
+        ],
+        "properties": {
+          "idConsultaProcedimiento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "pasos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardPaso"
+            }
+          }
+        }
+      },
+      "DashboardPaso": {
+        "type": "object",
+        "required": [
+          "idConsultaProcedimientoPaso",
+          "nombre",
+          "orden",
+          "nivel",
+          "estado",
+          "responsable",
+          "fechaInicio",
+          "fechaFin",
+          "tieneValor"
+        ],
+        "properties": {
+          "idConsultaProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "nullable": true
+          },
+          "orden": {
+            "type": "integer"
+          },
+          "nivel": {
+            "type": "integer",
+            "description": "Profundidad en el grafo de secuencias del catálogo."
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "responsable": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "nombre",
+              "rol"
+            ],
+            "properties": {
+              "nombre": {
+                "type": "string"
+              },
+              "rol": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "tieneValor": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardValorPaso": {
+        "type": "object",
+        "required": [
+          "idConsultaProcedimientoPaso",
+          "nombre",
+          "estado",
+          "fechaFin",
+          "valor"
+        ],
+        "properties": {
+          "idConsultaProcedimientoPaso": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "valor": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

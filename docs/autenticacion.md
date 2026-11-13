@@ -41,6 +41,8 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 | `GET /api/auth/me` | Cookie de sesión | Usuario, persona, rol, clínica y token CSRF. |
 | `POST /api/auth/logout` | Cookie y cabecera `X-CSRF-Token` | 204; invalida toda la sesión. |
 | `GET /api/atencion/asignaciones` | Cookie de sesión | Asignaciones de empleado activas de la cuenta en todas sus clínicas; `activa` marca el rol activo. Sin sesión: 401 `auth.sesion`. |
+| `GET /api/atencion/dashboard` | Cookie de sesión y rol activo (DOCTOR o ADMINISTRACION) | Consultas de la clínica del rol activo (HU3). El servicio exige sesión y revalida la asignación: 401 `auth.sesion`, 403 `auth.rolActivo` o `auth.asignacion`. |
+| `GET /api/atencion/dashboard/pasos/{id}/valor` | Cookie de sesión y rol activo | Valor de un paso de la misma clínica; si no, 404 `consulta.pasoNoExiste`. |
 | `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. Con una consulta en curso y otra asignación: 409 `rolCambio.cerrarAntesCambiar`. |
 
 El documento se busca por el par exacto (tipo, valor); el número se recorta pero
