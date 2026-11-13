@@ -14,6 +14,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.O
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.exception.ApiException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ConsultaProcedimientoPasoService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ExamenService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.OrdenExamenService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.OrdenExamen;
 
@@ -40,11 +41,14 @@ public class OrdenExamenResource extends AbstractResource<OrdenExamen, OrdenExam
                     Response.Status.BAD_REQUEST, "campos.servidor", "La fecha de la orden la genera el servidor.");
         }
         return atencion.ordenar(paso.getIdConsultaProcedimiento().getIdConsulta().getIdConsulta(),
-                paso.getIdConsultaProcedimientoPaso(), datos.getIndicaciones());
+                paso.getIdConsultaProcedimientoPaso(), datos.getIdExamen(), datos.getIndicaciones());
     }
 
     @Inject
     private ConsultaProcedimientoPasoService consultaProcedimientoPasoService;
+
+    @Inject
+    private ExamenService examenService;
 
     @Override
     protected Map<String, String> filtrosPermitidos() {
@@ -75,6 +79,7 @@ public class OrdenExamenResource extends AbstractResource<OrdenExamen, OrdenExam
         dto.setFechaCreacion(entidad.getFechaCreacion());
         dto.setIndicaciones(entidad.getIndicaciones());
         dto.setIdConsultaProcedimientoPaso(entidad.getIdConsultaProcedimientoPaso() == null ? null : entidad.getIdConsultaProcedimientoPaso().getIdConsultaProcedimientoPaso());
+        dto.setIdExamen(entidad.getIdExamen() == null ? null : entidad.getIdExamen().getIdExamen());
         return dto;
     }
 
@@ -83,5 +88,6 @@ public class OrdenExamenResource extends AbstractResource<OrdenExamen, OrdenExam
         entidad.setFechaCreacion(dto.getFechaCreacion());
         entidad.setIndicaciones(dto.getIndicaciones());
         entidad.setIdConsultaProcedimientoPaso(relacion(consultaProcedimientoPasoService, dto.getIdConsultaProcedimientoPaso(), "idConsultaProcedimientoPaso"));
+        entidad.setIdExamen(relacion(examenService, dto.getIdExamen(), "idExamen"));
     }
 }

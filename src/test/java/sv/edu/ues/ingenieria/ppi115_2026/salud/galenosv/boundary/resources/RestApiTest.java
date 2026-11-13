@@ -686,9 +686,9 @@ class RestApiTest extends JerseyTest {
                 .post(Entity.json("{\"idProcedimiento\":\"" + ID + "\",\"observaciones\":\"notas\"}"))) {
             assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
         }
-        when(atencion.ordenar(ID, ID, "Hemograma")).thenReturn((OrdenExamen) records.get(OrdenExamen.class).get(ID));
+        when(atencion.ordenar(ID, ID, ID, "Hemograma")).thenReturn((OrdenExamen) records.get(OrdenExamen.class).get(ID));
         try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request()
-                .post(Entity.json("{\"indicaciones\":\"Hemograma\"}"))) {
+                .post(Entity.json("{\"idExamen\":\"" + ID + "\",\"indicaciones\":\"Hemograma\"}"))) {
             assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
         }
         var resultado = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenResultado) records.get(entityType(ExamenResultadoResource.class)).get(ID);
@@ -698,7 +698,7 @@ class RestApiTest extends JerseyTest {
             assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
         }
         verify(atencion).agregarProcedimiento(ID, ID, "notas", ID);
-        verify(atencion).ordenar(ID, ID, "Hemograma");
+        verify(atencion).ordenar(ID, ID, ID, "Hemograma");
         verify(atencion).registrarResultado(ID, ID, "Normal", "interpretación");
         verify(services.get(ConsultaProcedimiento.class), never()).crear(any());
         verify(services.get(OrdenExamen.class), never()).crear(any());
@@ -1077,6 +1077,81 @@ class RestApiTest extends JerseyTest {
             assertError(response, 404);
         }
         verify(atencion, times(1)).examenesAsignables(any(), any());
+    }
+
+    private OrdenExamen ordenConExamen() {
+        OrdenExamen orden = new OrdenExamen(A1);
+        orden.setIdConsultaProcedimientoPaso((ConsultaProcedimientoPaso) records.get(ConsultaProcedimientoPaso.class).get(ID));
+        orden.setIdExamen((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen) records.get(
+                sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen.class).get(ID));
+        orden.setFechaCreacion(java.time.OffsetDateTime.parse("2026-11-13T09:00:00-06:00"));
+        return orden;
+    }
+
+    @Test
+    void ordenAnidadaTomaElPasoDeLaUrlYDevuelveElExamen() {
+        when(atencion.ordenar(ID, ID, ID, null)).thenReturn(ordenConExamen());
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request()
+                .post(Entity.json("{\"idExamen\":\"" + ID + "\"}"))) {
+            assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
+            JsonObject orden = json(response);
+            assertEquals(A1.toString(), orden.getString("idOrdenExamen"));
+            assertEquals(ID.toString(), orden.getString("idExamen"));
+            assertEquals(ID.toString(), orden.getString("idConsultaProcedimientoPaso"));
+            assertFalse(orden.containsKey("indicaciones"));
+        }
+        verify(atencion).ordenar(ID, ID, ID, null);
+        verify(services.get(OrdenExamen.class), never()).crear(any());
+    }
+
+    @Test
+    void ordenAnidadaConOtroPasoEnElCuerpoDa400RelacionInconsistente() {
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request()
+                .post(Entity.json("{\"idExamen\":\"" + ID + "\",\"idConsultaProcedimientoPaso\":\"" + A1 + "\"}"))) {
+            assertEquals("relacion.inconsistente", assertError(response, 400).getString("code"));
+        }
+        verify(atencion, never()).ordenar(any(), any(), any(), any());
+    }
+
+    @Test
+    void ordenAnidadaDevuelveLos400DelServicio() {
+        for (String codigo : List.of("consulta.examenObligatorio", "consulta.examenNoAsignable", "consulta.indicacionesValidas")) {
+            reset(atencion);
+            when(atencion.ordenar(any(), any(), any(), any())).thenThrow(ServiceException.localizada(codigo, "Motivo legible."));
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request()
+                    .post(Entity.json("{}"))) {
+                JsonObject error = assertError(response, 400);
+                assertEquals(codigo, error.getString("code"));
+            }
+        }
+        reset(atencion);
+        when(atencion.ordenar(any(), any(), any(), any())).thenThrow(ServiceException.localizada("consulta.ordenPasoCompletado", "Completado."));
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request()
+                .post(Entity.json("{\"idExamen\":\"" + ID + "\"}"))) {
+            assertEquals("consulta.ordenPasoCompletado", assertError(response, 409).getString("code"));
+        }
+    }
+
+    @Test
+    void ordenAnidadaRechazaIndicacionesDeMasDe255EnElDto() {
+        String cuerpo = Json.createObjectBuilder().add("idExamen", ID.toString()).add("indicaciones", "x".repeat(256)).build().toString();
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/ordenes-examen").request().post(Entity.json(cuerpo))) {
+            assertError(response, 400);
+        }
+        verify(atencion, never()).ordenar(any(), any(), any(), any());
+    }
+
+    @Test
+    void lecturaDeUnaOrdenIncluyeElExamenYLoOmiteEnOrdenesAntiguas() {
+        records.get(OrdenExamen.class).put(A1, ordenConExamen());
+        ((OrdenExamen) records.get(OrdenExamen.class).get(ID)).setIdExamen(null);
+        try (Response response = target("ordenes-examen/" + A1).request().get()) {
+            assertEquals(ID.toString(), json(response).getString("idExamen"));
+        }
+        try (Response response = target("ordenes-examen/" + ID).request().get()) {
+            assertEquals(200, response.getStatus());
+            assertFalse(json(response).containsKey("idExamen"));
+        }
     }
 
     @Test

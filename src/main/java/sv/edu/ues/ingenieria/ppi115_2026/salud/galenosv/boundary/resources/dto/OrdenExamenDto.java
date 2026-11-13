@@ -1,6 +1,5 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
@@ -13,12 +12,14 @@ public class OrdenExamenDto implements IdentifiableDto {
 
     private OffsetDateTime fechaCreacion;
 
-    @NotBlank(message = "indicaciones es obligatorio.")
     @Size(max = 255, message = "indicaciones admite hasta 255 caracteres.")
     private String indicaciones;
 
     @NotNull(message = "idConsultaProcedimientoPaso es obligatorio.")
     private UUID idConsultaProcedimientoPaso;
+
+    /** Examen ordenado. Obligatorio al crear por la ruta anidada; null en órdenes antiguas. */
+    private UUID idExamen;
 
     public UUID getIdOrdenExamen() {
         return idOrdenExamen;
@@ -50,6 +51,14 @@ public class OrdenExamenDto implements IdentifiableDto {
 
     public void setIdConsultaProcedimientoPaso(UUID idConsultaProcedimientoPaso) {
         this.idConsultaProcedimientoPaso = idConsultaProcedimientoPaso;
+    }
+
+    public UUID getIdExamen() {
+        return idExamen;
+    }
+
+    public void setIdExamen(UUID idExamen) {
+        this.idExamen = idExamen;
     }
 
     @Override

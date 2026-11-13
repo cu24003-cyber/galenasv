@@ -694,4 +694,104 @@ class AtencionServiceTest {
         medico.getIdRol().setNombre("Administración"); medico.getIdRol().setCodigo("ADMINISTRACION");
         assertEquals("consulta.soloMedico", a.codigo());
     }
+
+    // ---- B5: órdenes con examen (HU4)
+
+    /** Paso PENDIENTE de la consulta {@code id}; {@code asignable} es el resultado del COUNT. */
+    private final class Orden {
+        final Consulta c = abierta();
+        final ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID());
+        final ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID());
+        final Examen examen = new Examen(UUID.randomUUID());
+        long asignable = 1;
+        final List<String> jpql = new ArrayList<>();
+        final Map<String, Object> parametros = new HashMap<>();
+        Orden() {
+            cp.setIdConsulta(c);
+            paso.setIdConsultaProcedimiento(cp); paso.setIdProcedimientoPaso(new ProcedimientoPaso(UUID.randomUUID())); paso.setEstado("PENDIENTE");
+            when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+            when(em.find(Examen.class, examen.getIdExamen())).thenReturn(examen);
+            when(em.createQuery(anyString(), eq(Long.class))).thenAnswer(inv -> {
+                jpql.add(inv.getArgument(0));
+                @SuppressWarnings("unchecked") TypedQuery<Long> t = mock(TypedQuery.class);
+                when(t.setParameter(anyString(), any())).thenAnswer(x -> { parametros.put(x.getArgument(0), x.getArgument(1)); return t; });
+                when(t.getSingleResult()).thenAnswer(x -> asignable);
+                return t;
+            });
+        }
+        OrdenExamen ordenar(UUID examenId, String indicaciones) {
+            return servicio.ordenar(id, paso.getIdConsultaProcedimientoPaso(), examenId, indicaciones);
+        }
+        String codigo(UUID examenId, String indicaciones) {
+            ServiceException e = assertThrows(ServiceException.class, () -> ordenar(examenId, indicaciones));
+            verify(em, never()).persist(any());
+            return e.getMessageKey();
+        }
+    }
+
+    @Test void ordenConExamenAsignableGuardaExamenIndicacionesRecortadasYFecha() {
+        Orden o = new Orden();
+        OrdenExamen orden = o.ordenar(o.examen.getIdExamen(), "  En ayunas  ");
+        ArgumentCaptor<OrdenExamen> captor = ArgumentCaptor.forClass(OrdenExamen.class);
+        verify(em).persist(captor.capture());
+        assertSame(orden, captor.getValue());
+        assertSame(o.examen, orden.getIdExamen());
+        assertSame(o.paso, orden.getIdConsultaProcedimientoPaso());
+        assertEquals("En ayunas", orden.getIndicaciones());
+        assertNotNull(orden.getFechaCreacion().getOffset());
+        verify(em).find(Consulta.class, id, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test void ordenSinExamenDa400ExamenObligatorio() {
+        Orden o = new Orden();
+        assertEquals("consulta.examenObligatorio", o.codigo(null, "Hemograma"));
+    }
+
+    @Test void ordenConExamenNoAsignableDa400ConLasMismasCondicionesQueLosAsignables() {
+        Orden o = new Orden(); o.asignable = 0;
+        assertEquals("consulta.examenNoAsignable", o.codigo(o.examen.getIdExamen(), null));
+        String q = o.jpql.get(0);
+        assertTrue(q.contains("p.idConsultaProcedimientoPaso=:paso") && q.contains("pe.idProcedimientoPaso=def"), q);
+        assertTrue(q.contains("pe.idExamen.idExamen=:examen"), q);
+        assertTrue(q.contains("pe.activo=true") && q.contains("pe.idExamen.activo=true"), q);
+        assertEquals(Map.of("paso", o.paso.getIdConsultaProcedimientoPaso(), "examen", o.examen.getIdExamen()), o.parametros);
+    }
+
+    @Test void ordenEnUnPasoSinDefinicionDa400ExamenNoAsignableSinConsultar() {
+        Orden o = new Orden(); o.paso.setIdProcedimientoPaso(null);
+        assertEquals("consulta.examenNoAsignable", o.codigo(o.examen.getIdExamen(), null));
+        assertTrue(o.jpql.isEmpty());
+    }
+
+    @Test void ordenEnUnPasoCompletadoSigueDando409() {
+        Orden o = new Orden(); o.paso.setEstado("COMPLETADO"); o.paso.setFechaFin(OffsetDateTime.now());
+        assertEquals("consulta.ordenPasoCompletado", o.codigo(o.examen.getIdExamen(), null));
+    }
+
+    @Test void ordenConExamenAdmiteIndicacionesVaciasYLimitaA255() {
+        Orden o = new Orden();
+        assertNull(o.ordenar(o.examen.getIdExamen(), null).getIndicaciones());
+        assertNull(o.ordenar(o.examen.getIdExamen(), "   ").getIndicaciones());
+        assertEquals(255, o.ordenar(o.examen.getIdExamen(), "x".repeat(255)).getIndicaciones().length());
+    }
+
+    @Test void ordenConIndicacionesDe256CaracteresDa400() {
+        Orden o = new Orden();
+        assertEquals("consulta.indicacionesValidas", o.codigo(o.examen.getIdExamen(), "x".repeat(256)));
+    }
+
+    @Test void ordenRechazaPasoAjenoYConsultaCerrada() {
+        Orden o = new Orden(); o.cp.setIdConsulta(new Consulta(UUID.randomUUID()));
+        assertEquals("consulta.pasoPropio", o.codigo(o.examen.getIdExamen(), null));
+        o.cp.setIdConsulta(o.c); o.c.setFechaFin(OffsetDateTime.now());
+        assertEquals("consulta.yaCerrada", o.codigo(o.examen.getIdExamen(), null));
+    }
+
+    @Test void laSobrecargaDeJsfSigueCreandoOrdenesSinExamen() {
+        Orden o = new Orden();
+        OrdenExamen orden = servicio.ordenar(id, o.paso.getIdConsultaProcedimientoPaso(), "Hemograma");
+        assertNull(orden.getIdExamen());
+        assertEquals("Hemograma", orden.getIndicaciones());
+        assertTrue(o.jpql.isEmpty());
+    }
 }

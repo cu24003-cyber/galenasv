@@ -47,6 +47,10 @@ public class OrdenExamen implements Serializable {
     @JoinColumn(name = "id_consulta_procedimiento_paso", referencedColumnName = "id_consulta_procedimiento_paso")
     @ManyToOne(fetch = FetchType.LAZY)
     private ConsultaProcedimientoPaso idConsultaProcedimientoPaso;
+    /** Examen ordenado (HU4). Null en órdenes anteriores a la migración 20261113_orden_examen_examen. */
+    @JoinColumn(name = "id_examen", referencedColumnName = "id_examen")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Examen idExamen;
 
     @PrePersist
     protected void prePersist() {
@@ -84,6 +88,14 @@ public class OrdenExamen implements Serializable {
 
     public void setIndicaciones(String indicaciones) {
         this.indicaciones = indicaciones;
+    }
+
+    public Examen getIdExamen() {
+        return idExamen;
+    }
+
+    public void setIdExamen(Examen idExamen) {
+        this.idExamen = idExamen;
     }
 
     public Collection<ExamenResultado> getExamenResultadoCollection() {

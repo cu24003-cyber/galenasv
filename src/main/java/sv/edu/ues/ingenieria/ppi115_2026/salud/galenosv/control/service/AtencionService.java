@@ -331,6 +331,28 @@ public class AtencionService {
                 .setParameter("paso", pasoId).getResultList().stream()
                 .map(fila -> new ExamenAsignable((UUID) fila[0], (String) fila[1])).toList();
     }
+    /**
+     * HU4, REST: orden de un examen asignable al paso (misma condición que examenesAsignables).
+     * Las indicaciones son opcionales, de hasta 255 caracteres.
+     */
+    public OrdenExamen ordenar(UUID consulta, UUID pasoId, UUID examenId, String indicaciones) {
+        abierta(consulta);
+        ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        if (paso.getFechaFin() != null) throw ServiceException.localizada("consulta.ordenPasoCompletado", "No se pueden crear órdenes en un paso completado.");
+        if (examenId == null) throw ServiceException.localizada("consulta.examenObligatorio", "Seleccione el examen que ordena.");
+        boolean asignable = paso.getIdProcedimientoPaso() != null && em.createQuery("SELECT COUNT(pe) FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
+                        + " ProcedimientoPasoExamen pe WHERE p.idConsultaProcedimientoPaso=:paso AND pe.idProcedimientoPaso=def"
+                        + " AND pe.idExamen.idExamen=:examen AND pe.activo=true AND pe.idExamen.activo=true", Long.class)
+                .setParameter("paso", pasoId).setParameter("examen", examenId).getSingleResult() > 0;
+        if (!asignable) throw ServiceException.localizada("consulta.examenNoAsignable", "El examen no está activo o no se puede ordenar en este paso.");
+        String texto = indicaciones == null || indicaciones.isBlank() ? null : indicaciones.trim();
+        if (texto != null && texto.length() > 255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");
+        OrdenExamen o = new OrdenExamen(UUID.randomUUID());
+        o.setIdConsultaProcedimientoPaso(paso); o.setIdExamen(em.find(Examen.class, examenId));
+        o.setIndicaciones(texto); o.setFechaCreacion(ahora()); em.persist(o);
+        return o;
+    }
+    /** Vista JSF: orden sin examen, con indicaciones obligatorias (decisión 1A de la B5). */
     public OrdenExamen ordenar(UUID consulta,UUID paso,String indicaciones) {
         abierta(consulta); ConsultaProcedimientoPaso p=pasoPropio(consulta,paso);
         if(indicaciones==null || indicaciones.isBlank() || indicaciones.trim().length()>255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");
