@@ -7339,8 +7339,8 @@
           "OrdenExamen"
         ],
         "operationId": "crearConsultaProcedimientoPasoOrdenesExamen",
-        "summary": "Crear OrdenExamen",
-        "description": "Operación limitada al padre de la URL. El UUID del padre se infiere si se omite; uno contradictorio devuelve 400. El hijo ajeno devuelve 404. Se aplican las reglas del servicio.",
+        "summary": "HU4: ordenar un examen asignable en un paso pendiente",
+        "description": "Solo DOCTOR, paso de la clínica activa y consulta abierta. El paso se toma de la URL; un idConsultaProcedimientoPaso distinto en el cuerpo da 400 relacion.inconsistente. 400: consulta.examenObligatorio, consulta.examenNoAsignable, consulta.indicacionesValidas, consulta.pasoPropio. 409: consulta.ordenPasoCompletado, consulta.yaCerrada.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7364,16 +7364,22 @@
                   "indicaciones": {
                     "type": "string",
                     "maxLength": 255,
-                    "minLength": 1
+                    "nullable": true,
+                    "description": "Opcional; se recorta."
                   },
                   "idConsultaProcedimientoPaso": {
                     "type": "string",
                     "format": "uuid",
                     "description": "UUID fijado por el padre en la URL; puede omitirse."
+                  },
+                  "idExamen": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Examen activo asociado (asociación activa) a la definición del paso. Ver GET …/examenes-asignables."
                   }
                 },
                 "required": [
-                  "indicaciones"
+                  "idExamen"
                 ]
               }
             }
@@ -14297,6 +14303,57 @@
           }
         }
       }
+    },
+    "/consultas-procedimientos-pasos/{id}/examenes-asignables": {
+      "get": {
+        "tags": [
+          "ConsultaProcedimientoPaso"
+        ],
+        "operationId": "examenesAsignablesPaso",
+        "summary": "HU4: exámenes que se pueden ordenar en este paso",
+        "description": "Solo DOCTOR, paso de la clínica activa. Exámenes activos con asociación activa a la definición del paso. Se lista en cualquier estado del paso y de la consulta. También en /consultas-procedimientos/{cp}/pasos/{id}/examenes-asignables.",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "200": {
+            "description": "Exámenes asignables, por nombre y luego idExamen. Vacío si el paso no tiene definición o asociaciones activas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExamenAsignable"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -14659,16 +14716,22 @@
           "indicaciones": {
             "type": "string",
             "maxLength": 255,
-            "minLength": 1
+            "nullable": true,
+            "description": "Opcional, hasta 255 caracteres; se recorta."
           },
           "idConsultaProcedimientoPaso": {
             "type": "string",
             "format": "uuid",
             "description": "UUID de ConsultaProcedimientoPaso; debe existir."
+          },
+          "idExamen": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Examen ordenado (HU4). Obligatorio en el POST anidado; se omite en órdenes anteriores a la migración 20261113_orden_examen_examen.",
+            "nullable": true
           }
         },
         "required": [
-          "indicaciones",
           "idConsultaProcedimientoPaso"
         ]
       },
@@ -16020,6 +16083,22 @@
             }
           }
         }
+      },
+      "ExamenAsignable": {
+        "type": "object",
+        "properties": {
+          "idExamen": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "idExamen",
+          "nombre"
+        ]
       }
     },
     "responses": {

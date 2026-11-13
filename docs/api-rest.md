@@ -340,7 +340,7 @@ El CRUD directo anterior de las entidades se conserva. Para seguir el comportami
 | POST /api/personas-roles/{id}/consultas | Crea una atención para un rol Paciente activo. PUT y PATCH del hijo editan sus notas; PATCH /api/consultas/{id} también usa el flujo. |
 | POST /api/consultas/{id}/procedimientos | Inicia el procedimiento y genera los pasos iniciales después de comprobar todo el personal requerido. |
 | /api/consultas-procedimientos/{id}/pasos | Los pasos se generan por el flujo; no hay escrituras genéricas en esta colección. |
-| POST /api/consultas-procedimientos-pasos/{id}/ordenes-examen | Crea una orden de un paso pendiente de la consulta. |
+| POST /api/consultas-procedimientos-pasos/{id}/ordenes-examen | Crea la orden de un examen asignable en un paso pendiente de la consulta (HU4). Exige `idExamen`. |
 | POST /api/ordenes-examen/{id}/resultados | Registra un resultado de una orden de la consulta, incluso después del cierre. |
 
 Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genérico de procedimientos ejecutados, pasos, órdenes o resultados. En estas rutas las fechas y los estados se generan en el servidor: no enviar fechas en POST; el paciente y las fechas se conservan al editar las notas de una consulta. El CRUD directo anterior mantiene su contrato. Para las transiciones se usan estas operaciones:
@@ -354,6 +354,10 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | `PUT /api/consultas-procedimientos-pasos/{id}/finalizacion` | `valor` opcional | Completa el paso y genera sus sucesores cuando se cumplen los predecesores. |
 | `POST /api/consultas-procedimientos-pasos/{id}/examenes` | `nombre`, `idTipoExamen`, `observaciones` opcionales | Crea examen, clasificación y asociación al paso en una transacción. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | Sin cuerpo | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
+| `GET /api/consultas-procedimientos-pasos/{id}/examenes-asignables` | — | HU4: exámenes que se pueden ordenar en el paso. Ver abajo. |
+
+Las acciones sin cuerpo se envían sin `Content-Type: application/json`: un cuerpo vacío con ese tipo
+responde 400 `json.invalido`.
 
 **Retroceso (HU4).** Lo puede hacer solo DOCTOR, sobre un paso de la clínica del rol activo y
 de una consulta abierta; ADMINISTRACION recibe 403 `auth.permiso`. También funciona en la ruta
@@ -383,6 +387,50 @@ el que se envíe; si se envía vacío o null, el valor se borra. Para conservarl
 precargarlo y reenviarlo. Al completarlo, el paso siguiente se crea de nuevo con un id nuevo y
 el responsable automático.
 
+**Exámenes asignables y órdenes con examen (HU4).** Solo DOCTOR, sobre un paso de la clínica del
+rol activo; ADMINISTRACION y un paso de otra clínica reciben 403 `auth.permiso`. Las dos rutas
+también funcionan anidadas bajo `/api/consultas-procedimientos/{cp}/pasos/{id}`.
+
+Un examen es **asignable** a un paso si está activo y tiene una asociación activa
+(`procedimientos-pasos/{id}/examenes-configurados`) con la definición de catálogo del paso.
+
+```text
+GET /api/consultas-procedimientos-pasos/UUID_DEL_PASO/examenes-asignables
+200 [{"idExamen":"…","nombre":"Glucosa en ayunas"},{"idExamen":"…","nombre":"Hemograma completo"}]
+```
+
+La lista viene ordenada por `nombre` y luego por `idExamen`. Un paso sin definición, o sin
+asociaciones activas, da `[]`. Como solo lee, se puede consultar en cualquier estado del paso y de
+la consulta.
+
+```text
+POST /api/consultas-procedimientos-pasos/UUID_DEL_PASO/ordenes-examen
+{"idExamen":"UUID_DEL_EXAMEN","indicaciones":"En ayunas"}
+201 {"idOrdenExamen":"…","idExamen":"…","idConsultaProcedimientoPaso":"UUID_DEL_PASO","indicaciones":"En ayunas","fechaCreacion":"…"}
+```
+
+El paso se toma de la URL: `idConsultaProcedimientoPaso` puede omitirse y, si se envía otro, la
+respuesta es 400 `relacion.inconsistente`. `indicaciones` es opcional (hasta 255 caracteres, se
+recorta). La consulta debe estar abierta y el paso PENDIENTE.
+
+| Código | Caso |
+| --- | --- |
+| 400 `consulta.examenObligatorio` | Falta `idExamen`. |
+| 400 `consulta.examenNoAsignable` | El examen no existe, está inactivo, su asociación con el paso está inactiva o es de otro paso. |
+| 400 `consulta.indicacionesValidas` | Las indicaciones superan 255 caracteres. |
+| 400 `consulta.pasoPropio` | El paso no es de la consulta. |
+| 409 `consulta.ordenPasoCompletado` | El paso ya está completado. |
+| 409 `consulta.yaCerrada` | La consulta está cerrada. |
+
+Las órdenes anteriores a la migración no tienen examen: en su JSON se omite `idExamen`, como los
+demás campos nulos. La vista JSF de Consulta sigue creando órdenes solo con indicaciones.
+
+**Despliegue.** La entidad `OrdenExamen` mapea `orden_examen.id_examen`: aplique
+`docs/migrations/20261113_orden_examen_examen.sql` **antes** de desplegar este código; sin la
+columna, toda lectura o escritura de órdenes falla. Los datos demo de exámenes están en
+`docs/migrations/20261113_datos_desarrollo_examenes.sql` y los aplica
+`scripts/preparar-bd-desarrollo.sh`.
+
 El cierre conserva la referencia y las observaciones existentes cuando se omiten o se envían null. El cierre repetido no altera las fechas de una consulta ya cerrada. Los conflictos de estado, como editar una consulta cerrada, crear órdenes de pasos completados o cerrar con pendientes, devuelven 409. Las acciones de un paso también funcionan sobre su ruta anidada y comprueban que pertenezca al procedimiento indicado.
 
 Un recorrido REST del flujo:
@@ -397,8 +445,10 @@ POST /api/personas-roles/UUID_DE_ASIGNACION_PACIENTE/consultas
 POST /api/consultas/UUID_DE_CONSULTA/procedimientos
 {"idProcedimiento":"UUID_DEL_PROCEDIMIENTO","observaciones":"Notas"}
 
+GET /api/consultas-procedimientos-pasos/UUID_DEL_PASO/examenes-asignables
+
 POST /api/consultas-procedimientos-pasos/UUID_DEL_PASO/ordenes-examen
-{"indicaciones":"Hemograma"}
+{"idExamen":"UUID_DEL_EXAMEN","indicaciones":"En ayunas"}
 
 PUT /api/consultas-procedimientos-pasos/UUID_DEL_PASO/finalizacion
 {"valor":"125/80"}
