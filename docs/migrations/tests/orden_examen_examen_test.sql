@@ -42,8 +42,9 @@ BEGIN
     BEGIN
         DELETE FROM public.examen WHERE id_examen = examen_prueba;
         RAISE EXCEPTION 'Se borró un examen con órdenes';
-    -- ON DELETE RESTRICT informa restrict_violation (23001), no foreign_key_violation.
-    EXCEPTION WHEN restrict_violation THEN NULL;
+    -- ON DELETE RESTRICT informa foreign_key_violation (23503) hasta PostgreSQL 17 y
+    -- restrict_violation (23001) desde PostgreSQL 18. Se aceptan ambos.
+    EXCEPTION WHEN foreign_key_violation OR restrict_violation THEN NULL;
     END;
 END $$;
 
