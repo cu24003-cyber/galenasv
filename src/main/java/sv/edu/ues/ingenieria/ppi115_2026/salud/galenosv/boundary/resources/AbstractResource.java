@@ -97,9 +97,18 @@ public abstract class AbstractResource<T, D extends IdentifiableDto> {
         UUID identificador = parseId(id);
         buscarExistente(identificador);
         AbstractResource<?, ?> recurso = resourceContext.getResource(relacionada.recurso());
-        recurso.padre = identificador;
-        recurso.contextoColeccion = relacionada;
+        recurso.usarColeccion(identificador, relacionada);
         return recurso;
+    }
+
+    /**
+     * Fija el padre de una colección anidada. Debe ser una llamada y no una escritura de campos:
+     * en Liberty el recurso hijo es un proxy CDI (@RequestScoped), y solo las llamadas llegan a la
+     * instancia que atiende la petición. No debe ser private ni final, para que el proxy delegue.
+     */
+    public void usarColeccion(UUID idPadre, ColeccionRelacionada relacionada) {
+        this.padre = idPadre;
+        this.contextoColeccion = relacionada;
     }
 
     private Response listarFiltrado(UriInfo uriInfo, Map<String, UUID> filtrosFijos) {
