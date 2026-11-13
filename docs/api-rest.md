@@ -101,7 +101,7 @@ Errores:
 | `PUT rol-activo` | 401 `auth.sesion` | Sin sesión o usuario inactivo. |
 | `PUT rol-activo` | 403 `auth.csrf` | Falta el token CSRF o no coincide. |
 | `PUT rol-activo` | 403 `auth.asignacion` | La asignación no es una asignación de empleado activa de la cuenta. |
-| `PUT rol-activo` | 400 `rolCambio.cerrarAntesCambiar` | Hay una consulta en curso y se pide otra asignación. Primero se cierra la consulta; no se renueva la sesión. |
+| `PUT rol-activo` | 409 `rolCambio.cerrarAntesCambiar` | Hay una consulta en curso y se pide otra asignación. Primero se cierra la consulta; no se renueva la sesión. Es un conflicto de estado, igual que `consulta.cerrarAntesCrear`. |
 
 ### Búsqueda pública de citas (HU1)
 

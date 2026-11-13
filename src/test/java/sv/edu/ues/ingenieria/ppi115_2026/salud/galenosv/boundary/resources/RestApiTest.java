@@ -849,7 +849,7 @@ class RestApiTest extends JerseyTest {
         doThrow(ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta antes de cambiar de médico o rol."))
                 .when(sesion).cambiarRol(any());
         try (Response response = target("atencion/rol-activo").request().put(Entity.json("{\"idPersonaRol\":\"" + ID + "\"}"))) {
-            assertEquals(400, response.getStatus());
+            assertEquals(409, response.getStatus());
             assertEquals("rolCambio.cerrarAntesCambiar", json(response).getString("code"));
         }
         verify(peticion, never()).changeSessionId();
@@ -1073,6 +1073,8 @@ class RestApiTest extends JerseyTest {
                 Arguments.of(new ServiceException("persona.nombreInvalido", "Nombre inválido.", null), 400),
                 Arguments.of(new ServiceException("error.noExisteActualizar", "No existe.", null), 404),
                 Arguments.of(new ServiceException("tipoDocumento.enUso", "Tiene documentos asociados.", null), 409),
+                Arguments.of(ServiceException.localizada("consulta.cerrarAntesCrear", "Cierre la consulta."), 409),
+                Arguments.of(ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta."), 409),
                 Arguments.of(new EJBException(new ServiceException("error.noExisteEliminar", "No existe.", null)), 404),
                 Arguments.of(new EJBAccessException(), 403),
                 Arguments.of(new EntityExistsException("detalle interno"), 409),

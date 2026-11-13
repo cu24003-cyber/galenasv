@@ -13397,7 +13397,7 @@
             }
           }
         ],
-        "description": "La asignación debe pertenecer a la cuenta autenticada y tener rol y clínica activos; si no, 403 auth.asignacion. Con una consulta en curso y otra asignación responde 400 rolCambio.cerrarAntesCambiar y no renueva la sesión."
+        "description": "La asignación debe pertenecer a la cuenta autenticada y tener rol y clínica activos; si no, 403 auth.asignacion. Con una consulta en curso y otra asignación responde 409 rolCambio.cerrarAntesCambiar y no renueva la sesión."
       }
     },
     "/consultas/{id}/sesion": {
