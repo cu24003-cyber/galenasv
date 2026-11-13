@@ -128,9 +128,10 @@ DUI (`^[0-9]{8}-[0-9]$`) y estas cuentas con números ficticios:
 - doctor.demo tiene DOCTOR en ambas y ADMINISTRACION en la clínica 1. Su rol inicial sigue
   siendo DOCTOR en la clínica 1.
 - Procedimiento "Consulta general de demostración" de 3 pasos DOCTOR (SIGUIENTE 1→2→3).
-- Seis consultas de paciente.demo, una pasada, una de hoy y una futura por clínica, con fechas
-  relativas al día local. La de hoy en la clínica 1 tiene el paso 1 COMPLETADO con valor y el
-  paso 2 PENDIENTE.
+- Siete consultas de paciente.demo, con fechas relativas al día local: por clínica, una
+  pasada, una futura y las de hoy; la clínica 1 tiene dos de hoy y la Norte una. En la
+  clínica 1, la de las 08:00 tiene el paso 1 COMPLETADO con valor y el paso 2 PENDIENTE; la de
+  las 10:30 tiene el paso 1 PENDIENTE sin valor.
 
 Si se vuelve a ejecutar, inserta lo que falte y ancla de nuevo las fechas a hoy sin cambiar
 estados. Para devolver la demo a su estado inicial después de usarla:
