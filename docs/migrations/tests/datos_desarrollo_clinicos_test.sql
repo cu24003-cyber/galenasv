@@ -33,17 +33,33 @@ BEGIN
            WHERE p.id_procedimiento = 'de110006-0000-4000-8000-000000000001' AND s.tipo_secuencia = 'SIGUIENTE') <> 2 THEN
         RAISE EXCEPTION 'El procedimiento demo requiere 3 pasos DOCTOR y 2 secuencias SIGUIENTE';
     END IF;
-    -- Una consulta pasada, una de hoy y una futura por clínica, relativas al día local.
+    -- Por clínica, una consulta pasada y una futura; hoy, dos en la clínica 1 y una en la 2.
     IF (SELECT count(*) FROM public.consulta c JOIN public.persona_rol a ON a.id_persona_rol = c.id_persona_rol
         WHERE c.id_consulta::text LIKE 'de110009-%' AND a.id_persona = paciente
           AND ((c.fecha_inicio AT TIME ZONE 'America/El_Salvador')::date < hoy_local)) <> 2
-       OR (SELECT count(*) FROM public.consulta c
-           WHERE c.id_consulta::text LIKE 'de110009-%'
-             AND (c.fecha_inicio AT TIME ZONE 'America/El_Salvador')::date = hoy_local) <> 2
+       OR (SELECT count(*) FROM public.consulta c JOIN public.persona_rol a ON a.id_persona_rol = c.id_persona_rol
+           WHERE c.id_consulta::text LIKE 'de110009-%' AND a.id_persona = paciente
+             AND (c.fecha_inicio AT TIME ZONE 'America/El_Salvador')::date = hoy_local) <> 3
        OR (SELECT count(*) FROM public.consulta c
            WHERE c.id_consulta::text LIKE 'de110009-%'
              AND (c.fecha_inicio AT TIME ZONE 'America/El_Salvador')::date > hoy_local) <> 2 THEN
-        RAISE EXCEPTION 'Las consultas demo no están en pasado/hoy/futuro (2 de cada una)';
+        RAISE EXCEPTION 'Las consultas demo no están en pasado/hoy/futuro (2 pasadas, 3 hoy, 2 futuras)';
+    END IF;
+    -- Segunda consulta de hoy en la clínica 1: más tarde que la …-2 y con solo el paso 1 PENDIENTE sin valor.
+    IF (SELECT a.id_clinica FROM public.consulta c JOIN public.persona_rol a ON a.id_persona_rol = c.id_persona_rol
+        WHERE c.id_consulta = 'de110009-0000-4000-8000-000000000007'
+          AND (c.fecha_inicio AT TIME ZONE 'America/El_Salvador')::date = hoy_local
+          AND c.fecha_fin IS NULL
+          AND c.fecha_inicio > (SELECT fecha_inicio FROM public.consulta WHERE id_consulta = 'de110009-0000-4000-8000-000000000002'))
+       IS DISTINCT FROM c1
+       OR (SELECT string_agg(pp.nombre || '=' || x.estado || CASE WHEN x.valor IS NULL THEN '' ELSE '+valor' END, ',')
+           FROM public.consulta_procedimiento_paso x
+           JOIN public.consulta_procedimiento cp ON cp.id_consulta_procedimiento = x.id_consulta_procedimiento
+           JOIN public.procedimiento_paso pp ON pp.id_procedimiento_paso = x.id_procedimiento_paso
+           WHERE cp.id_consulta = 'de110009-0000-4000-8000-000000000007'
+             AND cp.id_procedimiento = 'de110006-0000-4000-8000-000000000001')
+       IS DISTINCT FROM 'Toma de signos vitales=PENDIENTE' THEN
+        RAISE EXCEPTION 'Falta la segunda consulta de hoy de la clínica 1 (…-7: más tarde que …-2, paso 1 PENDIENTE sin valor)';
     END IF;
     -- Consulta de hoy de la clínica 1: paso 1 COMPLETADO con valor, paso 2 PENDIENTE y nada más.
     IF (SELECT string_agg(pp.nombre || '=' || x.estado || CASE WHEN x.valor IS NULL THEN '' ELSE '+valor' END, ',' ORDER BY pp.nombre)

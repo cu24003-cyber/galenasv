@@ -140,7 +140,7 @@ bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
 # equivale a: psql -v reiniciar=1 -f docs/migrations/20261112_datos_desarrollo_clinicos.sql
 ```
 
-El reinicio pide confirmación y solo afecta las seis consultas con UUID `de110009-…`: borra
+El reinicio pide confirmación y solo afecta las siete consultas con UUID `de110009-…`: borra
 las órdenes, los resultados y los pasos o procedimientos que se les hayan agregado desde la
 app, y restaura fechas, estados, valores y notas. No toca ningún otro dato.
 

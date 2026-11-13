@@ -6,7 +6,7 @@
 -- Solo toca filas con UUID fijos de demostración:
 --   de110000-…-2 clínica 2           de110002-…-4/5/6 asignaciones nuevas
 --   de110006 procedimiento            de110007 pasos            de110008 secuencias
---   de110009 consultas (1-6)          de11000a consulta_procedimiento
+--   de110009 consultas (1-7)          de11000a consulta_procedimiento
 --   de11000b pasos ejecutados (consulta*10 + paso)
 -- Al repetirlo inserta lo que falte y vuelve a anclar las fechas al día de hoy, sin cambiar
 -- estados. Todos los textos son ficticios.
@@ -64,8 +64,9 @@ SELECT ('de110008-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid,
 FROM generate_series(1,2) n
 ON CONFLICT (id_procedimiento_paso_secuencia) DO NOTHING;
 
--- Estado inicial deseado de las seis consultas (fuente única para carga y reinicio).
+-- Estado inicial deseado de las siete consultas (fuente única para carga y reinicio).
 -- tipo: P pasada (3 pasos completados), H1 hoy a medio avanzar, N nueva (paso 1 pendiente).
+-- La 7 es la segunda de hoy en la clínica 1, más tarde que la 2, para atender una consulta desde el inicio.
 CREATE TEMP TABLE demo_consulta ON COMMIT DROP AS
 SELECT ('de110009-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid AS id_consulta,
        ('de11000a-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid AS id_cp,
@@ -75,7 +76,8 @@ SELECT ('de110009-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid AS id_consul
        pg_temp.dia(v.dias, v.hora) AS inicio
 FROM (VALUES
     (1,'P', 3,2,-20,'09:00'), (2,'H1',3,2,0,'08:00'), (3,'N',3,2,7,'10:00'),
-    (4,'P', 4,5,-12,'14:00'), (5,'N', 4,5,0,'11:00'), (6,'N',4,5,3,'15:30')
+    (4,'P', 4,5,-12,'14:00'), (5,'N', 4,5,0,'11:00'), (6,'N',4,5,3,'15:30'),
+    (7,'N', 3,2,0,'10:30')
 ) AS v(n,tipo,paciente,doctor,dias,hora);
 
 CREATE TEMP TABLE demo_paso ON COMMIT DROP AS
@@ -99,7 +101,7 @@ FROM demo_consulta;
 
 \if :{?reiniciar}
 -- MODO REINICIO (psql -v reiniciar=1 o scripts/reiniciar-demo.sh). Borra solo lo que cuelga
--- de las seis consultas demo y no forma parte de su estado inicial: resultados, órdenes,
+-- de las siete consultas demo y no forma parte de su estado inicial: resultados, órdenes,
 -- pasos y procedimientos agregados desde la app. Nada fuera de esas consultas se toca.
 CREATE TEMP TABLE demo_cp_actual ON COMMIT DROP AS
 SELECT cp.id_consulta_procedimiento FROM public.consulta_procedimiento cp
@@ -180,7 +182,7 @@ ON CONFLICT (id_consulta_procedimiento_paso) DO NOTHING;
 
 -- Verificación estructural (los estados se comprueban en el modo reinicio).
 DO $$ BEGIN
-    IF (SELECT count(*) FROM public.consulta WHERE id_consulta::text LIKE 'de110009-%') <> 6
+    IF (SELECT count(*) FROM public.consulta WHERE id_consulta::text LIKE 'de110009-%') <> 7
        OR (SELECT count(*) FROM public.persona_rol WHERE id_persona_rol IN ('de110002-0000-4000-8000-000000000004',
             'de110002-0000-4000-8000-000000000005','de110002-0000-4000-8000-000000000006')) <> 3
        OR (SELECT count(*) FROM public.procedimiento_paso_secuencia WHERE id_procedimiento_paso_secuencia::text LIKE 'de110008-%') <> 2 THEN
@@ -188,4 +190,4 @@ DO $$ BEGIN
     END IF;
 END $$;
 COMMIT;
-\echo 'Datos clínicos demo: 2 clínicas, 6 consultas de paciente.demo (pasadas, hoy y futuras).'
+\echo 'Datos clínicos demo: 2 clínicas, 7 consultas de paciente.demo (pasadas, hoy y futuras).'

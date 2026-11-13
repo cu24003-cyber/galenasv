@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Uso desde la raíz del backend: bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
-# Devuelve las seis consultas demo (UUID fijos de110009-…) a su estado inicial con fechas de hoy:
+# Devuelve las siete consultas demo (UUID fijos de110009-…) a su estado inicial con fechas de hoy:
 # borra órdenes, resultados, pasos y procedimientos agregados a ESAS consultas desde la app.
 # No toca ningún otro dato. Requiere haber ejecutado antes scripts/preparar-bd-desarrollo.sh.
 if (( $# > 3 )); then

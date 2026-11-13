@@ -118,7 +118,7 @@ El script hace, en este orden y dentro del contenedor (`docker exec … psql`):
 4. aplica `20261113_orden_examen_examen.sql`, la columna `orden_examen.id_examen` de la HU4;
 5. carga `20261111_datos_desarrollo.sql`: clínica, cuentas demo y DUI. Genera un hash aleatorio
    con `ContrasenaService`, porque el login es por documento y no usa contraseña;
-6. carga `20261112_datos_desarrollo_clinicos.sql`: segunda clínica, procedimiento y seis consultas;
+6. carga `20261112_datos_desarrollo_clinicos.sql`: segunda clínica, procedimiento y siete consultas;
 7. carga `20261113_datos_desarrollo_examenes.sql`: catálogo de exámenes asignables.
 
 Debe terminar con `Base preparada: galenasv. …`. **Se puede repetir sin error**: se verificó la
@@ -194,7 +194,7 @@ bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
 Usa los mismos argumentos y valores por defecto que `preparar-bd-desarrollo.sh` y pide
 confirmación (`s`).
 
-- **Qué hace:** vuelve a anclar las seis consultas demo al día de hoy y les devuelve su estado
+- **Qué hace:** vuelve a anclar las siete consultas demo al día de hoy y les devuelve su estado
   inicial. Borra las órdenes, resultados, pasos y procedimientos agregados desde la app **solo**
   a esas consultas.
 - **Qué no toca:** ningún otro dato.
@@ -211,12 +211,13 @@ ficticios.
 | `00000000-2` | doctor.demo | DOCTOR en Clínica de demostración (**rol inicial**); DOCTOR en Clínica de demostración Norte; ADMINISTRACION en Clínica de demostración | Entra y puede cambiar de rol y clínica (HU3). |
 | `00000000-3` | paciente.demo | PACIENTE en las dos clínicas | **Rechazado** (401): solo los empleados se autentican (HU2). |
 
-Las seis consultas son de paciente.demo; las fechas se calculan al cargar o al reiniciar:
+Las siete consultas son de paciente.demo y todas usan el procedimiento demo de 3 pasos; las fechas se calculan al cargar o al reiniciar:
 
 | Consulta | Clínica | Fecha | Estado inicial |
 | --- | --- | --- | --- |
 | `de110009-…-1` | Demostración | hace 20 días, 09:00 | Cerrada, los 3 pasos completados. |
 | `de110009-…-2` | Demostración | **hoy, 08:00** | Abierta: paso 1 completado, paso 2 "Evaluación médica" pendiente (HU4). |
+| `de110009-…-7` | Demostración | **hoy, 10:30** | Nueva: paso 1 "Toma de signos vitales" PENDIENTE, sin valor. Sirve para atender una consulta desde el inicio. |
 | `de110009-…-3` | Demostración | dentro de 7 días, 10:00 | Nueva: paso 1 pendiente. |
 | `de110009-…-4` | Norte | hace 12 días, 14:00 | Cerrada. |
 | `de110009-…-5` | Norte | **hoy, 11:00** | Nueva. |
