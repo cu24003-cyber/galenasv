@@ -67,11 +67,12 @@ PermisosApiFilter tampoco aceptan una asignación PACIENTE como rol de sesión.
 
 ```text
 usuario: { idUsuario, idPersona, nombres, apellidos }
-rolActivo: { idPersonaRol, codigo, nombreRol, idClinica, nombreClinica }
+rolActivo: { idPersonaRol, idRol, codigo, nombreRol, idClinica, nombreClinica }
 csrfToken: token aleatorio asociado a la sesión
 ```
 
-`codigo` es el código estable del rol (`ADMINISTRACION`, `DOCTOR`, `ENFERMERA`…) y es
+`idRol` es el UUID del rol: se compara con `rolPaso.idRol` del dashboard para saber qué pasos
+atiende el empleado. `codigo` es el código estable del rol (`ADMINISTRACION`, `DOCTOR`, `ENFERMERA`…) y es
 `null` en un rol creado desde la app sin código; `nombreRol` es el nombre visible (por
 ejemplo "Atención al público" para `ADMINISTRACION`). El frontend debe mostrar
 `nombreRol` y no deducir permisos del código, salvo `ADMINISTRACION` (recepción y

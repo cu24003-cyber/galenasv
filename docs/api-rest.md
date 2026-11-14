@@ -147,7 +147,8 @@ Errores:
     "idConsultaProcedimiento": "…", "nombre": "Consulta general de demostración",
     "fechaInicio": "…", "fechaFin": null,
     "pasos": [{"idConsultaProcedimientoPaso": "…", "nombre": "Toma de signos vitales", "orden": 1, "nivel": 0,
-               "estado": "COMPLETADO", "responsable": {"nombre": "…", "rol": "Doctor"},
+               "estado": "COMPLETADO", "responsable": {"nombre": "…", "rol": "Enfermera"},
+               "rolPaso": {"idRol": "…", "nombre": "Enfermera"},
                "fechaInicio": "…", "fechaFin": "…", "tieneValor": true}]
   }]
 }]
@@ -176,8 +177,12 @@ Errores:
   - `orden` es la posición dentro del procedimiento. Los empates de nivel se resuelven por
     `fechaInicio`.
   - Un paso sin definición de catálogo va al final, con `nivel` 0.
-- `responsable` es la asignación del paso: en uno COMPLETADO, quién lo realizó; en uno
-  PENDIENTE, quién debe realizarlo. Es `null` si no hay responsable.
+- `responsable` es la asignación del paso: en uno COMPLETADO, quién lo realizó (desde la B8, quien
+  lo completó); en uno PENDIENTE, a quién se asignó. Es `null` si no hay responsable.
+- `rolPaso` (B8) es el rol que atiende el paso, `{idRol, nombre}`: el de la definición del paso
+  y, en un paso histórico sin definición, el de su responsable; `null` si no hay ninguno. Puede
+  diferir de `responsable.rol`. El frontend lo compara con `rolActivo.idRol` de `/auth/me` para
+  saber qué pasos puede atender el empleado: es la misma regla que aplica AtencionService.
 - `tieneValor` indica si el paso tiene un valor registrado. El valor no viaja en el dashboard:
   se pide con la ruta `…/valor` cuando el usuario abre el paso.
 - No se envían `observaciones`, `referenciaExterna`, órdenes de examen ni resultados.
@@ -405,7 +410,7 @@ DELETE /api/personas/UUID_DE_PERSONA/documentos/UUID_DEL_DOCUMENTO
 
 ## Nuevas operaciones del flujo clínico
 
-El CRUD directo anterior de las entidades se conserva. Para seguir el comportamiento de las vistas, usar las nuevas escrituras anidadas y las acciones de esta sección. Estas operaciones usan `AtencionService`, igual que las vistas de Consulta e Historial. Requieren el rol médico y la clínica de la misma sesión HTTP. El cliente REST debe conservar las cookies de esa sesión. `GET /api/atencion` informa `idPersonaRol` e `idConsulta`; `PUT /api/atencion/rol-activo` selecciona la asignación con el mismo servicio de sesión usado por Cambiar de rol.
+El CRUD directo anterior de las entidades se conserva. Para seguir el comportamiento de las vistas, usar las nuevas escrituras anidadas y las acciones de esta sección. Estas operaciones usan `AtencionService`, igual que las vistas de Consulta e Historial. Requieren un rol de empleado activo (cualquiera excepto PACIENTE) y la clínica de la misma sesión HTTP; las acciones sobre un paso exigen además el rol responsable del paso (ver "Permisos por rol"). El cliente REST debe conservar las cookies de esa sesión. `GET /api/atencion` informa `idPersonaRol` e `idConsulta`; `PUT /api/atencion/rol-activo` selecciona la asignación con el mismo servicio de sesión usado por Cambiar de rol.
 
 | Ruta del flujo | Escrituras nuevas habilitadas |
 | --- | --- |

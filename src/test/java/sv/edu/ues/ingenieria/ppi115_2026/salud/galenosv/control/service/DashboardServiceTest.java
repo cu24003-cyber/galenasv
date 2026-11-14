@@ -49,12 +49,12 @@ class DashboardServiceTest {
     static Object[] consulta(UUID id, String inicio, UUID persona, Date nacimiento) {
         return new Object[]{id, utc(inicio), null, persona, "Ana", "Pérez", nacimiento};
     }
-    /** Fila de pasos con las 20 columnas de DashboardRepository.pasos. */
+    /** Fila de pasos con las 21 columnas de DashboardRepository.pasos. */
     static Object[] paso(UUID consulta, UUID cp, UUID proc, UUID id, UUID def, String nombre, String estado,
             String inicio, String fin, UUID rolDef, boolean valor) {
         return new Object[]{consulta, cp, proc, "Procedimiento", utc("2026-11-13T14:00Z"), null, id, def, nombre, estado,
                 inicio == null ? null : utc(inicio), fin == null ? null : utc(fin), "Luis", "Gómez", "Doctor", rolDef, rolDef, valor,
-                null, false};
+                null, false, rolDef == null ? null : "Doctor"};
     }
 
     // ---- sesión y rol
@@ -152,7 +152,7 @@ class DashboardServiceTest {
         UUID proc = UUID.randomUUID(), paso1 = UUID.randomUUID(), def1 = UUID.randomUUID();
         when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", persona,
                 Timestamp.from(Instant.parse("1990-05-02T06:00:00Z")))));
-        Object[] vacio = new Object[18];
+        Object[] vacio = new Object[21];
         vacio[0] = c1; vacio[1] = cpVacio; vacio[2] = proc; vacio[3] = "Sin pasos"; vacio[4] = utc("2026-11-13T15:00Z");
         when(repositorio.pasos(any())).thenReturn(List.of(
                 paso(c1, cp, proc, paso1, def1, "Signos", "COMPLETADO", "2026-11-13T14:00Z", "2026-11-13T14:30Z", rolDoctor, true), vacio));
@@ -174,6 +174,7 @@ class DashboardServiceTest {
         assertEquals("Signos", s.nombre()); assertEquals(1, s.orden()); assertEquals(0, s.nivel());
         assertEquals("COMPLETADO", s.estado()); assertTrue(s.tieneValor());
         assertEquals(new DashboardService.Responsable("Luis Gómez", "Doctor"), s.responsable());
+        assertEquals(new DashboardService.RolPaso(rolDoctor, "Doctor"), s.rolPaso());
         assertEquals(ZoneOffset.ofHours(-6), s.fechaFin().getOffset());
         assertEquals("Sin pasos", c.procedimientos().get(1).nombre());
         assertTrue(c.procedimientos().get(1).pasos().isEmpty());
@@ -294,6 +295,36 @@ class DashboardServiceTest {
         } finally {
             TimeZone.setDefault(anterior);
         }
+    }
+
+    /** B8: rolPaso es el rol de la definición aunque el responsable tenga otro rol. */
+    @Test void rolPasoEsElRolDeLaDefinicion() {
+        UUID c1 = UUID.randomUUID(), enfermera = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        Object[] fila = paso(c1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Triaje", "PENDIENTE", "2026-11-13T14:00Z", null, enfermera, false);
+        fila[20] = "Enfermera"; fila[16] = rolDoctor; fila[14] = "Doctor";
+        when(repositorio.pasos(any())).thenReturn(List.<Object[]>of(fila));
+        assertEquals(new DashboardService.RolPaso(enfermera, "Enfermera"),
+                servicio.consultas(null, null).getFirst().procedimientos().getFirst().pasos().getFirst().rolPaso());
+    }
+
+    @Test void rolPasoDeUnPasoHistoricoUsaElRolDelResponsable() {
+        UUID c1 = UUID.randomUUID(), enfermera = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        Object[] fila = paso(c1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, null, "COMPLETADO", "2026-11-13T14:00Z", "2026-11-13T14:10Z", null, true);
+        fila[16] = enfermera; fila[14] = "Enfermera";
+        when(repositorio.pasos(any())).thenReturn(List.<Object[]>of(fila));
+        assertEquals(new DashboardService.RolPaso(enfermera, "Enfermera"),
+                servicio.consultas(null, null).getFirst().procedimientos().getFirst().pasos().getFirst().rolPaso());
+    }
+
+    @Test void rolPasoNuloSinDefinicionNiResponsable() {
+        UUID c1 = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        Object[] fila = paso(c1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, null, "PENDIENTE", "2026-11-13T14:00Z", null, null, false);
+        fila[12] = null; fila[13] = null; fila[14] = null;
+        when(repositorio.pasos(any())).thenReturn(List.<Object[]>of(fila));
+        assertNull(servicio.consultas(null, null).getFirst().procedimientos().getFirst().pasos().getFirst().rolPaso());
     }
 
     @Test void responsableNuloSiElPasoNoTieneAsignado() {

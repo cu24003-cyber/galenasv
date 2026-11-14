@@ -95,6 +95,8 @@ class AuthResourceTest {
         var rol = Json.createReader(new StringReader((String) resource.me().getEntity())).readObject().getJsonObject("rolActivo");
         assertEquals("ENFERMERA", rol.getString("codigo"));
         assertEquals("Enfermera", rol.getString("nombreRol"));
+        assertEquals(contexto.asignacion().getIdRol().getIdRol().toString(), rol.getString("idRol"));
+        assertEquals(java.util.Set.of("idPersonaRol", "idRol", "codigo", "nombreRol", "idClinica", "nombreClinica"), rol.keySet());
     }
     @Test void meConUnRolSinCodigoDevuelveCodigoNullEnLugarDeFallar() {
         when(request.getSession(false)).thenReturn(http); acceso.autenticar(idUsuario);

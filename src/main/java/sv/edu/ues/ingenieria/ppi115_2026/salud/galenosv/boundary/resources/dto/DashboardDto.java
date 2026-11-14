@@ -69,6 +69,12 @@ public final class DashboardDto {
             texto(responsable, "rol", s.responsable().rol());
             json.add("responsable", responsable);
         }
+        if (s.rolPaso() == null) json.addNull("rolPaso");
+        else {
+            JsonObjectBuilder rol = Json.createObjectBuilder().add("idRol", s.rolPaso().idRol().toString());
+            texto(rol, "nombre", s.rolPaso().nombre());
+            json.add("rolPaso", rol);
+        }
         fecha(json, "fechaInicio", s.fechaInicio());
         fecha(json, "fechaFin", s.fechaFin());
         return json.add("tieneValor", s.tieneValor()).build();

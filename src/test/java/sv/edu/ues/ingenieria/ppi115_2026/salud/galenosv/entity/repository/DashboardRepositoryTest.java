@@ -59,7 +59,7 @@ class DashboardRepositoryTest {
         assertFalse(columnas.contains("observaciones"));
         assertTrue(q.contains("LEFT JOIN cp.consultaProcedimientoPasoCollection p"));
         // B8: 18 quién completó o tiene asignado el paso y 19 si es de finalización (pendienteParaMi).
-        assertTrue(columnas.endsWith("CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END, resp.idPersonaRol, def.indicaFin"), columnas);
+        assertTrue(columnas.endsWith("CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END, resp.idPersonaRol, def.indicaFin, rolDef.nombre"), columnas);
         assertTrue(q.contains("cp.idConsulta.idConsulta IN :consultas"));
         verify(consulta).setParameter("consultas", List.of(id, otro));
         assertFalse(q.contains(id.toString()));

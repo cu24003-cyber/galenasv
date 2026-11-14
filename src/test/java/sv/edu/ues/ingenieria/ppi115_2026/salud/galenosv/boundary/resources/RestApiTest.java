@@ -915,9 +915,10 @@ class RestApiTest extends JerseyTest {
     private static DashboardService.ConsultaDashboard consultaDashboard() {
         var responsable = new DashboardService.Responsable("Luis Gómez", "Doctor");
         var completado = new DashboardService.PasoDashboard(A1, "Signos", 1, 0, "COMPLETADO", responsable,
-                OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), true);
+                OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), true,
+                new DashboardService.RolPaso(C1, "Enfermera"));
         var pendiente = new DashboardService.PasoDashboard(A2, "Evaluación", 2, 1, "PENDIENTE", null,
-                OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), null, false);
+                OffsetDateTime.of(2026, 11, 13, 8, 30, 0, 0, SV), null, false, null);
         var procedimiento = new DashboardService.ProcedimientoDashboard(A3, "Consulta general",
                 OffsetDateTime.of(2026, 11, 13, 8, 0, 0, 0, SV), null, List.of(completado, pendiente));
         var paciente = new DashboardService.Paciente("Ana", "Pérez", java.time.LocalDate.of(1990, 5, 2), 36,
@@ -964,12 +965,17 @@ class RestApiTest extends JerseyTest {
             assertEquals(java.util.Set.of("idConsultaProcedimiento", "nombre", "fechaInicio", "fechaFin", "pasos"), procedimiento.keySet());
             JsonObject paso = procedimiento.getJsonArray("pasos").getJsonObject(0);
             assertEquals(java.util.Set.of("idConsultaProcedimientoPaso", "nombre", "orden", "nivel", "estado", "responsable",
-                    "fechaInicio", "fechaFin", "tieneValor"), paso.keySet());
+                    "rolPaso", "fechaInicio", "fechaFin", "tieneValor"), paso.keySet());
+            JsonObject rolPaso = paso.getJsonObject("rolPaso");
+            assertEquals(java.util.Set.of("idRol", "nombre"), rolPaso.keySet());
+            assertEquals(C1.toString(), rolPaso.getString("idRol"));
+            assertEquals("Enfermera", rolPaso.getString("nombre"));
             assertEquals("2026-11-13T08:30:00-06:00", paso.getString("fechaFin"));
             assertTrue(paso.getBoolean("tieneValor"));
             assertEquals(java.util.Set.of("nombre", "rol"), paso.getJsonObject("responsable").keySet());
             JsonObject pendiente = procedimiento.getJsonArray("pasos").getJsonObject(1);
             assertTrue(pendiente.isNull("responsable"));
+            assertTrue(pendiente.isNull("rolPaso"));
             assertTrue(pendiente.isNull("fechaFin"));
             assertEquals(1, pendiente.getInt("nivel"));
         }

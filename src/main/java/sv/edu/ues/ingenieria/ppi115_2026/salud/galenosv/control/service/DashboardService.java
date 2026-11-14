@@ -28,8 +28,10 @@ public class DashboardService {
     public record DocumentoPaciente(String tipoDocumento, String numero) {}
     public record Paciente(String nombres, String apellidos, LocalDate fechaNacimiento, Integer edad, List<DocumentoPaciente> documentos) {}
     public record Responsable(String nombre, String rol) {}
+    /** B8: rol que atiende el paso: el de su definición o, en un paso histórico, el de su responsable. */
+    public record RolPaso(UUID idRol, String nombre) {}
     public record PasoDashboard(UUID idConsultaProcedimientoPaso, String nombre, int orden, int nivel, String estado,
-            Responsable responsable, OffsetDateTime fechaInicio, OffsetDateTime fechaFin, boolean tieneValor) {}
+            Responsable responsable, OffsetDateTime fechaInicio, OffsetDateTime fechaFin, boolean tieneValor, RolPaso rolPaso) {}
     public record ProcedimientoDashboard(UUID idConsultaProcedimiento, String nombre, OffsetDateTime fechaInicio,
             OffsetDateTime fechaFin, List<PasoDashboard> pasos) {}
     public record ConsultaDashboard(UUID idConsulta, OffsetDateTime fechaInicio, OffsetDateTime fechaFin,
@@ -172,9 +174,15 @@ public class DashboardService {
                     : new Responsable(nombre((String) f[12], (String) f[13]), (String) f[14]);
             pasos.add(new PasoDashboard((UUID) f[6], (String) f[8], i + 1,
                     f[7] == null ? 0 : niveles.getOrDefault((UUID) f[7], 0), (String) f[9], responsable,
-                    local((OffsetDateTime) f[10]), local((OffsetDateTime) f[11]), Boolean.TRUE.equals(f[17])));
+                    local((OffsetDateTime) f[10]), local((OffsetDateTime) f[11]), Boolean.TRUE.equals(f[17]), rolPaso(f)));
         }
         return List.copyOf(pasos);
+    }
+
+    private static RolPaso rolPaso(Object[] f) {
+        if (f[15] != null) return new RolPaso((UUID) f[15], (String) f[20]);
+        if (f[16] != null) return new RolPaso((UUID) f[16], (String) f[14]);
+        return null;
     }
 
     /** Camino más largo desde un nodo sin predecesores (Kahn). Los nodos en un ciclo quedan en 0. */

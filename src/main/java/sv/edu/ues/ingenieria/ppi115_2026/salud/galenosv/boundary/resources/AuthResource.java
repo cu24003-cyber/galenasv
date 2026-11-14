@@ -67,7 +67,8 @@ public class AuthResource {
 
     /** B8: cualquier rol de empleado puede ser el activo; un rol creado sin código devuelve codigo null. */
     private static jakarta.json.JsonObjectBuilder rolActivo(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol rol) {
-        var json = Json.createObjectBuilder().add("idPersonaRol", rol.getIdPersonaRol().toString());
+        var json = Json.createObjectBuilder().add("idPersonaRol", rol.getIdPersonaRol().toString())
+                .add("idRol", rol.getIdRol().getIdRol().toString());
         if (rol.getIdRol().getCodigo() == null) json.addNull("codigo");
         else json.add("codigo", rol.getIdRol().getCodigo());
         if (rol.getIdRol().getNombre() == null) json.addNull("nombreRol");
