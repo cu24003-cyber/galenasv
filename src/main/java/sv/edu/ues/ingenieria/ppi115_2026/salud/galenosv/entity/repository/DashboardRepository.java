@@ -39,14 +39,15 @@ public class DashboardRepository {
      * 4 fechaInicio y 5 fechaFin del procedimiento, 6 idConsultaProcedimientoPaso,
      * 7 idProcedimientoPaso (definición), 8 nombre del paso, 9 estado, 10 fechaInicio, 11 fechaFin,
      * 12 nombres y 13 apellidos del responsable, 14 nombre del rol del responsable,
-     * 15 idRol de la definición, 16 idRol del responsable, 17 tieneValor.
+     * 15 idRol de la definición, 16 idRol del responsable, 17 tieneValor,
+     * 18 idPersonaRol del responsable (quien lo completó) y 19 indicaFin de la definición (B8).
      */
     public List<Object[]> pasos(List<UUID> consultas) {
         if (consultas == null || consultas.isEmpty()) return List.of();
         return em.createQuery("SELECT cp.idConsulta.idConsulta, cp.idConsultaProcedimiento, proc.idProcedimiento, proc.nombre,"
                 + " cp.fechaInicio, cp.fechaFin, p.idConsultaProcedimientoPaso, def.idProcedimientoPaso, def.nombre,"
                 + " p.estado, p.fechaInicio, p.fechaFin, per.nombres, per.apellidos, rolResp.nombre,"
-                + " rolDef.idRol, rolResp.idRol, CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END"
+                + " rolDef.idRol, rolResp.idRol, CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END, resp.idPersonaRol, def.indicaFin"
                 + " FROM ConsultaProcedimiento cp JOIN cp.idProcedimiento proc"
                 + " LEFT JOIN cp.consultaProcedimientoPasoCollection p LEFT JOIN p.idProcedimientoPaso def"
                 + " LEFT JOIN def.idRol rolDef LEFT JOIN p.idPersonaRol resp LEFT JOIN resp.idPersona per"

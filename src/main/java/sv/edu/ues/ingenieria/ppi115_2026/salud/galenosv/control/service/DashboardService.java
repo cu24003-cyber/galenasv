@@ -10,12 +10,12 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.DashboardRepository;
 
 /**
- * HU3: dashboard de consultas de la clínica del rol activo (DOCTOR o ADMINISTRACION).
+ * HU3: dashboard de consultas de la clínica del rol activo (cualquier rol de empleado).
  *
  * PermisosApiFilter no revisa /atencion, así que aquí se exige sesión vigente, rol activo y
  * que ese rol siga siendo una asignación de empleado activa de la cuenta; la clínica se toma de
  * esa asignación leída de la base, nunca del cliente. No usa AtencionService.historial (que es
- * de JSF y solo acepta DOCTOR): hace su propia consulta por clínica y rango.
+ * de JSF): hace su propia consulta por clínica y rango.
  *
  * Sin N+1: consultas, pasos, documentos y secuencias son 4 consultas para todo el rango. El
  * valor de un paso no viaja en el dashboard; se pide con {@link #valor(UUID)}.
@@ -58,7 +58,7 @@ public class DashboardService {
                 d.atStartOfDay(ZONA).toOffsetDateTime(), h.plusDays(1).atStartOfDay(ZONA).toOffsetDateTime()));
         if (consultas.isEmpty()) return List.of();
         consultas.sort(Comparator.comparing((Object[] f) -> (OffsetDateTime) f[1]).thenComparing(f -> (UUID) f[0]));
-        return armar(consultas, activo.getIdRol().getIdRol(), hoy);
+        return armar(consultas, activo, hoy);
     }
 
     /**
@@ -69,7 +69,7 @@ public class DashboardService {
         PersonaRol activo = asignacion(exigirSesion());
         List<Object[]> filas = repositorio.consulta(id, activo.getIdClinica().getIdClinica());
         if (filas.isEmpty()) throw new AccesoException(404, "consulta.noExiste", "La consulta no existe.");
-        return armar(filas, activo.getIdRol().getIdRol(), LocalDate.now(reloj)).getFirst();
+        return armar(filas, activo, LocalDate.now(reloj)).getFirst();
     }
 
     /** Valor completo de un paso de una consulta de la clínica del rol activo; si no, 404. */
@@ -99,7 +99,8 @@ public class DashboardService {
         catch (DateTimeParseException e) { throw new AccesoException(400, "dashboard.fecha", "Las fechas deben tener el formato yyyy-MM-dd."); }
     }
 
-    private List<ConsultaDashboard> armar(List<Object[]> consultas, UUID rolActivo, LocalDate hoy) {
+    private List<ConsultaDashboard> armar(List<Object[]> consultas, PersonaRol activo, LocalDate hoy) {
+        UUID rolActivo = activo.getIdRol().getIdRol();
         List<UUID> ids = consultas.stream().map(f -> (UUID) f[0]).toList();
         List<UUID> personas = consultas.stream().map(f -> (UUID) f[3]).distinct().toList();
         List<Object[]> pasos = repositorio.pasos(ids);
@@ -113,14 +114,27 @@ public class DashboardService {
         // Procedimientos en el orden de la consulta (fechaInicio, id) y sus pasos.
         Map<UUID, Map<UUID, Object[]>> procedimientos = new HashMap<>();
         Map<UUID, List<Object[]>> pasosPorProcedimiento = new HashMap<>();
+        // B8 pendienteParaMi: un paso PENDIENTE de mi rol, o (consulta abierta, sin pasos
+        // pendientes) el último paso de finalización completado lo completé yo: me falta cerrarla.
         Map<UUID, Boolean> pendiente = new HashMap<>();
+        Set<UUID> conPendientes = new HashSet<>();
+        Map<UUID, Object[]> ultimoFinal = new HashMap<>();
         for (Object[] f : pasos) {
             procedimientos.computeIfAbsent((UUID) f[0], k -> new LinkedHashMap<>()).putIfAbsent((UUID) f[1], f);
             List<Object[]> lista = pasosPorProcedimiento.computeIfAbsent((UUID) f[1], k -> new ArrayList<>());
             if (f[6] == null) continue;
             lista.add(f);
             UUID rolPaso = f[15] != null ? (UUID) f[15] : (UUID) f[16];
+            if (f[11] == null) conPendientes.add((UUID) f[0]);
             if ("PENDIENTE".equals(f[9]) && rolActivo.equals(rolPaso)) pendiente.put((UUID) f[0], true);
+            if (Boolean.TRUE.equals(f[19]) && f[11] != null)
+                ultimoFinal.merge((UUID) f[0], f, (a, b) -> ((OffsetDateTime) b[11]).isAfter((OffsetDateTime) a[11]) ? b : a);
+        }
+        for (Object[] c : consultas) {
+            UUID idConsulta = (UUID) c[0];
+            Object[] fin = ultimoFinal.get(idConsulta);
+            if (c[2] == null && !conPendientes.contains(idConsulta) && fin != null && activo.getIdPersonaRol().equals(fin[18]))
+                pendiente.put(idConsulta, true);
         }
 
         List<ConsultaDashboard> resultado = new ArrayList<>();

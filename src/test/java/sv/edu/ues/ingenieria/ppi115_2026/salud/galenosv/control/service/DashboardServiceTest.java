@@ -49,11 +49,12 @@ class DashboardServiceTest {
     static Object[] consulta(UUID id, String inicio, UUID persona, Date nacimiento) {
         return new Object[]{id, utc(inicio), null, persona, "Ana", "Pérez", nacimiento};
     }
-    /** Fila de pasos con las 18 columnas de DashboardRepository.pasos. */
+    /** Fila de pasos con las 20 columnas de DashboardRepository.pasos. */
     static Object[] paso(UUID consulta, UUID cp, UUID proc, UUID id, UUID def, String nombre, String estado,
             String inicio, String fin, UUID rolDef, boolean valor) {
         return new Object[]{consulta, cp, proc, "Procedimiento", utc("2026-11-13T14:00Z"), null, id, def, nombre, estado,
-                inicio == null ? null : utc(inicio), fin == null ? null : utc(fin), "Luis", "Gómez", "Doctor", rolDef, rolDef, valor};
+                inicio == null ? null : utc(inicio), fin == null ? null : utc(fin), "Luis", "Gómez", "Doctor", rolDef, rolDef, valor,
+                null, false};
     }
 
     // ---- sesión y rol
@@ -230,6 +231,46 @@ class DashboardServiceTest {
         fila[16] = rolDoctor;
         when(repositorio.pasos(any())).thenReturn(List.<Object[]>of(fila));
         assertTrue(servicio.consultas(null, null).getFirst().pendienteParaMi());
+    }
+
+    /** B8: todos los pasos completados; el final lo completó {@code quien}. */
+    private List<Object[]> completadaConFinalDe(UUID consulta, UUID quien) {
+        UUID cp = UUID.randomUUID(), proc = UUID.randomUUID();
+        Object[] triaje = paso(consulta, cp, proc, UUID.randomUUID(), UUID.randomUUID(), "Triaje", "COMPLETADO", "2026-11-13T14:00Z", "2026-11-13T14:10Z", UUID.randomUUID(), true);
+        Object[] entrega = paso(consulta, cp, proc, UUID.randomUUID(), UUID.randomUUID(), "Entrega", "COMPLETADO", "2026-11-13T14:10Z", "2026-11-13T14:30Z", rolAdmin, true);
+        entrega[18] = quien; entrega[19] = true;
+        return List.of(triaje, entrega);
+    }
+
+    @Test void pendienteParaMiSiMeFaltaCerrarLaConsultaPorqueCompleteLaFinalizacion() {
+        UUID c1 = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        when(repositorio.pasos(any())).thenReturn(completadaConFinalDe(c1, asignacionId));
+        assertTrue(servicio.consultas(null, null).getFirst().pendienteParaMi());
+    }
+
+    @Test void noEsPendienteParaMiSiLaFinalizacionLaCompletoOtro() {
+        UUID c1 = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        when(repositorio.pasos(any())).thenReturn(completadaConFinalDe(c1, UUID.randomUUID()));
+        assertFalse(servicio.consultas(null, null).getFirst().pendienteParaMi());
+    }
+
+    @Test void unaConsultaCerradaNuncaEsPendienteParaMi() {
+        UUID c1 = UUID.randomUUID();
+        Object[] cerrada = consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null); cerrada[2] = utc("2026-11-13T14:40Z");
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(cerrada));
+        when(repositorio.pasos(any())).thenReturn(completadaConFinalDe(c1, asignacionId));
+        assertFalse(servicio.consultas(null, null).getFirst().pendienteParaMi());
+    }
+
+    @Test void conUnPasoPendienteNoCuentaComoFaltaCerrarAunqueYoHayaCompletadoUnFinal() {
+        UUID c1 = UUID.randomUUID();
+        when(repositorio.consultas(any(), any(), any())).thenReturn(List.<Object[]>of(consulta(c1, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        List<Object[]> filas = new ArrayList<>(completadaConFinalDe(c1, asignacionId));
+        filas.add(paso(c1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Otro", "PENDIENTE", "2026-11-13T14:40Z", null, rolAdmin, false));
+        when(repositorio.pasos(any())).thenReturn(filas);
+        assertFalse(servicio.consultas(null, null).getFirst().pendienteParaMi());
     }
 
     @Test void edadEnAniosCumplidos() {

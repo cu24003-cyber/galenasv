@@ -112,12 +112,12 @@ Errores:
 | `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}`. |
 | `GET /api/atencion/consultas/{idConsulta}` | Sí | 200 con **una** consulta, con el mismo JSON que su elemento del dashboard (HU3/HU4). |
 
-- **Roles:** DOCTOR y ADMINISTRACION, los dos roles de empleado. La clínica es la de la
+- **Roles:** cualquier rol de empleado (activo y distinto de PACIENTE). La clínica es la de la
   asignación activa, leída de la base. Ningún parámetro del cliente la cambia.
 - **Sesión:** `PermisosApiFilter` no revisa `/atencion`, así que `DashboardService` comprueba,
   antes de cualquier consulta, que haya sesión vigente y un rol activo, y que ese rol siga siendo
   una asignación de empleado activa de la cuenta. No usa `AtencionService.historial`, que es de
-  la vista JSF y solo acepta DOCTOR.
+  la vista JSF.
 - **Fechas:** son días de El Salvador, con `hasta` incluido.
   - Sin `desde` ni `hasta` se usa hoy. Con uno solo, se usa ese día en los dos extremos.
   - El rango admite como máximo 31 días, contando ambos extremos.
@@ -148,9 +148,14 @@ Errores:
 
 - `fechaFin` de la consulta es `null` mientras está abierta. Para atenderla, se selecciona con
   `PUT /api/consultas/{id}/sesion`.
-- `pendienteParaMi` es `true` si la consulta tiene un paso PENDIENTE cuyo rol es el del rol
-  activo. Se toma el rol de la definición del paso y, si el paso no tiene definición, el rol
-  de su responsable.
+- `pendienteParaMi` es `true` en dos casos:
+  - la consulta tiene un paso PENDIENTE cuyo rol es el del rol activo. Se toma el rol de la
+    definición del paso y, si el paso no tiene definición, el rol de su responsable;
+  - (B8) la consulta está abierta, no tiene pasos pendientes y el último paso de finalización
+    completado lo completó la asignación activa: le falta cerrarla con `PUT /api/consultas/{id}/cierre`.
+
+  Coincide con lo que acepta `PUT /api/consultas/{id}/sesion`, salvo una consulta sin pasos, que
+  cualquier empleado puede seleccionar pero no sale como pendiente.
 - `edad` son los años cumplidos a hoy, y es `null` si no hay fecha de nacimiento.
 - `documentos` lleva todos los documentos del paciente, ordenados por tipo, sin `rutaFisica`.
 
