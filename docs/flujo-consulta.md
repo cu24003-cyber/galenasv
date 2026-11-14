@@ -4,7 +4,7 @@
 
 El esquema de referencia es el proporcionado por el equipo. Su único parche pendiente está en `docs/migrations/consulta_procedimiento_paso.sql`: añade `id_procedimiento_paso`, `valor` y la clave foránea del paso ejecutado. La aplicación no genera ni modifica el esquema automáticamente. Aplique ese parche solamente mediante el proceso acordado por el equipo; no hay otros scripts de migración para este flujo.
 
-La tabla `consulta` almacena el paciente en `id_persona_rol`. No tiene columna de médico creador. Por ello, el historial y la reanudación se limitan a la clínica del rol médico activo, sin atribuir consultas a una persona médica específica. El selector de rol de la aplicación no autentica usuarios.
+La tabla `consulta` almacena el paciente en `id_persona_rol`. No tiene columna de empleado creador. Por ello, el historial y la reanudación se limitan a la clínica del rol de empleado activo (cualquier rol activo excepto Paciente; B8), sin atribuir consultas a una persona específica. Quién realizó cada paso queda en el `id_persona_rol` del paso (ver "Quién atiende cada paso (B8)"). El selector de rol de la aplicación no autentica usuarios.
 
 Las consultas anteriores al parche pueden tener pasos sin `id_procedimiento_paso`. Se muestran en el historial, pero un paso sin definición no puede completarse automáticamente porque no es posible inferir su posición en la secuencia. Requiere que el equipo identifique manualmente el paso correcto.
 
