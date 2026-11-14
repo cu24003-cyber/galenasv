@@ -73,6 +73,15 @@ Las rutas bajo `/api/publico/` no requieren sesión ni CSRF y nunca devuelven no
 | --- | --- | --- |
 | `GET /api/atencion/asignaciones` | Sí (sin CSRF por ser GET) | 200 con `[{idPersonaRol, codigoRol, nombreRol, idClinica, nombreClinica, activa}]`. |
 | `PUT /api/atencion/rol-activo` | Sí + `X-CSRF-Token` | `{"idPersonaRol":"UUID"}` → 200 con `{idPersonaRol, idConsulta}` y nuevo identificador de sesión. |
+| `DELETE /api/atencion/consulta` | Sí + `X-CSRF-Token` | Sin cuerpo → 204. Sale de la consulta en curso **sin cerrarla** (B8). |
+
+`DELETE /api/atencion/consulta` quita la consulta en curso de la sesión. La consulta queda
+abierta y sin cambios: sus pasos, valores y órdenes se conservan, y se puede volver a
+seleccionar con `PUT /api/consultas/{id}/sesion`. Después se puede cambiar de rol con
+`PUT /api/atencion/rol-activo`, que con una consulta en curso daba 409
+`rolCambio.cerrarAntesCambiar`. Es idempotente: sin consulta en curso también responde 204.
+Errores: 401 `auth.sesion` sin sesión o con usuario inactivo; 403 `auth.asignacion` si la
+asignación activa ya no es de la cuenta; 403 `auth.csrf` sin el token.
 
 `GET /api/atencion/asignaciones` devuelve todas las asignaciones de empleado activas
 (cualquier rol activo excepto `PACIENTE`, en una clínica activa; B8) de la cuenta autenticada, en todas sus
@@ -411,6 +420,7 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | Método y ruta | Cuerpo | Comportamiento |
 | --- | --- | --- |
 | `PUT /api/atencion/rol-activo` | `idPersonaRol` | Selecciona rol y clínica; conserva la restricción de cambio de rol durante una atención. |
+| `DELETE /api/atencion/consulta` | Sin cuerpo | 204. Sale de la consulta en curso sin cerrarla; queda abierta (B8). |
 | `PUT /api/consultas/{id}/sesion` | Sin cuerpo | Retoma una consulta abierta de la clínica activa que tenga un paso pendiente del rol activo, o que este rol deba cerrar (B8). |
 | `PUT /api/consultas/{id}/cierre` | `referenciaExterna`, `observaciones` opcionales | Cierra cuando los pasos están completos y cada procedimiento llega a un paso final; libera la consulta en sesión. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/responsable` | `idPersonaRol` | Cambia el responsable de un paso pendiente, respetando rol activo y clínica. |

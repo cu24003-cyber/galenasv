@@ -856,6 +856,39 @@ class RestApiTest extends JerseyTest {
         }
     }
 
+    // ---- B8: salir de la consulta en curso sin cerrarla
+
+    @Test
+    void salirDeLaConsultaLaQuitaDeLaSesionSinCerrarla() {
+        Consulta consulta = (Consulta) records.get(Consulta.class).get(ID);
+        consulta.setFechaFin(null);
+        when(sesion.getConsulta()).thenReturn(ID);
+        try (Response response = target("atencion/consulta").request().delete()) {
+            assertEquals(204, response.getStatus());
+        }
+        verify(sesion).setConsulta(null);
+        verify(atencion, never()).cerrar(any(), any(), any());
+        assertNull(consulta.getFechaFin());
+    }
+
+    @Test
+    void salirSinConsultaEnCursoTambienDa204() {
+        when(sesion.getConsulta()).thenReturn(null);
+        try (Response response = target("atencion/consulta").request().delete()) {
+            assertEquals(204, response.getStatus());
+        }
+    }
+
+    @Test
+    void salirDeLaConsultaSinSesionDa401() {
+        when(acceso.vigente()).thenReturn(false);
+        try (Response response = target("atencion/consulta").request().delete()) {
+            assertEquals(401, response.getStatus());
+            assertEquals("auth.sesion", json(response).getString("code"));
+        }
+        verify(sesion, never()).setConsulta(any());
+    }
+
     @Test
     void asignacionesSinSesionDa401() {
         when(acceso.vigente()).thenReturn(false);

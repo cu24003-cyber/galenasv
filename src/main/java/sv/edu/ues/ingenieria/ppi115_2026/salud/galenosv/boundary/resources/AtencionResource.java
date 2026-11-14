@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -94,6 +95,21 @@ public class AtencionResource {
     @Path("dashboard/pasos/{idPaso}/valor")
     public Response valorPaso(@PathParam("idPaso") UUID idPaso) {
         return Response.ok(DashboardDto.valor(dashboardService.valor(idPaso)).toString()).build();
+    }
+
+    /**
+     * B8, HU4: sale de la consulta en curso sin cerrarla. La consulta queda abierta y sin cambios;
+     * después se puede cambiar de rol o seleccionar otra. Idempotente: sin consulta en curso
+     * también responde 204. Exige sesión (401) y revalida la asignación activa (401/403).
+     */
+    @DELETE
+    @Path("consulta")
+    public Response salirDeConsulta() {
+        if (!acceso.vigente()) throw new AccesoException(401, "auth.sesion", "Vuelva a iniciar sesión.");
+        var activo = sesion.getRolActivo();
+        autenticacion.contexto(acceso.getIdUsuario(), activo == null ? null : activo.getIdPersonaRol());
+        sesion.setConsulta(null);
+        return Response.noContent().build();
     }
 
     @PUT
