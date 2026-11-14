@@ -767,7 +767,24 @@ class RestApiTest extends JerseyTest {
             assertEquals(200, response.getStatus());
         }
         verify(atencion).cargar(ID);
+        verify(atencion).exigirAtendible(ID);
         verify(sesion).setConsulta(ID);
+    }
+
+    /** B8: solo se selecciona una consulta con un paso pendiente del rol activo (o que le falte cerrar). */
+    @Test
+    void sesionSinPasoParaElRolDa409YNoSeleccionaLaConsulta() {
+        ((Consulta) records.get(Consulta.class).get(ID)).setFechaFin(null);
+        doThrow(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ServiceException.localizada(
+                "consulta.sinPasoParaRol", "Esta consulta no tiene un paso pendiente para su rol."))
+                .when(atencion).exigirAtendible(ID);
+        try (Response response = target("consultas/" + ID + "/sesion").request().put(Entity.json("{}"))) {
+            assertEquals(409, response.getStatus());
+            var error = json(response);
+            assertEquals("consulta.sinPasoParaRol", error.getString("code"));
+            assertEquals("Esta consulta no tiene un paso pendiente para su rol.", error.getString("message"));
+        }
+        verify(sesion, never()).setConsulta(ID);
     }
 
     private static final UUID C1 = UUID.fromString("11111111-1111-4111-8111-111111111111");

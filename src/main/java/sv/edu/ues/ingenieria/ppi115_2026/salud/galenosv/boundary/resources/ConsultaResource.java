@@ -91,6 +91,8 @@ public class ConsultaResource extends AbstractResource<Consulta, ConsultaDto> {
         if (sesion.getConsulta() != null && !consulta.getIdConsulta().equals(sesion.getConsulta())) {
             throw new ApiException(Response.Status.CONFLICT, "consulta.cerrarAntesRetomar", "Cierre la consulta en curso antes de retomar otra.");
         }
+        // B8: con un paso pendiente del rol activo, o si le falta cerrarla quien completó la finalización.
+        atencion.exigirAtendible(consulta.getIdConsulta());
         sesion.setConsulta(consulta.getIdConsulta());
         return Response.ok(toDto(consulta)).build();
     }

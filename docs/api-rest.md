@@ -406,7 +406,7 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | Método y ruta | Cuerpo | Comportamiento |
 | --- | --- | --- |
 | `PUT /api/atencion/rol-activo` | `idPersonaRol` | Selecciona rol y clínica; conserva la restricción de cambio de rol durante una atención. |
-| `PUT /api/consultas/{id}/sesion` | Sin cuerpo | Retoma una consulta abierta de la clínica activa. |
+| `PUT /api/consultas/{id}/sesion` | Sin cuerpo | Retoma una consulta abierta de la clínica activa que tenga un paso pendiente del rol activo, o que este rol deba cerrar (B8). |
 | `PUT /api/consultas/{id}/cierre` | `referenciaExterna`, `observaciones` opcionales | Cierra cuando los pasos están completos y cada procedimiento llega a un paso final; libera la consulta en sesión. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/responsable` | `idPersonaRol` | Cambia el responsable de un paso pendiente, respetando rol activo y clínica. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/finalizacion` | `valor` opcional | Completa el paso y genera sus sucesores cuando se cumplen los predecesores. |
@@ -426,6 +426,19 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 
 El filtro no decide qué rol atiende cada paso: eso lo valida AtencionService con el rol
 responsable del paso. Una ruta de otra clínica sigue dando 403 `auth.permiso`.
+
+Reglas de AtencionService (detalle en `docs/flujo-consulta.md`, "Quién atiende cada paso"):
+
+| Status y código | Mensaje | Cuándo |
+| --- | --- | --- |
+| 403 `consulta.noResponsablePaso` | "Este paso lo atiende el rol {rol}." | `finalizacion`, `retroceso`, `responsable`, `examenes` u `ordenes-examen` sobre un paso cuyo rol responsable no es el rol activo. |
+| 403 `consulta.soloFinalizador` | "Cierra la consulta quien completó el paso de finalización." | `PUT /api/consultas/{id}/cierre` hecho por alguien distinto de quien completó el último paso de finalización. |
+| 403 `consulta.soloEmpleado` | "Solo un empleado con rol activo puede atender consultas." | El rol activo ya no está activo, o es PACIENTE. |
+| 403 `consulta.rolClinica` | "Seleccione su rol y clínica." | La sesión no tiene rol activo. |
+| 409 `consulta.sinPasoParaRol` | "Esta consulta no tiene un paso pendiente para su rol." | `PUT /api/consultas/{id}/sesion` sin un paso pendiente del rol activo y sin que le toque cerrarla. |
+
+Al completar un paso (`finalizacion`), su responsable pasa a ser el rol activo de quien lo
+completó; así el dashboard muestra quién lo realizó.
 
 Las acciones admiten el cuerpo vacío aunque lleguen con `Content-Type: application/json`: un
 cuerpo vacío o en blanco se trata como `{}`. Así, `…/retroceso` y `…/sesion` no lo usan,

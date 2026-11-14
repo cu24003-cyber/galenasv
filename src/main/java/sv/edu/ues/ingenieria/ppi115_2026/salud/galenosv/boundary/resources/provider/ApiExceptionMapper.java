@@ -40,7 +40,10 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             "consulta.examenPasoCompletado", "consulta.cerrarAntesCrear", "consulta.completeAntesCerrar",
             "consulta.procedimientoSinFinal", "rolCambio.cerrarAntesCambiar",
             "consulta.retrocesoPrimerPaso", "consulta.retrocesoConRegistros",
-            "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado");
+            "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado", "consulta.sinPasoParaRol");
+    /** B8: el rol activo no puede hacer esta acción de la consulta. */
+    private static final Set<String> FORBIDDEN = Set.of("consulta.rolClinica", "consulta.soloEmpleado",
+            "consulta.noResponsablePaso", "consulta.soloFinalizador");
 
     @Context
     private UriInfo uriInfo;
@@ -99,6 +102,7 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             code = service.getMessageKey();
             if (NOT_FOUND.contains(code)) status = Response.Status.NOT_FOUND.getStatusCode();
             else if (CONFLICT.contains(code)) status = Response.Status.CONFLICT.getStatusCode();
+            else if (FORBIDDEN.contains(code)) status = Response.Status.FORBIDDEN.getStatusCode();
             else if (service.getCause() == null) status = Response.Status.BAD_REQUEST.getStatusCode();
             if (status < 500) message = service.getMessage();
         } else if (error instanceof EntityExistsException || error instanceof OptimisticLockException) {

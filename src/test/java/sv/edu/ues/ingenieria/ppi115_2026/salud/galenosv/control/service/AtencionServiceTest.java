@@ -51,7 +51,7 @@ class AtencionServiceTest {
         when(q.getResultList()).thenReturn(resultado); return q;
     }
     @Test void retomaConsultaExistenteSinCambiarInicio() {
-        PersonaRol pr=new PersonaRol(UUID.randomUUID()); Rol rol=new Rol(); rol.setNombre("Paciente"); rol.setActivo(true); pr.setIdRol(rol);
+        PersonaRol pr=new PersonaRol(UUID.randomUUID()); Rol rol=new Rol(); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true); pr.setIdRol(rol);
         when(em.find(PersonaRol.class,pr.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(pr);
         Consulta c=new Consulta(id); c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00")); c.setIdPersonaRol(pr);
         TypedQuery<Consulta> q=query(Consulta.class,List.of(c)); when(q.getSingleResult()).thenReturn(c);
@@ -77,7 +77,7 @@ class AtencionServiceTest {
     }
     @Test void permiteRetomarConsultaAbiertaDeLaMismaClinica() {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
-        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         Consulta ajena = new Consulta(id); ajena.setIdPersonaRol(paciente);
@@ -103,6 +103,7 @@ class AtencionServiceTest {
         Consulta c=abierta(); OffsetDateTime inicio=c.getFechaInicio();
         ConsultaProcedimientoPaso paso=new ConsultaProcedimientoPaso(); paso.setFechaFin(OffsetDateTime.now());
         ProcedimientoPaso definicion = new ProcedimientoPaso(UUID.randomUUID()); definicion.setIndicaFin(true); paso.setIdProcedimientoPaso(definicion);
+        paso.setIdPersonaRol(medico); // B8: cierra quien completó el paso de finalización
         ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setFechaInicio(inicio); paso.setIdConsultaProcedimiento(cp);
         query(ConsultaProcedimientoPaso.class,List.of(paso)); query(ConsultaProcedimiento.class,List.of(cp));
         servicio.cerrar(id,"referencia","observación");
@@ -376,7 +377,7 @@ class AtencionServiceTest {
     }
     private PersonaRol paciente(Clinica clinica) {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
-        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(clinica);
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         return paciente;
@@ -433,7 +434,7 @@ class AtencionServiceTest {
     }
     @Test void aperturaRechazaResponsableDeOtraClinica() {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
-        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(new Clinica(UUID.randomUUID()));
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         PersonaRol doctor = responsable(new Clinica(UUID.randomUUID()), "Médico");
@@ -468,16 +469,17 @@ class AtencionServiceTest {
         assertNull(paso.getIdPersonaRol());
     }
 
-    @Test void administracionAbreConsultaSinObtenerPermisosMedicos() {
+    /** B8: Atención al público (ADMINISTRACION) es empleado: crea la consulta y ve el historial de su clínica. */
+    @Test void administracionAbreConsultaYConsultaElHistorialDeSuClinica() {
         medico.getIdRol().setCodigo("ADMINISTRACION"); medico.getIdRol().setNombre("Secretaría");
         PersonaRol paciente = new PersonaRol(UUID.randomUUID()); Rol rol = new Rol(UUID.randomUUID());
-        rol.setNombre("Paciente"); rol.setActivo(true); paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
+        rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true); paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
         when(em.find(PersonaRol.class,paciente.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         query(Consulta.class,List.of());
         Consulta consulta=servicio.crear(paciente.getIdPersonaRol(),"REF","Control");
         assertEquals(paciente,consulta.getIdPersonaRol()); assertNotNull(consulta.getFechaInicio());
         assertEquals("Control",consulta.getObservaciones()); verify(em).persist(consulta);
-        assertThrows(ServiceException.class,()->servicio.historial());
+        assertEquals(List.of(), servicio.historial());
     }
 
     // ---- B4: retroceso de un paso (HU4)
@@ -600,12 +602,15 @@ class AtencionServiceTest {
         assertEquals("consulta.yaCerrada", r.codigo());
     }
 
-    @Test void retrocesoEnConsultaDeOtraClinicaORolNoMedicoSeRechaza() {
+    @Test void retrocesoEnConsultaDeOtraClinicaORolAjenoAlPasoSeRechaza() {
         Retroceso r = new Retroceso(); r.c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
         assertEquals("consulta.otraClinica", r.codigo());
         r.c.getIdPersonaRol().setIdClinica(medico.getIdClinica());
-        medico.getIdRol().setNombre("Administración"); medico.getIdRol().setCodigo("ADMINISTRACION");
-        assertEquals("consulta.soloMedico", r.codigo());
+        Rol doctor = new Rol(UUID.randomUUID()); doctor.setNombre("Doctor"); doctor.setActivo(true); r.defB.setIdRol(doctor);
+        medico.getIdRol().setNombre("Atención al público"); medico.getIdRol().setCodigo("ADMINISTRACION");
+        assertEquals("consulta.noResponsablePaso", r.codigo());
+        medico.getIdRol().setCodigo("PACIENTE");
+        assertEquals("consulta.soloEmpleado", r.codigo());
     }
 
     @Test void retrocesoDeUnPasoDeOtraConsultaDa400PasoPropio() {
@@ -683,7 +688,7 @@ class AtencionServiceTest {
         assertEquals(2, a.listar().size());
     }
 
-    @Test void asignablesRechazanPasoAjenoOtraClinicaYRolNoMedico() {
+    @Test void asignablesRechazanPasoAjenoOtraClinicaYRolQueNoEsDeEmpleado() {
         Asignables a = new Asignables();
         a.cp.setIdConsulta(new Consulta(UUID.randomUUID()));
         assertEquals("consulta.pasoPropio", a.codigo());
@@ -691,8 +696,12 @@ class AtencionServiceTest {
         a.c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
         assertEquals("consulta.otraClinica", a.codigo());
         a.c.getIdPersonaRol().setIdClinica(medico.getIdClinica());
-        medico.getIdRol().setNombre("Administración"); medico.getIdRol().setCodigo("ADMINISTRACION");
-        assertEquals("consulta.soloMedico", a.codigo());
+        // B8: listar solo lee, así que cualquier empleado de la clínica puede; un PACIENTE no.
+        medico.getIdRol().setNombre("Atención al público"); medico.getIdRol().setCodigo("ADMINISTRACION");
+        assertEquals(2, a.listar().size());
+        a.jpql.clear();
+        medico.getIdRol().setNombre("Paciente"); medico.getIdRol().setCodigo("PACIENTE");
+        assertEquals("consulta.soloEmpleado", a.codigo());
     }
 
     // ---- B5: órdenes con examen (HU4)

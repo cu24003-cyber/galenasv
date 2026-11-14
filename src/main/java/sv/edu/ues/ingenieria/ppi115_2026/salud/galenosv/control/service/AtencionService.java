@@ -25,8 +25,8 @@ public class AtencionService {
         return pacientesClinica().stream().filter(r -> r.getIdPersona().getIdPersona().equals(persona)).toList();
     }
     public List<PersonaRol> pacientesClinica() {
-        PersonaRol medico = medicoActivo();
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
+        PersonaRol medico = empleadoActivo();
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND rol.codigo='PACIENTE' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
                 .setParameter("clinica", medico.getIdClinica()).getResultList();
     }
     public List<PersonaRol> responsables(UUID clinica) {
@@ -41,30 +41,50 @@ public class AtencionService {
         }
         return rol;
     }
-    private PersonaRol medicoActivo() {
+    /**
+     * B8: el rol activo de la sesión, releído de la base. Vale cualquier empleado (rol activo
+     * distinto de PACIENTE, con clínica); qué paso atiende lo decide {@link #exigirResponsable}.
+     */
+    private PersonaRol empleadoActivo() {
         PersonaRol actual = sesion == null ? null : sesion.getRolActivo();
-        if (actual == null || actual.getIdPersonaRol() == null) throw ServiceException.localizada("consulta.medicoClinica", "Seleccione su rol médico y clínica.");
-        PersonaRol medico = em.find(PersonaRol.class, actual.getIdPersonaRol());
-        String nombreRol = medico == null || medico.getIdRol() == null ? "" : medico.getIdRol().getNombre();
-        String rolNormalizado = nombreRol == null ? "" : java.text.Normalizer.normalize(nombreRol.trim(), java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
-        if (medico == null || medico.getIdRol() == null || medico.getIdClinica() == null
-                || !Boolean.TRUE.equals(medico.getIdRol().getActivo())
-                || !("DOCTOR".equals(medico.getIdRol().getCodigo()) || medico.getIdRol().getCodigo() == null
-                    && Set.of("medico", "medica", "doctor", "doctora").contains(rolNormalizado))) {
-            throw ServiceException.localizada("consulta.soloMedico", "Solo un médico con rol activo puede consultar expedientes clínicos.");
+        if (actual == null || actual.getIdPersonaRol() == null) throw ServiceException.localizada("consulta.rolClinica", "Seleccione su rol y clínica.");
+        PersonaRol empleado = em.find(PersonaRol.class, actual.getIdPersonaRol());
+        if (empleado == null || empleado.getIdClinica() == null || !AutenticacionService.esEmpleado(empleado)) {
+            throw ServiceException.localizada("consulta.soloEmpleado", "Solo un empleado con rol activo puede atender consultas.");
         }
-        return medico;
+        return empleado;
     }
+    /** Quien crea una consulta: cualquier empleado, incluida Atención al público (ADMINISTRACION). */
     private PersonaRol operadorConsulta() {
-        PersonaRol actual = sesion == null ? null : sesion.getRolActivo();
-        PersonaRol operador = actual == null ? null : em.find(PersonaRol.class, actual.getIdPersonaRol());
-        if (operador != null && operador.getIdRol() != null && "ADMINISTRACION".equals(operador.getIdRol().getCodigo())
-                && Boolean.TRUE.equals(operador.getIdRol().getActivo()) && operador.getIdClinica() != null) return operador;
-        return medicoActivo();
+        return empleadoActivo();
+    }
+    /**
+     * B8: el rol activo debe ser el rol responsable del paso (la clínica ya la valida
+     * comprobarClinica). Un paso sin definición o sin rol (histórico) no tiene restricción de rol.
+     * Devuelve el rol activo para registrar quién hizo la acción.
+     */
+    private PersonaRol exigirResponsable(ConsultaProcedimientoPaso paso) {
+        PersonaRol actual = empleadoActivo();
+        Rol requerido = paso.getIdProcedimientoPaso() == null ? null : paso.getIdProcedimientoPaso().getIdRol();
+        if (requerido != null && !requerido.getIdRol().equals(actual.getIdRol().getIdRol())) {
+            throw ServiceException.localizada("consulta.noResponsablePaso", "Este paso lo atiende el rol " + requerido.getNombre() + ".", requerido.getNombre());
+        }
+        return actual;
+    }
+    private static boolean esDelRol(ConsultaProcedimientoPaso paso, PersonaRol actual) {
+        Rol requerido = paso.getIdProcedimientoPaso() == null ? null : paso.getIdProcedimientoPaso().getIdRol();
+        return requerido == null || requerido.getIdRol().equals(actual.getIdRol().getIdRol());
+    }
+    /** El paso de finalización completado más reciente: quien lo completó es quien cierra. */
+    private static Optional<ConsultaProcedimientoPaso> ultimoFinal(List<ConsultaProcedimientoPaso> pasos) {
+        return pasos.stream().filter(p -> p.getIdProcedimientoPaso() != null && Boolean.TRUE.equals(p.getIdProcedimientoPaso().getIndicaFin())
+                && p.getFechaFin() != null).max(Comparator.comparing(ConsultaProcedimientoPaso::getFechaFin));
+    }
+    private static boolean esFinalizador(List<ConsultaProcedimientoPaso> pasos, PersonaRol actual) {
+        return ultimoFinal(pasos).map(p -> p.getIdPersonaRol() != null && p.getIdPersonaRol().getIdPersonaRol().equals(actual.getIdPersonaRol())).orElse(false);
     }
     private void comprobarClinica(Consulta consulta) {
-        PersonaRol medico = medicoActivo();
+        PersonaRol medico = empleadoActivo();
         if (consulta == null || consulta.getIdPersonaRol() == null || consulta.getIdPersonaRol().getIdClinica() == null
                 || !medico.getIdClinica().getIdClinica().equals(consulta.getIdPersonaRol().getIdClinica().getIdClinica())) {
             throw ServiceException.localizada("consulta.otraClinica", "Esta consulta pertenece a otra clínica.");
@@ -78,12 +98,12 @@ public class AtencionService {
         return iniciarConsulta(pacienteId, null, referencia, observaciones, false);
     }
     private Consulta iniciarConsulta(UUID rolId, UUID responsableId, String referencia, String observaciones, boolean retomar) {
-        PersonaRol medico = retomar ? medicoActivo() : operadorConsulta();
-        if (retomar && !medico.getIdPersonaRol().equals(responsableId)) throw ServiceException.localizada("consulta.medicoPropio", "El médico activo debe abrir su propia consulta.");
+        PersonaRol medico = retomar ? empleadoActivo() : operadorConsulta();
+        if (retomar && !medico.getIdPersonaRol().equals(responsableId)) throw ServiceException.localizada("consulta.empleadoPropio", "El empleado activo debe abrir su propia consulta.");
         String referenciaValidada = texto(referencia, "La referencia", "consulta.longitudReferencia", 255);
         String notasValidadas = texto(observaciones, "Las observaciones", "consulta.longitudObservaciones", 255);
         PersonaRol rol=rolId == null ? null : em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
-        if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || rol.getIdRol().getNombre()==null || !"paciente".equalsIgnoreCase(rol.getIdRol().getNombre().trim()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw ServiceException.localizada("consulta.rolPaciente", "Seleccione el rol del paciente.");
+        if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || !AutenticacionService.PACIENTE.equals(rol.getIdRol().getCodigo()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw ServiceException.localizada("consulta.rolPaciente", "Seleccione el rol del paciente.");
         responsable(medico.getIdPersonaRol(), rol);
         List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
         if(!abiertas.isEmpty()) {
@@ -95,6 +115,22 @@ public class AtencionService {
         c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas);
         em.persist(c); em.flush(); return retomar ? cargar(c.getIdConsulta()) : c;
     }
+    /**
+     * B8, HU3: para seleccionar una consulta (PUT consultas/{id}/sesion) debe estar abierta y
+     * tener un paso PENDIENTE del rol activo, o tener todos sus pasos completados y que el rol
+     * activo haya completado la finalización (le falta cerrarla). Sin pasos, cualquier empleado
+     * la puede atender para agregar el procedimiento.
+     */
+    public void exigirAtendible(UUID id) {
+        Consulta c = cargar(id);
+        if (c.getFechaFin() != null) throw ServiceException.localizada("consulta.yaCerrada", "La consulta ya está cerrada.");
+        PersonaRol actual = empleadoActivo();
+        List<ConsultaProcedimientoPaso> lista = pasos(id);
+        if (lista.isEmpty()) return;
+        if (lista.stream().anyMatch(p -> p.getFechaFin() == null && esDelRol(p, actual))) return;
+        if (lista.stream().allMatch(p -> p.getFechaFin() != null) && esFinalizador(lista, actual)) return;
+        throw ServiceException.localizada("consulta.sinPasoParaRol", "Esta consulta no tiene un paso pendiente para su rol.");
+    }
     public Consulta cargar(UUID id) {
         Consulta c = em.createQuery("SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol r JOIN FETCH r.idPersona JOIN FETCH r.idClinica WHERE c.idConsulta=:id",Consulta.class).setParameter("id",id).getSingleResult();
         comprobarClinica(c);
@@ -104,7 +140,7 @@ public class AtencionService {
     public List<Consulta> historial(LocalDate desde, LocalDate hasta) {
         if (desde != null && hasta != null && desde.isAfter(hasta))
             throw ServiceException.localizada("consulta.rangoInvalido", "La fecha Desde debe ser anterior o igual a Hasta.");
-        PersonaRol medico = medicoActivo();
+        PersonaRol medico = empleadoActivo();
         ZoneId zona = ZoneId.of("America/El_Salvador");
         OffsetDateTime inicio = desde == null ? null : desde.atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
         OffsetDateTime finExclusivo = hasta == null ? null : hasta.plusDays(1).atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
@@ -214,6 +250,7 @@ public class AtencionService {
         Consulta c = abierta(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
         if (paso.getFechaFin() != null) throw ServiceException.localizada("consulta.pasoYaCompletado", "El paso ya está completado.");
+        exigirResponsable(paso);
         sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol resp = responsable(responsableId, c.getIdPersonaRol());
         if (paso.getIdProcedimientoPaso() != null && paso.getIdProcedimientoPaso().getIdRol() != null && !resp.getIdRol().getIdRol().equals(paso.getIdProcedimientoPaso().getIdRol().getIdRol())) {
             throw ServiceException.localizada("consulta.rolInvalido", "El responsable debe tener el rol " + paso.getIdProcedimientoPaso().getIdRol().getNombre());
@@ -225,6 +262,7 @@ public class AtencionService {
     }
     public void completar(UUID consulta,UUID pasoId,String valor) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);
+        PersonaRol autor = exigirResponsable(paso);
         if(paso.getFechaFin()!=null) return;
         if(paso.getIdProcedimientoPaso()==null) throw ServiceException.localizada("consulta.pasoSinDefinicionHistorica", "El paso histórico no tiene una definición de catálogo.");
         List<ProcedimientoPasoSecuencia> previos=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPasoReferencia=:p",ProcedimientoPasoSecuencia.class).setParameter("p",paso.getIdProcedimientoPaso()).getResultList();
@@ -234,6 +272,8 @@ public class AtencionService {
         }
         paso.setValor(valor == null || valor.isBlank() ? null : valor.trim());
         paso.setEstado("COMPLETADO"); paso.setFechaFin(ahora());
+        // HU3 "quién los realizó": el paso queda a nombre de quien lo completó.
+        paso.setIdPersonaRol(autor);
         List<ProcedimientoPasoSecuencia> siguientes=em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s WHERE s.idProcedimientoPaso=:p",ProcedimientoPasoSecuencia.class)
                 .setParameter("p",paso.getIdProcedimientoPaso()).getResultList();
         for (ProcedimientoPasoSecuencia siguiente : siguientes) {
@@ -262,6 +302,7 @@ public class AtencionService {
     public ConsultaProcedimientoPaso retroceder(UUID consulta, UUID pasoId) {
         abierta(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        exigirResponsable(paso);
         if (paso.getFechaFin() != null || !"PENDIENTE".equals(paso.getEstado()))
             throw ServiceException.localizada("consulta.pasoYaCompletado", "El paso ya está completado.");
         if (paso.getIdProcedimientoPaso() == null)
@@ -301,6 +342,7 @@ public class AtencionService {
     public List<TipoExamen> tipos(String texto) { return em.createQuery("SELECT t FROM TipoExamen t WHERE t.activo=true AND LOWER(t.nombre) LIKE :q ORDER BY t.nombre",TipoExamen.class).setParameter("q","%"+(texto == null ? "" : texto.toLowerCase(Locale.ROOT))+"%").setMaxResults(30).getResultList(); }
     public Examen examen(UUID consulta,UUID pasoId,String nombre,String notas,UUID tipoId) {
         abierta(consulta); ConsultaProcedimientoPaso paso=pasoPropio(consulta,pasoId);
+        exigirResponsable(paso);
         TipoExamen tipo=tipoId==null?null:em.find(TipoExamen.class,tipoId);
         if(nombre==null || nombre.isBlank() || nombre.trim().length()>155 || tipo==null || !Boolean.TRUE.equals(tipo.getActivo())) throw ServiceException.localizada("consulta.examenValido", "Indique un nombre de hasta 155 caracteres y un tipo de examen activo.");
         if(paso.getFechaFin()!=null) throw ServiceException.localizada("consulta.examenPasoCompletado", "No se pueden registrar exámenes en un paso completado.");
@@ -338,6 +380,7 @@ public class AtencionService {
     public OrdenExamen ordenar(UUID consulta, UUID pasoId, UUID examenId, String indicaciones) {
         abierta(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
+        exigirResponsable(paso);
         if (paso.getFechaFin() != null) throw ServiceException.localizada("consulta.ordenPasoCompletado", "No se pueden crear órdenes en un paso completado.");
         if (examenId == null) throw ServiceException.localizada("consulta.examenObligatorio", "Seleccione el examen que ordena.");
         boolean asignable = paso.getIdProcedimientoPaso() != null && em.createQuery("SELECT COUNT(pe) FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
@@ -355,6 +398,7 @@ public class AtencionService {
     /** Vista JSF: orden sin examen, con indicaciones obligatorias (decisión 1A de la B5). */
     public OrdenExamen ordenar(UUID consulta,UUID paso,String indicaciones) {
         abierta(consulta); ConsultaProcedimientoPaso p=pasoPropio(consulta,paso);
+        exigirResponsable(p);
         if(indicaciones==null || indicaciones.isBlank() || indicaciones.trim().length()>255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");
         if(p.getFechaFin()!=null) throw ServiceException.localizada("consulta.ordenPasoCompletado", "No se pueden crear órdenes en un paso completado.");
         OrdenExamen o=new OrdenExamen(UUID.randomUUID()); o.setIdConsultaProcedimientoPaso(p); o.setIndicaciones(indicaciones.trim()); o.setFechaCreacion(ahora()); em.persist(o);
@@ -395,6 +439,9 @@ public class AtencionService {
                     "El procedimiento " + procedimiento.getIdProcedimiento().getNombre() + " no ha llegado a un paso final.",
                     procedimiento.getIdProcedimiento().getNombre());
         }
+        // B8: cierra quien completó el paso de finalización (el último en completarse).
+        if (!esFinalizador(pasos, empleadoActivo()))
+            throw ServiceException.localizada("consulta.soloFinalizador", "Cierra la consulta quien completó el paso de finalización.");
         String referenciaValidada = texto(referencia, "La referencia", "consulta.longitudReferencia", 255);
         String notasValidadas = texto(notas, "Las observaciones", "consulta.longitudObservaciones", 255);
         OffsetDateTime fin=ahora(); c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas); c.setFechaFin(fin);
