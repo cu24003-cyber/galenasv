@@ -52,7 +52,7 @@ Detalle completo en `docs/autenticacion.md`. Resumen del contrato (HU1, HU2):
 | Operación | Sesión | Cuerpo / respuesta |
 | --- | --- | --- |
 | `GET /api/publico/tipos-documento` | No | 200 con `[{idTipoDocumento, nombre, indicaciones, expresionRegular}]`, solo tipos activos, ordenados por nombre. `indicaciones` y `expresionRegular` pueden ser `null`. |
-| `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"00000000-1"}` → 204 y cookie nueva. |
+| `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"01000001-1"}` → 204 y cookie nueva. |
 | `GET /api/auth/me` | Sí | Usuario, rol activo y `csrfToken`. |
 | `POST /api/auth/logout` | Sí + `X-CSRF-Token` | 204. |
 
@@ -94,8 +94,8 @@ siempre está) en un rol creado sin código; el frontend debe mostrar `nombreRol
 
 ```json
 [
-  {"idPersonaRol":"…","codigoRol":"DOCTOR","nombreRol":"Doctor","idClinica":"…","nombreClinica":"Clínica de demostración","activa":true},
-  {"idPersonaRol":"…","codigoRol":"ADMINISTRACION","nombreRol":"Administración","idClinica":"…","nombreClinica":"Clínica de demostración","activa":false}
+  {"idPersonaRol":"…","codigoRol":"DOCTOR","nombreRol":"Doctor","idClinica":"…","nombreClinica":"Clínica Santa Ana","activa":true},
+  {"idPersonaRol":"…","codigoRol":"DOCTOR","nombreRol":"Doctor","idClinica":"…","nombreClinica":"Clínica San Salvador","activa":false}
 ]
 ```
 
@@ -141,12 +141,12 @@ Errores:
 [{
   "idConsulta": "…", "fechaInicio": "2026-11-13T08:00:00-06:00", "fechaFin": null,
   "pendienteParaMi": true,
-  "paciente": {"nombres": "…", "apellidos": "…", "fechaNacimiento": "1999-12-31", "edad": 26,
-               "documentos": [{"tipoDocumento": "DUI", "numero": "00000000-3"}]},
+  "paciente": {"nombres": "Ana", "apellidos": "Martínez", "fechaNacimiento": "1992-04-10", "edad": 34,
+               "documentos": [{"tipoDocumento": "DUI", "numero": "01000004-4"}]},
   "procedimientos": [{
-    "idConsultaProcedimiento": "…", "nombre": "Consulta general de demostración",
+    "idConsultaProcedimiento": "…", "nombre": "Consulta general",
     "fechaInicio": "…", "fechaFin": null,
-    "pasos": [{"idConsultaProcedimientoPaso": "…", "nombre": "Toma de signos vitales", "orden": 1, "nivel": 0,
+    "pasos": [{"idConsultaProcedimientoPaso": "…", "nombre": "Triaje", "orden": 1, "nivel": 0,
                "estado": "COMPLETADO", "responsable": {"nombre": "…", "rol": "Enfermera"},
                "rolPaso": {"idRol": "…", "nombre": "Enfermera"},
                "fechaInicio": "…", "fechaFin": "…", "tieneValor": true}]
@@ -273,13 +273,13 @@ POST /galenosv/api/publico/citas
 Origin: http://localhost:9080
 Content-Type: application/json
 
-{"idTipoDocumento":"de110004-0000-4000-8000-000000000001","numeroDocumento":"00000000-3",
- "idClinica":"de110000-0000-4000-8000-000000000001","desde":"2026-11-01","hasta":"2026-11-30"}
+{"idTipoDocumento":"UUID del DUI","numeroDocumento":"01000004-4",
+ "idClinica":"de120000-0000-4000-8000-000000000001","desde":"2026-11-01","hasta":"2026-11-30"}
 ```
 
 ```json
-[{"idConsulta":"de110009-0000-4000-8000-000000000002","fechaInicio":"2026-11-12T08:00:00-06:00",
-  "nombreClinica":"Clínica de demostración","procedimientos":["Consulta general de demostración"]}]
+[{"idConsulta":"de120010-0000-4000-8000-000000000003","fechaInicio":"2026-11-13T08:00:00-06:00",
+  "nombreClinica":"Clínica Santa Ana","procedimientos":["Consulta general"]}]
 ```
 
 ## Filtros y colecciones relacionadas
@@ -541,8 +541,8 @@ demás campos nulos. La vista JSF de Consulta sigue creando órdenes solo con in
 
 **Despliegue.** La entidad `OrdenExamen` mapea `orden_examen.id_examen`: aplique
 `docs/migrations/20261113_orden_examen_examen.sql` **antes** de desplegar este código; sin la
-columna, toda lectura o escritura de órdenes falla. Los datos demo de exámenes están en
-`docs/migrations/20261113_datos_desarrollo_examenes.sql` y los aplica
+columna, toda lectura o escritura de órdenes falla. Los datos demo de exámenes (con sus tipos y órdenes) están en
+`docs/migrations/20261113_datos_demo_rubrica.sql` y `…_consultas.sql`, y los aplica
 `scripts/preparar-bd-desarrollo.sh`.
 
 El cierre conserva la referencia y las observaciones existentes cuando se omiten o se envían null. El cierre repetido no altera las fechas de una consulta ya cerrada. Los conflictos de estado, como editar una consulta cerrada, crear órdenes de pasos completados o cerrar con pendientes, devuelven 409. Las acciones de un paso también funcionan sobre su ruta anidada y comprueban que pertenezca al procedimiento indicado.

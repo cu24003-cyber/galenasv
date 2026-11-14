@@ -29,13 +29,13 @@ docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -
     < "$raiz/docs/migrations/20261112_documento_tipo_valor_unico.sql"
 docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
     < "$raiz/docs/migrations/20261113_orden_examen_examen.sql"
+# Datos demo del guion del Primer Parcial (docs/datos-demo-rubrica.md). Si la base tiene la demo
+# anterior (admin.demo, doctor.demo), antes aplique 20261113_limpieza_demo_anterior.sql (docs/LEVANTAR.md).
 {
     printf '\\set password_hash %s\n' "$hash"
-    cat "$raiz/docs/migrations/20261111_datos_desarrollo.sql"
+    cat "$raiz/docs/migrations/20261113_datos_demo_rubrica.sql"
 } | docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos"
 unset hash
 docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
-    < "$raiz/docs/migrations/20261112_datos_desarrollo_clinicos.sql"
-docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
-    < "$raiz/docs/migrations/20261113_datos_desarrollo_examenes.sql"
-printf 'Base preparada: %s. Entra con tipo DUI y 00000000-1 (admin.demo) o 00000000-2 (doctor.demo). Configura el mismo nombre y credenciales de conexión en Liberty y reinicia el backend.\n' "$base_datos"
+    < "$raiz/docs/migrations/20261113_datos_demo_rubrica_consultas.sql"
+printf 'Base preparada: %s. Entra con tipo DUI y 01000001-1 (Carlos, Doctor), 01000002-2 (Lucía, Enfermera) o 01000003-3 (Marta, Atención al público). Configura el mismo nombre y credenciales de conexión en Liberty y reinicia el backend.\n' "$base_datos"

@@ -3,7 +3,7 @@
 Guía para dejar el backend (`galenasv`) funcionando en otra computadora para la revisión:
 
 - Open Liberty en `http://localhost:9080/galenosv`, con la API en `/galenosv/api`;
-- PostgreSQL en Docker, con los datos demo de las HU1 a HU4.
+- PostgreSQL en Docker, con los datos demo del guion del Primer Parcial para las HU1 a HU4.
 
 Todos los comandos se ejecutan **desde la raíz del repositorio `galenasv`**, salvo que se indique
 otra cosa.
@@ -116,13 +116,65 @@ El script hace, en este orden y dentro del contenedor (`docker exec … psql`):
 2. aplica `docs/migrations/20261111_base_completa.sql`;
 3. aplica `20261112_documento_tipo_valor_unico.sql`;
 4. aplica `20261113_orden_examen_examen.sql`, la columna `orden_examen.id_examen` de la HU4;
-5. carga `20261111_datos_desarrollo.sql`: clínica, cuentas demo y DUI. Genera un hash aleatorio
-   con `ContrasenaService`, porque el login es por documento y no usa contraseña;
-6. carga `20261112_datos_desarrollo_clinicos.sql`: segunda clínica, procedimiento y siete consultas;
-7. carga `20261113_datos_desarrollo_examenes.sql`: catálogo de exámenes asignables.
+5. carga `20261113_datos_demo_rubrica.sql`: los datos demo del guion del Primer Parcial
+   (`docs/datos-demo-rubrica.md`): clínicas, roles, tipos, exámenes, procedimientos, personas,
+   documentos, contactos, asignaciones y cuentas. Genera un hash aleatorio con
+   `ContrasenaService`, porque el login es por documento y no usa contraseña;
+6. carga `20261113_datos_demo_rubrica_consultas.sql`: las 11 consultas demo con sus pasos y órdenes.
 
-Debe terminar con `Base preparada: galenasv. …`. **Se puede repetir sin error**: se verificó la
-secuencia completa dos veces sobre una base existente. No borra datos.
+Debe terminar con `Base preparada: galenasv. …`. **Se puede repetir sin error** y deja los mismos
+datos (se verificó cargando dos veces). No borra datos. Para comprobar lo cargado:
+
+```bash
+docker exec -i galenasv psql -X -v ON_ERROR_STOP=1 -U postgres -d galenasv \
+  < docs/migrations/tests/datos_demo_rubrica_test.sql
+# Datos demo del guion correctos.
+```
+
+Si la base ya tenía la demo anterior (admin.demo, doctor.demo, paciente.demo), siga antes la
+sección 5.1.
+
+### 5.1. Si la base ya tiene la demo anterior
+
+Hasta la B8 la demo era "Clínica de demostración" con admin.demo, doctor.demo y paciente.demo
+(UUID `de110000…`). La demo nueva no la borra: se quita con un script aparte, que **no** ejecuta
+`preparar-bd-desarrollo.sh`. Haga los pasos en este orden. En los ejemplos, `CONTENEDOR`, `BASE` y
+`USUARIO` son los mismos argumentos del script (por defecto `galenasv`, `galenasv`, `postgres`).
+
+1. **Respaldo** de la base completa, fuera del contenedor, y comprobación de que se puede leer:
+   ```bash
+   mvn -DskipTests package
+   RESPALDO=respaldo-galenasv-$(date +%Y%m%d-%H%M%S).dump
+   docker exec CONTENEDOR pg_dump -U USUARIO -d BASE -Fc > "$RESPALDO"
+   docker exec -i CONTENEDOR pg_restore -l < "$RESPALDO" | head -5
+   ```
+2. **Limpieza** de la demo anterior. Borra sus clínicas, personas, cuentas, procedimiento,
+   exámenes y consultas, incluido lo que se les agregó desde la app. Conserva el tipo de
+   documento DUI. Si alguna fila de otra persona depende de la demo (por ejemplo, una asignación
+   en "Clínica de demostración"), se detiene **sin borrar nada** y dice cuántas hay:
+   ```bash
+   docker exec -i CONTENEDOR psql -X -v ON_ERROR_STOP=1 -U USUARIO -d BASE \
+     < docs/migrations/20261113_limpieza_demo_anterior.sql
+   docker exec -i CONTENEDOR psql -X -v ON_ERROR_STOP=1 -U USUARIO -d BASE \
+     < docs/migrations/tests/datos_demo_rubrica_limpieza_test.sql
+   # Demo anterior eliminada.
+   ```
+3. **Datos nuevos:**
+   ```bash
+   bash scripts/preparar-bd-desarrollo.sh CONTENEDOR BASE USUARIO
+   ```
+4. **Prueba SQL** de los datos nuevos:
+   ```bash
+   docker exec -i CONTENEDOR psql -X -v ON_ERROR_STOP=1 -U USUARIO -d BASE \
+     < docs/migrations/tests/datos_demo_rubrica_test.sql
+   # Datos demo del guion correctos.
+   ```
+
+Si algo sale mal, se vuelve al estado del respaldo con:
+
+```bash
+docker exec -i CONTENEDOR pg_restore -U USUARIO -d BASE --clean --if-exists --single-transaction < "$RESPALDO"
+```
 
 ## 6. Arrancar Liberty
 
@@ -146,19 +198,22 @@ y la feature `jakartaee-11.0`, así que tarda varios minutos. Al recompilar (`mv
 2. **API pública, sin sesión:**
    ```bash
    curl -s http://localhost:9080/galenosv/api/publico/tipos-documento
-   # [{"expresionRegular":…,"idTipoDocumento":"de110004-0000-4000-8000-000000000001","indicaciones":…,"nombre":"DUI"}]
+   # [{…,"nombre":"DUI"},{…,"nombre":"Pasaporte"}]
    ```
-   El JSON debe incluir el DUI demo; si responde `[]`, faltan los datos del paso 5.
-3. **Login de un empleado.** Responde `204` y crea la sesión; la cabecera `Origin` es
-   obligatoria, ver "Errores comunes":
+   Debe listar DUI y Pasaporte (Licencia de conducir está inactiva); si responde `[]`, faltan los
+   datos del paso 5. El `idTipoDocumento` del DUI depende de la base: es `de120003-…-1` en una
+   base nueva y el UUID que ya tenía el DUI en una base existente (por ejemplo `de110004-…-1`).
+3. **Login de un empleado** (Carlos Gómez, Doctor). Responde `204` y crea la sesión; la cabecera
+   `Origin` es obligatoria, ver "Errores comunes". El ejemplo toma el UUID del DUI con `jq`:
    ```bash
+   DUI=$(curl -s http://localhost:9080/galenosv/api/publico/tipos-documento | jq -r '.[] | select(.nombre=="DUI") | .idTipoDocumento')
    curl -s -o /dev/null -w '%{http_code}\n' -c /tmp/galenosv.cookies \
      -H 'Origin: http://localhost:3000' -H 'Content-Type: application/json' \
      -X POST http://localhost:9080/galenosv/api/auth/login \
-     -d '{"idTipoDocumento":"de110004-0000-4000-8000-000000000001","numeroDocumento":"00000000-2"}'
+     -d "{\"idTipoDocumento\":\"$DUI\",\"numeroDocumento\":\"01000001-1\"}"
    # 204
    curl -s -b /tmp/galenosv.cookies http://localhost:9080/galenosv/api/atencion/dashboard
-   # [ … consultas de hoy de la clínica 1 … ]
+   # [ … consultas de hoy de Clínica Santa Ana … ]
    ```
 
 `GET /api/jakartaee11` **no** sirve para comprobar el servidor: exige sesión y sin ella responde
@@ -194,48 +249,75 @@ bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
 Usa los mismos argumentos y valores por defecto que `preparar-bd-desarrollo.sh` y pide
 confirmación (`s`).
 
-- **Qué hace:** vuelve a anclar las siete consultas demo al día de hoy y les devuelve su estado
-  inicial. Borra las órdenes, resultados, pasos y procedimientos agregados desde la app **solo**
-  a esas consultas.
+- **Qué hace:** vuelve a anclar las 11 consultas demo al día de hoy y les devuelve su estado
+  inicial. Borra los resultados, órdenes, pasos y procedimientos agregados desde la app **solo**
+  a esas consultas, y restaura las dos órdenes demo (Hemograma completo en SA-1 y Glucosa en
+  ayunas en SA-6).
 - **Qué no toca:** ningún otro dato.
 - **No hace falta reiniciar Liberty.**
 
+Para comprobarlo, la misma prueba SQL del paso 5 (`tests/datos_demo_rubrica_test.sql`).
+
 ## 10. Datos demo
 
-Todos los documentos son de tipo **DUI** (`de110004-0000-4000-8000-000000000001`). Los datos son
-ficticios.
+Son los del guion del Primer Parcial; el detalle completo está en `docs/datos-demo-rubrica.md`.
+Todos los datos son inventados. Empleado es cualquier rol activo excepto Paciente; cada paso lo
+atiende quien tiene su rol en la clínica, y cierra la consulta quien completó el paso de
+finalización (docs/flujo-consulta.md).
 
-| DUI | Cuenta | Asignaciones (rol y clínica) | Login |
+| Documento | Persona | Asignaciones (rol y clínica) | Login y uso |
 | --- | --- | --- | --- |
-| `00000000-1` | admin.demo | ADMINISTRACION en Clínica de demostración | Entra (HU2). |
-| `00000000-2` | doctor.demo | DOCTOR en Clínica de demostración (**rol inicial**); DOCTOR en Clínica de demostración Norte; ADMINISTRACION en Clínica de demostración | Entra y puede cambiar de rol y clínica (HU3). |
-| `00000000-3` | paciente.demo | PACIENTE en las dos clínicas | **Rechazado** (401): solo los empleados se autentican (HU2). |
+| DUI `01000001-1` o Pasaporte `A10000001` | Carlos Gómez | Doctor en Santa Ana (**rol inicial**) y en San Salvador | Entra (HU2); selector con 2 clínicas (HU3); atiende la Consulta médica de SA-3 y SS-2 (HU4). |
+| DUI `01000002-2` | Lucía Pérez | Enfermera en Santa Ana | Entra; atiende el Triaje de SA-5 y la Toma de presión de SA-4. |
+| DUI `01000003-3` | Marta López | Atención al público en Santa Ana y en San Salvador | Entra; completa la Entrega de indicaciones de SA-6 y cierra la consulta. |
+| DUI `01000006-6` | Rosa Méndez | Enfermera en San Salvador | Entra. |
+| DUI `01000007-7` | Jorge Ruiz | Doctor solo en San Salvador | Entra. |
+| DUI `01000004-4` o Pasaporte `B10000004` | Ana Martínez | Paciente en Santa Ana y en San Salvador | **Rechazada** (401). HU1: citas pasadas, de hoy y futuras en 2 clínicas. |
+| DUI `01000008-8`, `01000009-9` | Julia Flores, Juan Vásquez | Paciente en Santa Ana | Rechazados (401). |
+| DUI `01000005-5` | Pedro Hernández | Ninguna | **Rechazado** (401). |
+| `12345678-9` | Nadie | — | HU1 y HU2: mensaje neutro. |
 
-Las siete consultas son de paciente.demo y todas usan el procedimiento demo de 3 pasos; las fechas se calculan al cargar o al reiniciar:
+Cuentas (`usuario.nombre_usuario`): carlos.gomez, lucia.perez, marta.lopez, rosa.mendez y
+jorge.ruiz. El login no las usa: es por tipo y número de documento.
 
-| Consulta | Clínica | Fecha | Estado inicial |
-| --- | --- | --- | --- |
-| `de110009-…-1` | Demostración | hace 20 días, 09:00 | Cerrada, los 3 pasos completados. |
-| `de110009-…-2` | Demostración | **hoy, 08:00** | Abierta: paso 1 completado, paso 2 "Evaluación médica" pendiente (HU4). |
-| `de110009-…-7` | Demostración | **hoy, 10:30** | Nueva: paso 1 "Toma de signos vitales" PENDIENTE, sin valor. Sirve para atender una consulta desde el inicio. |
-| `de110009-…-3` | Demostración | dentro de 7 días, 10:00 | Nueva: paso 1 pendiente. |
-| `de110009-…-4` | Norte | hace 12 días, 14:00 | Cerrada. |
-| `de110009-…-5` | Norte | **hoy, 11:00** | Nueva. |
-| `de110009-…-6` | Norte | dentro de 3 días, 15:30 | Nueva. |
+**Procedimientos** (cada paso con un rol distinto; el último es la finalización):
 
-**Procedimiento demo:** "Toma de signos vitales" → "Evaluación médica" → "Indicaciones y
-cierre".
+- Consulta general: Triaje (Enfermera) → Consulta médica (Doctor) → Entrega de indicaciones
+  (Atención al público).
+- Control de hipertensión: Toma de presión arterial (Enfermera) → Evaluación médica (Doctor) →
+  Programación de seguimiento (Atención al público).
 
-**Exámenes asignables a "Evaluación médica":** Hemograma completo, Glucosa en ayunas y Examen
-general de orina. También hay "Perfil lipídico", con la asociación inactiva, y "Examen
-descontinuado (demo)", inactivo; ninguno de los dos se ofrece.
+**Exámenes asignables:** en Consulta médica, Hemograma completo, Glucosa en ayunas, Examen general
+de orina y Rayos X de tórax (Electrocardiograma está asociado pero inactivo y no se ofrece); en
+Evaluación médica, Glucosa en ayunas y Rayos X de tórax.
+
+**Consultas** (fechas relativas a hoy, hora de El Salvador; UUID `de120010-…-N`):
+
+| N | Consulta | Paciente | Día y hora | Procedimiento | Estado inicial |
+| --- | --- | --- | --- | --- | --- |
+| 1 | SA-1 | Ana | hace 20 días, 09:00 | Consulta general | Cerrada; orden de Hemograma completo. |
+| 2 | SA-2 | Julia | ayer, 15:00 | Control de hipertensión | Cerrada. |
+| 3 | SA-3 | Ana | **hoy, 08:00** | Consulta general | Triaje completado (Lucía); Consulta médica PENDIENTE para Carlos. |
+| 4 | SA-4 | Julia | **hoy, 09:15** | Control de hipertensión | Toma de presión PENDIENTE para Lucía. |
+| 5 | SA-5 | Juan | **hoy, 10:30** | Consulta general | Triaje PENDIENTE para Lucía. |
+| 6 | SA-6 | Ana | **hoy, 11:45** | Consulta general | Triaje y Consulta médica completados, orden de Glucosa en ayunas; Entrega de indicaciones PENDIENTE para Marta. |
+| 7 | SA-7 | Juan | dentro de 3 días, 08:30 | Consulta general | Triaje PENDIENTE. |
+| 8 | SA-8 | Ana | dentro de 10 días, 10:00 | Control de hipertensión | Toma de presión PENDIENTE. |
+| 9 | SS-1 | Ana | hace 10 días, 14:00 | Consulta general | Cerrada (Rosa, Jorge, Marta). |
+| 10 | SS-2 | Ana | **hoy, 13:00** | Consulta general | Triaje completado (Rosa); Consulta médica PENDIENTE para Carlos. |
+| 11 | SS-3 | Ana | dentro de 5 días, 09:00 | Control de hipertensión | Toma de presión PENDIENTE. |
+
+SA-1 a SA-8 son de Clínica Santa Ana; SS-1 a SS-3, de Clínica San Salvador.
 
 ## 11. Errores comunes
 
 | Síntoma | Causa | Solución |
 | --- | --- | --- |
 | `403` con `"code":"auth.origen"` al iniciar sesión o en cualquier escritura | La petición no trae `Origin` (o `Referer`) aceptado: el frontend no corre en el puerto 3000, o se usa curl sin `-H 'Origin: http://localhost:3000'`. | Levantar ChivoMed en el puerto 3000, o definir `CHIVOMED_ORIGINS` antes de `mvn liberty:run` (sección 8). En curl, enviar la cabecera `Origin`. |
-| `401` `auth.credenciales` con `00000000-3` | Es el paciente: la HU2 solo admite empleados. | Usar `00000000-1` o `00000000-2`. |
+| `401` `auth.credenciales` con `01000004-4` o `01000005-5` | Ana es paciente y Pedro no tiene rol: la HU2 solo admite empleados. | Usar `01000001-1` (Carlos), `01000002-2` (Lucía) o `01000003-3` (Marta). |
+| `403` `consulta.noResponsablePaso` al completar, retroceder u ordenar | El paso lo atiende otro rol (por ejemplo, Carlos intenta completar el Triaje). | Entrar con un empleado que tenga el rol del paso en esa clínica (tabla de la sección 10). |
+| `preparar-bd-desarrollo.sh` falla con `duplicate key value violates unique constraint "uq_documento_tipo_valor"` | Otra persona de la base ya tiene uno de los documentos demo (`0100000N-N`). | Revisar esa persona; si es la demo anterior, seguir la sección 5.1. |
+| La limpieza falla con `No se borró nada: hay datos de otras personas que dependen de la demo anterior` | Hay filas que no son de la demo colgando de ella (el mensaje dice cuáles). | Revisarlas y moverlas o borrarlas a mano, o dejar la demo anterior. La base quedó sin cambios. |
 | `docker run` con `postgres:18` falla diciendo que hay datos en `/var/lib/postgresql/data` | La imagen 18 cambió la ruta del volumen. | Montar el volumen en `/var/lib/postgresql` (sección 2), o usar `postgres:17` con `/var/lib/postgresql/data`. |
 | Las migraciones fallan con `function gen_random_uuid() does not exist` u otra sintaxis | PostgreSQL anterior a 13. | Usar PostgreSQL 17 o 18. |
 | La prueba SQL de una FK `RESTRICT` falla en 17 y no en 18 (o al revés) | PostgreSQL 18 informa `restrict_violation` (23001) donde 17 informaba `foreign_key_violation` (23503). | Las pruebas de `docs/migrations/tests` ya aceptan los dos. Actualice el repositorio. |
@@ -244,9 +326,9 @@ descontinuado (demo)", inactivo; ninguno de los dos se ofrece.
 | `preparar-bd-desarrollo.sh` termina con `Primero ejecuta: mvn -DskipTests package` | Falta compilar. | Paso 4. |
 | `preparar-bd-desarrollo.sh` falla con `No such container` o `role "…" does not exist` | El contenedor o el usuario de PostgreSQL tienen otro nombre. | Pasar los argumentos: `bash scripts/preparar-bd-desarrollo.sh CONTENEDOR BASE USUARIO`. |
 | Error 500 al leer o crear órdenes; en `messages.log` aparece `column … id_examen does not exist` | Falta la migración `20261113_orden_examen_examen.sql`, por ejemplo en una base preparada antes de la HU4. | Volver a ejecutar `bash scripts/preparar-bd-desarrollo.sh …` (se puede repetir) y recompilar o reiniciar Liberty. |
-| `…/examenes-asignables` devuelve `[]` en "Evaluación médica" | Faltan los datos demo de exámenes. | Volver a ejecutar `preparar-bd-desarrollo.sh`. |
-| El login con `00000000-2` da 401, o `publico/tipos-documento` devuelve `[]` | No se cargaron los datos demo, o `server.xml` apunta a otra base (`databaseName`). | Revisar `databaseName` y volver a ejecutar `preparar-bd-desarrollo.sh`. |
-| `reiniciar-demo.sh` falla con `Faltan las cuentas demo` | La base no se preparó con el script. | Ejecutar primero `preparar-bd-desarrollo.sh`. |
+| `…/examenes-asignables` devuelve `[]` en "Consulta médica" | Faltan los datos demo, o el examen o su tipo están inactivos. | Volver a ejecutar `preparar-bd-desarrollo.sh`. |
+| El login con `01000001-1` da 401, o `publico/tipos-documento` devuelve `[]` | No se cargaron los datos demo, o `server.xml` apunta a otra base (`databaseName`). | Revisar `databaseName` y volver a ejecutar `preparar-bd-desarrollo.sh`. |
+| `reiniciar-demo.sh` falla con `Faltan los datos demo del guion` | La base no se preparó con el script. | Ejecutar primero `preparar-bd-desarrollo.sh`. |
 | El dashboard de hoy no muestra consultas | Las fechas demo se anclaron otro día. | `bash scripts/reiniciar-demo.sh` el día de la revisión (sección 9). |
 | Liberty no se conecta a la base (`DSRA…`, `Connection refused` o `password authentication failed`) | El contenedor está detenido, o el usuario o la contraseña de `server.xml` no coinciden. | `docker start galenasv`; revisar `user`, `password` y `portNumber` en `server.xml` y reiniciar Liberty. |
 

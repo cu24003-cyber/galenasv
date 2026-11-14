@@ -49,7 +49,7 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 | `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. Con una consulta en curso y otra asignación: 409 `rolCambio.cerrarAntesCambiar`. |
 
 El documento se busca por el par exacto (tipo, valor); el número se recorta pero
-no se normaliza de otra forma (el DUI se escribe con guion: `00000000-1`). El tipo
+no se normaliza de otra forma (el DUI se escribe con guion: `01000001-1`). El tipo
 debe estar activo. `numeroDocumento` admite hasta 50 caracteres sin saltos de línea;
 un UUID inválido o un cuerpo mal formado devuelven 400.
 
@@ -120,40 +120,42 @@ un responsable autorizado; no hay endpoint público para asignarse roles.
 
 ### Entorno de desarrollo
 
-Después de `mvn -DskipTests package`, `bash scripts/preparar-bd-desarrollo.sh` aplica
-la base completa, la migración de unicidad y los datos de desarrollo. Deja el tipo
-DUI (`^[0-9]{8}-[0-9]$`) y estas cuentas con números ficticios:
+Después de `mvn -DskipTests package`, `bash scripts/preparar-bd-desarrollo.sh` aplica la base
+completa, las migraciones y los datos demo del guion del Primer Parcial
+(`docs/migrations/20261113_datos_demo_rubrica.sql` y `…_consultas.sql`; detalle en
+`docs/datos-demo-rubrica.md` y `docs/LEVANTAR.md` §10). Tipos de documento activos: DUI
+(`^[0-9]{8}-[0-9]$`) y Pasaporte (`^[A-Z][0-9]{8}$`). Todos los números son inventados:
 
-| Cuenta | DUI | Resultado del login |
+| Persona | Documento | Resultado del login |
 | --- | --- | --- |
-| admin.demo | `00000000-1` | 204, rol ADMINISTRACION |
-| doctor.demo | `00000000-2` | 204, rol DOCTOR |
-| paciente.demo | `00000000-3` | 401, porque es PACIENTE |
+| Carlos Gómez | DUI `01000001-1` o Pasaporte `A10000001` | 204; rol inicial Doctor en Clínica Santa Ana (también Doctor en San Salvador) |
+| Lucía Pérez | DUI `01000002-2` | 204; Enfermera en Clínica Santa Ana |
+| Marta López | DUI `01000003-3` | 204; Atención al público (`ADMINISTRACION`) en Santa Ana y en San Salvador |
+| Rosa Méndez | DUI `01000006-6` | 204; Enfermera en Clínica San Salvador |
+| Jorge Ruiz | DUI `01000007-7` | 204; Doctor en Clínica San Salvador |
+| Ana Martínez, Julia Flores, Juan Vásquez | DUI `01000004-4`, `01000008-8`, `01000009-9` | 401, porque solo son PACIENTE |
+| Pedro Hernández | DUI `01000005-5` | 401, porque no tiene ninguna asignación |
+| Nadie | `12345678-9` | 401 con el mismo mensaje neutro |
 
-`scripts/preparar-bd-desarrollo.sh` también aplica
-`docs/migrations/20261112_datos_desarrollo_clinicos.sql`:
+Los roles Enfermera (`ENFERMERA`, activo) y Farmacéutico (`FARMACEUTICO`, inactivo) se crean
+con la demo; `ADMINISTRACION` pasa a llamarse "Atención al público" y conserva su código.
 
-- Segunda clínica "Clínica de demostración Norte".
-- paciente.demo es PACIENTE en ambas clínicas.
-- doctor.demo tiene DOCTOR en ambas y ADMINISTRACION en la clínica 1. Su rol inicial sigue
-  siendo DOCTOR en la clínica 1.
-- Procedimiento "Consulta general de demostración" de 3 pasos DOCTOR (SIGUIENTE 1→2→3).
-- Siete consultas de paciente.demo, con fechas relativas al día local: por clínica, una
-  pasada, una futura y las de hoy; la clínica 1 tiene dos de hoy y la Norte una. En la
-  clínica 1, la de las 08:00 tiene el paso 1 COMPLETADO con valor y el paso 2 PENDIENTE; la de
-  las 10:30 tiene el paso 1 PENDIENTE sin valor.
-
-Si se vuelve a ejecutar, inserta lo que falte y ancla de nuevo las fechas a hoy sin cambiar
-estados. Para devolver la demo a su estado inicial después de usarla:
+Si se vuelve a ejecutar, deja los catálogos y personas demo como en el archivo, inserta las
+consultas que falten y ancla de nuevo sus fechas a hoy sin cambiar estados. Para devolver las 11
+consultas a su estado inicial después de usarlas:
 
 ```bash
 bash scripts/reiniciar-demo.sh [contenedor] [base] [usuario_postgres]
-# equivale a: psql -v reiniciar=1 -f docs/migrations/20261112_datos_desarrollo_clinicos.sql
+# equivale a: psql -v reiniciar=1 -f docs/migrations/20261113_datos_demo_rubrica_consultas.sql
 ```
 
-El reinicio pide confirmación y solo afecta las siete consultas con UUID `de110009-…`: borra
-las órdenes, los resultados y los pasos o procedimientos que se les hayan agregado desde la
-app, y restaura fechas, estados, valores y notas. No toca ningún otro dato.
+El reinicio pide confirmación y solo afecta las 11 consultas con UUID `de120010-…`: borra los
+resultados, las órdenes y los pasos o procedimientos que se les hayan agregado desde la app, y
+restaura fechas, estados, valores, notas y las dos órdenes demo. No toca ningún otro dato.
+
+La demo anterior (admin.demo, doctor.demo y paciente.demo, DUI `00000000-1/2/3`) se borra con
+`docs/migrations/20261113_limpieza_demo_anterior.sql`, después de un respaldo
+(`docs/LEVANTAR.md` §5.1).
 
 ## Alcance de esta etapa
 
