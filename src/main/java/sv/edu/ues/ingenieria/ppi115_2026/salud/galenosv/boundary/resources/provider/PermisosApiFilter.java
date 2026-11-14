@@ -39,9 +39,11 @@ public class PermisosApiFilter implements ContainerRequestFilter {
         var actual = atencion.getRolActivo();
         var contexto = autenticacion.contexto(acceso.getIdUsuario(), actual == null ? null : actual.getIdPersonaRol());
         PersonaRol activo = contexto.asignacion();
-        String rol = activo.getIdRol().getCodigo();
+        // B8: el código puede ser null (rol de empleado creado sin código); "" lo trata como empleado.
+        String rol = Objects.toString(activo.getIdRol().getCodigo(), "");
         boolean lectura = Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
-        if (!Set.of("ADMINISTRACION", "DOCTOR", "PACIENTE").contains(rol)) throw denegado();
+        // Empleado: rol activo distinto de PACIENTE. PACIENTE conserva su rama de expediente propio.
+        if (!rol.equals("PACIENTE") && !AutenticacionService.esEmpleado(activo)) throw denegado();
         if (raiz.equals("recepcion")) {
             if (!rol.equals("ADMINISTRACION")) throw denegado();
             return;
@@ -85,12 +87,14 @@ public class PermisosApiFilter implements ContainerRequestFilter {
             // Las personas nuevas se registran junto con su asignación en una sola transacción.
             if (!lectura && recurso.equals("personas") && coleccion) throw denegado();
         } else if (recurso.equals("consultas")) {
-            if (lectura && rol.equals("ADMINISTRACION")) throw denegado();
+            // B8: cualquier empleado de la clínica lee, crea por la colección anidada y usa las
+            // acciones (sesion, cierre); AtencionService decide quién puede hacer cada una.
             if (!lectura && (request.getMethod().equals("DELETE") || request.getMethod().equals("PUT") && !accion)) throw denegado();
-            if (!lectura && !rol.equals("DOCTOR") && !(rol.equals("ADMINISTRACION") && request.getMethod().equals("POST") && coleccion && partes.size() == 3 && raiz.equals("personas-roles"))) throw denegado();
+            if (!lectura && rol.equals("PACIENTE")) throw denegado();
             if (!lectura && coleccion && partes.size() == 1) throw denegado();
         } else if (CLINICOS.contains(recurso)) {
-            if (rol.equals("ADMINISTRACION") || !lectura && !rol.equals("DOCTOR")) throw denegado();
+            // B8: cualquier empleado de la clínica; el rol responsable del paso lo exige el servicio.
+            if (!lectura && rol.equals("PACIENTE")) throw denegado();
             // Los POST clínicos deben pasar por las acciones y colecciones del flujo.
             if (!lectura && !accion && (partes.size() == 1 || request.getMethod().equals("PUT") || request.getMethod().equals("DELETE"))) throw denegado();
         } else throw denegado();

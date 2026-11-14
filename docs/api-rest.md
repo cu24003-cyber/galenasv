@@ -414,13 +414,27 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | Sin cuerpo | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
 | `GET /api/consultas-procedimientos-pasos/{id}/examenes-asignables` | — | HU4: exámenes que se pueden ordenar en el paso. Ver abajo. |
 
+### Permisos por rol (B8)
+
+`PermisosApiFilter` distingue tres casos por el código del rol activo:
+
+| Rol activo | Qué deja pasar el filtro |
+| --- | --- |
+| Empleado: cualquier rol activo distinto de `PACIENTE`, incluso sin código (Atención al público, Enfermera, Doctor…) | Lectura de catálogos y de personas, consultas y datos clínicos **de su clínica**; las acciones del flujo (`sesion`, `cierre`, `finalizacion`, `retroceso`, `responsable`, `examenes`, `examenes-asignables`, órdenes y resultados); crear consultas por `POST /api/personas-roles/{id}/consultas`. |
+| `ADMINISTRACION` (nombre visible "Atención al público") | Lo anterior, más la escritura de catálogos, de personas y `/api/recepcion/*`. |
+| `PACIENTE` | Solo su expediente (no puede iniciar sesión desde la HU2). |
+
+El filtro no decide qué rol atiende cada paso: eso lo valida AtencionService con el rol
+responsable del paso. Una ruta de otra clínica sigue dando 403 `auth.permiso`.
+
 Las acciones admiten el cuerpo vacío aunque lleguen con `Content-Type: application/json`: un
 cuerpo vacío o en blanco se trata como `{}`. Así, `…/retroceso` y `…/sesion` no lo usan,
 `…/finalizacion` completa el paso sin valor y `…/cierre` conserva la referencia y las
 observaciones. Un cuerpo que no es un objeto JSON sigue dando 400 `json.invalido`.
 
-**Retroceso (HU4).** Lo puede hacer solo DOCTOR, sobre un paso de la clínica del rol activo y
-de una consulta abierta; ADMINISTRACION recibe 403 `auth.permiso`. También funciona en la ruta
+**Retroceso (HU4).** Sobre un paso de la clínica del rol activo y de una consulta abierta; un
+paso de otra clínica recibe 403 `auth.permiso`. Quién puede hacerlo lo decide AtencionService
+(ver "Permisos por rol"). También funciona en la ruta
 anidada `/api/consultas-procedimientos/{cp}/pasos/{id}/retroceso`.
 
 Condiciones:
@@ -447,8 +461,9 @@ el que se envíe; si se envía vacío o null, el valor se borra. Para conservarl
 precargarlo y reenviarlo. Al completarlo, el paso siguiente se crea de nuevo con un id nuevo y
 el responsable automático.
 
-**Exámenes asignables y órdenes con examen (HU4).** Solo DOCTOR, sobre un paso de la clínica del
-rol activo; ADMINISTRACION y un paso de otra clínica reciben 403 `auth.permiso`. Las dos rutas
+**Exámenes asignables y órdenes con examen (HU4).** Sobre un paso de la clínica del rol activo;
+un paso de otra clínica recibe 403 `auth.permiso`. Quién puede ordenar lo decide AtencionService
+(ver "Permisos por rol"). Las dos rutas
 también funcionan anidadas bajo `/api/consultas-procedimientos/{cp}/pasos/{id}`.
 
 Un examen es **asignable** a un paso si está activo y tiene una asociación activa
