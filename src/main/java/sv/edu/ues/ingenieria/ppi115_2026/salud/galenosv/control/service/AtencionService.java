@@ -356,22 +356,42 @@ public class AtencionService {
         cargar(consulta);
         return em.createQuery("SELECT DISTINCT e FROM ProcedimientoPasoExamen e JOIN FETCH e.idExamen JOIN FETCH e.idProcedimientoPaso WHERE e.idProcedimientoPaso IN (SELECT p.idProcedimientoPaso FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id)",ProcedimientoPasoExamen.class).setParameter("id",consulta).getResultList();
     }
-    /** Examen que se puede ordenar en un paso: asociación con su definición y examen, ambos activos. */
-    public record ExamenAsignable(UUID idExamen, String nombre) {}
+    /** Tipo de examen activo de un examen asignable (B8). */
+    public record TipoExamenAsignable(UUID idTipoExamen, String nombre) {}
     /**
-     * HU4: exámenes asignables al paso, en una sola proyección. Solo lee, así que se lista en
-     * cualquier estado del paso o de la consulta. Un paso sin definición no tiene asignables.
+     * Examen que se puede ordenar en un paso: asociación con su definición y examen, ambos
+     * activos, y al menos un tipo de examen activo (B8, guion). tiposExamen: sus tipos activos.
+     */
+    public record ExamenAsignable(UUID idExamen, String nombre, List<TipoExamenAsignable> tiposExamen) {}
+    /** B8: condición JPQL "el examen tiene al menos un tipo de examen activo"; examen es su alias. */
+    private static String conTipoActivo(String examen) {
+        return " AND EXISTS (SELECT 1 FROM ExamenTipoExamen et WHERE et.idExamen=" + examen + " AND et.idTipoExamen.activo=true)";
+    }
+    /**
+     * HU4: exámenes asignables al paso. Dos proyecciones sin N+1: los exámenes y, solo si hay,
+     * sus tipos activos con IN. Solo lee, así que se lista en cualquier estado del paso o de la
+     * consulta. Un paso sin definición no tiene asignables.
      */
     public List<ExamenAsignable> examenesAsignables(UUID consulta, UUID pasoId) {
         cargar(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
         if (paso.getIdProcedimientoPaso() == null) return List.of();
-        return em.createQuery("SELECT DISTINCT e.idExamen, e.nombre FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
+        List<Object[]> examenes = em.createQuery("SELECT DISTINCT e.idExamen, e.nombre FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
                         + " ProcedimientoPasoExamen pe JOIN pe.idExamen e"
                         + " WHERE p.idConsultaProcedimientoPaso=:paso AND pe.idProcedimientoPaso=def AND pe.activo=true AND e.activo=true"
+                        + conTipoActivo("e")
                         + " ORDER BY e.nombre, e.idExamen", Object[].class)
-                .setParameter("paso", pasoId).getResultList().stream()
-                .map(fila -> new ExamenAsignable((UUID) fila[0], (String) fila[1])).toList();
+                .setParameter("paso", pasoId).getResultList();
+        if (examenes.isEmpty()) return List.of();
+        List<UUID> ids = examenes.stream().map(fila -> (UUID) fila[0]).toList();
+        Map<UUID, List<TipoExamenAsignable>> tipos = new HashMap<>();
+        for (Object[] fila : em.createQuery("SELECT DISTINCT et.idExamen.idExamen, t.idTipoExamen, t.nombre FROM ExamenTipoExamen et JOIN et.idTipoExamen t"
+                        + " WHERE et.idExamen.idExamen IN :examenes AND t.activo=true ORDER BY t.nombre, t.idTipoExamen", Object[].class)
+                .setParameter("examenes", ids).getResultList()) {
+            tipos.computeIfAbsent((UUID) fila[0], k -> new ArrayList<>()).add(new TipoExamenAsignable((UUID) fila[1], (String) fila[2]));
+        }
+        return examenes.stream().map(fila -> new ExamenAsignable((UUID) fila[0], (String) fila[1],
+                List.copyOf(tipos.getOrDefault((UUID) fila[0], List.of())))).toList();
     }
     /**
      * HU4, REST: orden de un examen asignable al paso (misma condición que examenesAsignables).
@@ -385,7 +405,7 @@ public class AtencionService {
         if (examenId == null) throw ServiceException.localizada("consulta.examenObligatorio", "Seleccione el examen que ordena.");
         boolean asignable = paso.getIdProcedimientoPaso() != null && em.createQuery("SELECT COUNT(pe) FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
                         + " ProcedimientoPasoExamen pe WHERE p.idConsultaProcedimientoPaso=:paso AND pe.idProcedimientoPaso=def"
-                        + " AND pe.idExamen.idExamen=:examen AND pe.activo=true AND pe.idExamen.activo=true", Long.class)
+                        + " AND pe.idExamen.idExamen=:examen AND pe.activo=true AND pe.idExamen.activo=true" + conTipoActivo("pe.idExamen"), Long.class)
                 .setParameter("paso", pasoId).setParameter("examen", examenId).getSingleResult() > 0;
         if (!asignable) throw ServiceException.localizada("consulta.examenNoAsignable", "El examen no está activo o no se puede ordenar en este paso.");
         String texto = indicaciones == null || indicaciones.isBlank() ? null : indicaciones.trim();

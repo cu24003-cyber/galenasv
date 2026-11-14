@@ -631,7 +631,11 @@ class AtencionServiceTest {
         final ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID());
         final ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID());
         final UUID hemograma = UUID.randomUUID(), glucosa = UUID.randomUUID();
+        final UUID laboratorio = UUID.randomUUID(), imagen = UUID.randomUUID();
         List<Object[]> filas = new ArrayList<>(List.of(new Object[]{glucosa, "Glucosa en ayunas"}, new Object[]{hemograma, "Hemograma completo"}));
+        /** Filas de la segunda proyección: idExamen, idTipoExamen, nombre del tipo. */
+        List<Object[]> tipos = new ArrayList<>(List.of(new Object[]{glucosa, laboratorio, "Laboratorio clínico"},
+                new Object[]{hemograma, imagen, "Imagenología"}, new Object[]{hemograma, laboratorio, "Laboratorio clínico"}));
         final List<String> jpql = new ArrayList<>();
         final Map<String, Object> parametros = new HashMap<>();
         Asignables() {
@@ -642,7 +646,8 @@ class AtencionServiceTest {
                 jpql.add(inv.getArgument(0));
                 @SuppressWarnings("unchecked") TypedQuery<Object[]> t = mock(TypedQuery.class);
                 when(t.setParameter(anyString(), any())).thenAnswer(x -> { parametros.put(x.getArgument(0), x.getArgument(1)); return t; });
-                when(t.getResultList()).thenAnswer(x -> filas);
+                String q = inv.getArgument(0);
+                when(t.getResultList()).thenAnswer(x -> q.startsWith("SELECT DISTINCT et.idExamen.idExamen") ? tipos : filas);
                 return t;
             });
         }
@@ -654,26 +659,36 @@ class AtencionServiceTest {
         }
     }
 
-    @Test void asignablesUsanUnaSolaProyeccionFiltradaPorPasoDefinicionYActividad() {
+    @Test void asignablesUsanDosProyeccionesSinNMasUno() {
         Asignables a = new Asignables();
         a.listar();
-        assertEquals(1, a.jpql.size());
+        assertEquals(2, a.jpql.size());
         String q = a.jpql.get(0);
+        // B8, guion: solo exámenes activos con al menos un tipo de examen activo.
+        assertTrue(q.contains("EXISTS (SELECT 1 FROM ExamenTipoExamen et WHERE et.idExamen=e AND et.idTipoExamen.activo=true)"), q);
+        String tipos = a.jpql.get(1);
+        assertTrue(tipos.startsWith("SELECT DISTINCT et.idExamen.idExamen, t.idTipoExamen, t.nombre FROM ExamenTipoExamen et JOIN et.idTipoExamen t"), tipos);
+        assertTrue(tipos.contains("et.idExamen.idExamen IN :examenes") && tipos.contains("t.activo=true"), tipos);
+        assertTrue(tipos.endsWith("ORDER BY t.nombre, t.idTipoExamen"), tipos);
+        assertEquals(List.of(a.glucosa, a.hemograma), a.parametros.get("examenes"));
         assertTrue(q.startsWith("SELECT DISTINCT e.idExamen, e.nombre FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def"), q);
         assertTrue(q.contains("ProcedimientoPasoExamen pe JOIN pe.idExamen e"), q);
         assertTrue(q.contains("p.idConsultaProcedimientoPaso=:paso"), q);
         assertTrue(q.contains("pe.idProcedimientoPaso=def"), q);
         assertTrue(q.contains("pe.activo=true") && q.contains("e.activo=true"), q);
         assertTrue(q.endsWith("ORDER BY e.nombre, e.idExamen"), q);
-        assertEquals(Map.of("paso", a.paso.getIdConsultaProcedimientoPaso()), a.parametros);
+        assertEquals(a.paso.getIdConsultaProcedimientoPaso(), a.parametros.get("paso"));
     }
 
     @Test void asignablesDevuelvenLosRegistrosEnElOrdenDeLaConsulta() {
         Asignables a = new Asignables();
-        assertEquals(List.of(new AtencionService.ExamenAsignable(a.glucosa, "Glucosa en ayunas"),
-                new AtencionService.ExamenAsignable(a.hemograma, "Hemograma completo")), a.listar());
-        a.filas.clear();
+        var laboratorio = new AtencionService.TipoExamenAsignable(a.laboratorio, "Laboratorio clínico");
+        var imagen = new AtencionService.TipoExamenAsignable(a.imagen, "Imagenología");
+        assertEquals(List.of(new AtencionService.ExamenAsignable(a.glucosa, "Glucosa en ayunas", List.of(laboratorio)),
+                new AtencionService.ExamenAsignable(a.hemograma, "Hemograma completo", List.of(imagen, laboratorio))), a.listar());
+        a.filas.clear(); a.jpql.clear();
         assertEquals(List.of(), a.listar());
+        assertEquals(1, a.jpql.size(), "sin asignables no se consultan los tipos");
     }
 
     @Test void asignablesDeUnPasoSinDefinicionSonVaciosSinConsultar() {
@@ -763,6 +778,7 @@ class AtencionServiceTest {
         assertTrue(q.contains("p.idConsultaProcedimientoPaso=:paso") && q.contains("pe.idProcedimientoPaso=def"), q);
         assertTrue(q.contains("pe.idExamen.idExamen=:examen"), q);
         assertTrue(q.contains("pe.activo=true") && q.contains("pe.idExamen.activo=true"), q);
+        assertTrue(q.contains("EXISTS (SELECT 1 FROM ExamenTipoExamen et WHERE et.idExamen=pe.idExamen AND et.idTipoExamen.activo=true)"), q);
         assertEquals(Map.of("paso", o.paso.getIdConsultaProcedimientoPaso(), "examen", o.examen.getIdExamen()), o.parametros);
     }
 

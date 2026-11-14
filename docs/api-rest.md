@@ -494,16 +494,21 @@ un paso de otra clínica recibe 403 `auth.permiso`. Quién puede ordenar lo deci
 (ver "Permisos por rol"). Las dos rutas
 también funcionan anidadas bajo `/api/consultas-procedimientos/{cp}/pasos/{id}`.
 
-Un examen es **asignable** a un paso si está activo y tiene una asociación activa
-(`procedimientos-pasos/{id}/examenes-configurados`) con la definición de catálogo del paso.
+Un examen es **asignable** a un paso si está activo, tiene una asociación activa
+(`procedimientos-pasos/{id}/examenes-configurados`) con la definición de catálogo del paso y
+(B8, guion) tiene al menos un tipo de examen activo.
 
 ```text
 GET /api/consultas-procedimientos-pasos/UUID_DEL_PASO/examenes-asignables
-200 [{"idExamen":"…","nombre":"Glucosa en ayunas"},{"idExamen":"…","nombre":"Hemograma completo"}]
+200 [{"idExamen":"…","nombre":"Glucosa en ayunas",
+      "tiposExamen":[{"idTipoExamen":"…","nombre":"Laboratorio clínico"}]},
+     {"idExamen":"…","nombre":"Rayos X de tórax",
+      "tiposExamen":[{"idTipoExamen":"…","nombre":"Imagenología"}]}]
 ```
 
-La lista viene ordenada por `nombre` y luego por `idExamen`. Un paso sin definición, o sin
-asociaciones activas, da `[]`. Como solo lee, se puede consultar en cualquier estado del paso y de
+La lista viene ordenada por `nombre` y luego por `idExamen`. `tiposExamen` (B8) trae solo los
+tipos activos del examen, ordenados por `nombre`; es una lista porque un examen puede tener
+varios tipos, y nunca está vacía. Un paso sin definición, o sin asociaciones activas, da `[]`. Como solo lee, se puede consultar en cualquier estado del paso y de
 la consulta.
 
 ```text
@@ -519,7 +524,8 @@ recorta). La consulta debe estar abierta y el paso PENDIENTE.
 | Código | Caso |
 | --- | --- |
 | 400 `consulta.examenObligatorio` | Falta `idExamen`. |
-| 400 `consulta.examenNoAsignable` | El examen no existe, está inactivo, su asociación con el paso está inactiva o es de otro paso. |
+| 400 `consulta.examenNoAsignable` | El examen no existe, está inactivo, no tiene ningún tipo de examen activo (B8), su asociación con el paso está inactiva o es de otro paso. |
+| 403 `consulta.noResponsablePaso` | El rol activo no es el rol responsable del paso (B8). |
 | 400 `consulta.indicacionesValidas` | Las indicaciones superan 255 caracteres. |
 | 400 `consulta.pasoPropio` | El paso no es de la consulta. |
 | 409 `consulta.ordenPasoCompletado` | El paso ya está completado. |

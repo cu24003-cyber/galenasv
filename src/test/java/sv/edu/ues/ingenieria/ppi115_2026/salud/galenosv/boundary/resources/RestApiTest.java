@@ -1137,15 +1137,20 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
-    void examenesAsignablesDevuelvenIdYNombreEnElOrdenDelServicio() {
+    void examenesAsignablesDevuelvenIdNombreYTiposEnElOrdenDelServicio() {
+        var laboratorio = new AtencionService.TipoExamenAsignable(A2, "Laboratorio clínico");
         when(atencion.examenesAsignables(ID, ID)).thenReturn(List.of(
-                new AtencionService.ExamenAsignable(A1, "Glucosa en ayunas"),
-                new AtencionService.ExamenAsignable(ID, "Hemograma completo")));
+                new AtencionService.ExamenAsignable(A1, "Glucosa en ayunas", List.of(laboratorio)),
+                new AtencionService.ExamenAsignable(ID, "Hemograma completo", List.of(laboratorio))));
         try (Response response = target("consultas-procedimientos-pasos/" + ID + "/examenes-asignables").request().get()) {
             assertEquals(200, response.getStatus());
             JsonArray datos = Json.createReader(new StringReader(response.readEntity(String.class))).readArray();
             assertEquals(2, datos.size());
-            assertEquals(java.util.Set.of("idExamen", "nombre"), datos.getJsonObject(0).keySet());
+            assertEquals(java.util.Set.of("idExamen", "nombre", "tiposExamen"), datos.getJsonObject(0).keySet());
+            JsonObject tipo = datos.getJsonObject(0).getJsonArray("tiposExamen").getJsonObject(0);
+            assertEquals(java.util.Set.of("idTipoExamen", "nombre"), tipo.keySet());
+            assertEquals(A2.toString(), tipo.getString("idTipoExamen"));
+            assertEquals("Laboratorio clínico", tipo.getString("nombre"));
             assertEquals(A1.toString(), datos.getJsonObject(0).getString("idExamen"));
             assertEquals("Glucosa en ayunas", datos.getJsonObject(0).getString("nombre"));
             assertEquals("Hemograma completo", datos.getJsonObject(1).getString("nombre"));
