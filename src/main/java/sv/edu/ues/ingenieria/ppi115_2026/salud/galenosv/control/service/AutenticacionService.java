@@ -3,7 +3,6 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Usuario;
@@ -14,7 +13,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.Usuari
 public class AutenticacionService {
     @Inject UsuarioRepository usuarios;
     public record Contexto(Usuario usuario, PersonaRol asignacion) {}
-    private static final Set<String> ROLES_EMPLEADO = Set.of("ADMINISTRACION", "DOCTOR");
+    /** Código del único rol que no es de empleado: el paciente nunca inicia sesión (HU2). */
+    public static final String PACIENTE = "PACIENTE";
 
     /**
      * HU2: login de empleados por tipo y número de documento, sin contraseña. Todo rechazo
@@ -49,9 +49,19 @@ public class AutenticacionService {
         return new Contexto(usuario, rol);
     }
 
-    /** Defensa adicional a la consulta: solo ADMINISTRACION y DOCTOR pueden ser rol de sesión. */
+    /**
+     * B8: es de empleado cualquier asignación con rol activo cuyo código no sea PACIENTE; un rol
+     * sin código (creado desde la app) también lo es. La clínica activa la exige la consulta.
+     */
+    public static boolean esEmpleado(PersonaRol asignacion) {
+        return asignacion != null && asignacion.getIdRol() != null
+                && Boolean.TRUE.equals(asignacion.getIdRol().getActivo())
+                && !PACIENTE.equals(asignacion.getIdRol().getCodigo());
+    }
+
+    /** Defensa adicional a la consulta del repositorio, que aplica la misma regla. */
     private static Stream<PersonaRol> empleados(List<PersonaRol> asignaciones) {
-        return asignaciones.stream().filter(a -> a.getIdRol() != null && ROLES_EMPLEADO.contains(a.getIdRol().getCodigo()));
+        return asignaciones.stream().filter(AutenticacionService::esEmpleado);
     }
 
     private AccesoException credencialesInvalidas() {

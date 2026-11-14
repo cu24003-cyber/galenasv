@@ -87,6 +87,24 @@ class AuthResourceTest {
             assertFalse(body.contains("NO-DEBE-SALIR")); assertFalse(body.contains("passwordHash")); assertFalse(body.contains("correo"));
         }
     }
+    @Test void meConEnfermeraDevuelveSuCodigoYElNombreDelRol() {
+        when(request.getSession(false)).thenReturn(http); acceso.autenticar(idUsuario);
+        var contexto = contexto("ENFERMERA"); contexto.asignacion().getIdRol().setNombre("Enfermera");
+        atencion.cambiarRol(contexto.asignacion());
+        when(servicio.contexto(idUsuario, contexto.asignacion().getIdPersonaRol())).thenReturn(contexto);
+        var rol = Json.createReader(new StringReader((String) resource.me().getEntity())).readObject().getJsonObject("rolActivo");
+        assertEquals("ENFERMERA", rol.getString("codigo"));
+        assertEquals("Enfermera", rol.getString("nombreRol"));
+    }
+    @Test void meConUnRolSinCodigoDevuelveCodigoNullEnLugarDeFallar() {
+        when(request.getSession(false)).thenReturn(http); acceso.autenticar(idUsuario);
+        var contexto = contexto(null); contexto.asignacion().getIdRol().setNombre("Laboratorista");
+        atencion.cambiarRol(contexto.asignacion());
+        when(servicio.contexto(idUsuario, contexto.asignacion().getIdPersonaRol())).thenReturn(contexto);
+        var rol = Json.createReader(new StringReader((String) resource.me().getEntity())).readObject().getJsonObject("rolActivo");
+        assertTrue(rol.isNull("codigo"));
+        assertEquals("Laboratorista", rol.getString("nombreRol"));
+    }
     @Test void unaAsignacionRevocadaInvalidaLaSesionAnterior() {
         when(request.getSession(false)).thenReturn(http); acceso.autenticar(idUsuario);
         when(servicio.contexto(idUsuario, null)).thenThrow(new AccesoException(403, "auth.asignacion", "Acceso revocado."));

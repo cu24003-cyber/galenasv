@@ -69,6 +69,34 @@ class AutenticacionServiceTest {
         var contexto = servicio.iniciar(dui, "00000000-2");
         assertSame(u, contexto.usuario()); assertSame(doctor, contexto.asignacion());
     }
+    @Test void enfermeraEsEmpleadaYPuedeEntrar() {
+        PersonaRol enfermera = asignacion("ENFERMERA", 0);
+        when(usuarios.buscarPorDocumento(dui, "01000002-2")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(enfermera));
+        assertSame(enfermera, servicio.iniciar(dui, "01000002-2").asignacion());
+    }
+    @Test void unRolSinCodigoCreadoDesdeLaAppEsDeEmpleado() {
+        PersonaRol sinCodigo = asignacion(null, 0);
+        when(usuarios.buscarPorDocumento(dui, "01000003-3")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(sinCodigo));
+        assertSame(sinCodigo, servicio.iniciar(dui, "01000003-3").asignacion());
+    }
+    @Test void unRolInactivoNoEsDeEmpleadoAunqueLleguePorError() {
+        PersonaRol farmaceutico = asignacion("FARMACEUTICO", 0); farmaceutico.getIdRol().setActivo(false);
+        when(usuarios.buscarPorDocumento(dui, "01000005-5")).thenReturn(usuario(true));
+        when(usuarios.asignaciones(idPersona)).thenReturn(List.of(farmaceutico));
+        credencialesInvalidas(() -> servicio.iniciar(dui, "01000005-5"));
+    }
+    @Test void esEmpleadoExcluyePacienteYRolesInactivos() {
+        assertTrue(AutenticacionService.esEmpleado(asignacion("DOCTOR", 0)));
+        assertTrue(AutenticacionService.esEmpleado(asignacion("ENFERMERA", 0)));
+        assertTrue(AutenticacionService.esEmpleado(asignacion(null, 0)));
+        assertFalse(AutenticacionService.esEmpleado(asignacion("PACIENTE", 0)));
+        PersonaRol inactivo = asignacion("ENFERMERA", 0); inactivo.getIdRol().setActivo(false);
+        assertFalse(AutenticacionService.esEmpleado(inactivo));
+        assertFalse(AutenticacionService.esEmpleado(null));
+        assertFalse(AutenticacionService.esEmpleado(new PersonaRol(UUID.randomUUID())));
+    }
     @Test void numeroVacioOTipoNuloSeRechazanSinConsultar() {
         credencialesInvalidas(() -> servicio.iniciar(null, "00000000-1"));
         credencialesInvalidas(() -> servicio.iniciar(dui, "  "));

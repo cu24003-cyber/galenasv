@@ -11,6 +11,8 @@ public final class AtencionDto {
     private AtencionDto() {}
 
     /** Asignación de empleado de la cuenta; {@code activa} indica si es el rol activo de la sesión. */
+    /** B8: codigoRol es null (no se omite) en un rol de empleado creado sin código. */
+    @jakarta.json.bind.annotation.JsonbNillable
     public record Asignacion(UUID idPersonaRol, String codigoRol, String nombreRol,
             UUID idClinica, String nombreClinica, boolean activa) {
         public static Asignacion de(PersonaRol a, UUID idActivo) {

@@ -62,8 +62,10 @@ class UsuarioRepositoryTest {
         when(consultaRoles.setParameter("persona", persona)).thenReturn(consultaRoles);
         when(consultaRoles.getResultList()).thenReturn(List.of());
         repositorio.asignaciones(persona);
-        assertTrue(jpql.getValue().contains("r.codigo IN ('ADMINISTRACION','DOCTOR')"));
-        assertFalse(jpql.getValue().contains("PACIENTE"));
+        // B8: empleado es cualquier rol activo excepto PACIENTE, incluso sin código.
+        assertTrue(jpql.getValue().contains("(r.codigo IS NULL OR r.codigo <> 'PACIENTE')"));
+        assertFalse(jpql.getValue().contains("'DOCTOR'"));
+        assertTrue(jpql.getValue().contains("r.activo=true AND c.activo=true"));
         assertTrue(jpql.getValue().contains("ORDER BY a.fechaCreacion, a.idPersonaRol"));
     }
 }

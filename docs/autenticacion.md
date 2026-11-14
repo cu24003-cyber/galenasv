@@ -3,11 +3,14 @@
 Requiere las migraciones `docs/migrations/20261111_base_completa.sql` y
 `docs/migrations/20261112_documento_tipo_valor_unico.sql`, y una cuenta activa en
 `usuario` vinculada a una persona que tenga un documento de un tipo activo y una
-asignación activa de ADMINISTRACION o DOCTOR en una clínica activa.
+asignación de empleado en una clínica activa: cualquier rol activo excepto PACIENTE
+(B8). Un rol creado sin código también es de empleado.
 No se crean cuentas predeterminadas al iniciar el servidor.
 
 **HU2:** el login es solo para empleados y se hace con tipo y número de documento,
-sin contraseña. Las personas que solo son PACIENTE no pueden iniciar sesión.
+sin contraseña. Empleado es cualquier rol activo excepto PACIENTE (por ejemplo
+Atención al público, Enfermera o Doctor). Las personas que solo son PACIENTE, o que
+solo tienen roles inactivos, no pueden iniciar sesión.
 
 ## Ejecución local
 
@@ -41,7 +44,7 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 | `GET /api/auth/me` | Cookie de sesión | Usuario, persona, rol, clínica y token CSRF. |
 | `POST /api/auth/logout` | Cookie y cabecera `X-CSRF-Token` | 204; invalida toda la sesión. |
 | `GET /api/atencion/asignaciones` | Cookie de sesión | Asignaciones de empleado activas de la cuenta en todas sus clínicas; `activa` marca el rol activo. Sin sesión: 401 `auth.sesion`. |
-| `GET /api/atencion/dashboard` | Cookie de sesión y rol activo (DOCTOR o ADMINISTRACION) | Consultas de la clínica del rol activo (HU3). El servicio exige sesión y revalida la asignación: 401 `auth.sesion`, 403 `auth.rolActivo` o `auth.asignacion`. |
+| `GET /api/atencion/dashboard` | Cookie de sesión y rol activo (cualquier rol de empleado) | Consultas de la clínica del rol activo (HU3). El servicio exige sesión y revalida la asignación: 401 `auth.sesion`, 403 `auth.rolActivo` o `auth.asignacion`. |
 | `GET /api/atencion/dashboard/pasos/{id}/valor` | Cookie de sesión y rol activo | Valor de un paso de la misma clínica; si no, 404 `consulta.pasoNoExiste`. |
 | `PUT /api/atencion/rol-activo` | Cookie, token CSRF y `idPersonaRol` | Solo admite asignaciones propias y renueva el identificador de sesión. Con una consulta en curso y otra asignación: 409 `rolCambio.cerrarAntesCambiar`. |
 
@@ -56,7 +59,7 @@ de otro tipo, tipo inactivo, usuario inactivo, persona sin asignación activa y
 persona que solo es PACIENTE. Así la respuesta no revela qué documentos existen ni a
 quién pertenecen. La respuesta y el estado del acceso usan `Cache-Control: no-store`.
 
-Rol inicial: la asignación de ADMINISTRACION o DOCTOR más antigua (`fecha_creacion`,
+Rol inicial: la asignación de empleado más antigua (`fecha_creacion`,
 después `id_persona_rol`), nunca PACIENTE. `GET /auth/me`, el cambio de rol y
 PermisosApiFilter tampoco aceptan una asignación PACIENTE como rol de sesión.
 
@@ -64,9 +67,15 @@ PermisosApiFilter tampoco aceptan una asignación PACIENTE como rol de sesión.
 
 ```text
 usuario: { idUsuario, idPersona, nombres, apellidos }
-rolActivo: { idPersonaRol, codigo, idClinica, nombreClinica }
+rolActivo: { idPersonaRol, codigo, nombreRol, idClinica, nombreClinica }
 csrfToken: token aleatorio asociado a la sesión
 ```
+
+`codigo` es el código estable del rol (`ADMINISTRACION`, `DOCTOR`, `ENFERMERA`…) y es
+`null` en un rol creado desde la app sin código; `nombreRol` es el nombre visible (por
+ejemplo "Atención al público" para `ADMINISTRACION`). El frontend debe mostrar
+`nombreRol` y no deducir permisos del código, salvo `ADMINISTRACION` (recepción y
+catálogos).
 
 No devuelve hashes ni contraseñas. Cada consulta de sesión comprueba de nuevo
 la cuenta y la asignación en PostgreSQL. Si fueron deshabilitadas o revocadas,
@@ -104,7 +113,7 @@ aleatoria que nadie conoce; ya no pide contraseña.
 
 Para dar de alta un empleado: crear la persona, su documento (tipo activo y número
 único dentro del tipo, restricción `uq_documento_tipo_valor`), su asignación de
-ADMINISTRACION o DOCTOR en `persona_rol` y la cuenta en `usuario` con un hash
+empleado (cualquier rol activo excepto PACIENTE) en `persona_rol` y la cuenta en `usuario` con un hash
 aleatorio, y activarla solo después de verificar la asignación. El alta debe hacerla
 un responsable autorizado; no hay endpoint público para asignarse roles.
 

@@ -31,8 +31,8 @@ public class UsuarioRepository extends AbstractRepository<Usuario, UUID> {
         return em.createQuery("SELECT a FROM PersonaRol a JOIN FETCH a.idPersona p "
                 + "JOIN FETCH a.idRol r JOIN FETCH a.idClinica c WHERE p.idPersona=:persona "
                 + "AND r.activo=true AND c.activo=true "
-                // HU2: solo los empleados se autentican; PACIENTE nunca es un rol de sesión.
-                + "AND r.codigo IN ('ADMINISTRACION','DOCTOR') "
+                // HU2/B8: empleado es cualquier rol activo excepto PACIENTE, aunque no tenga código.
+                + "AND (r.codigo IS NULL OR r.codigo <> 'PACIENTE') "
                 + "ORDER BY a.fechaCreacion, a.idPersonaRol", PersonaRol.class)
                 .setParameter("persona", idPersona).getResultList();
     }

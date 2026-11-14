@@ -75,12 +75,13 @@ Las rutas bajo `/api/publico/` no requieren sesión ni CSRF y nunca devuelven no
 | `PUT /api/atencion/rol-activo` | Sí + `X-CSRF-Token` | `{"idPersonaRol":"UUID"}` → 200 con `{idPersonaRol, idConsulta}` y nuevo identificador de sesión. |
 
 `GET /api/atencion/asignaciones` devuelve todas las asignaciones de empleado activas
-(`ADMINISTRACION`, `DOCTOR`; rol y clínica activos) de la cuenta autenticada, en todas sus
+(cualquier rol activo excepto `PACIENTE`, en una clínica activa; B8) de la cuenta autenticada, en todas sus
 clínicas. Usa `ContextoRolService.listar()` y conserva el orden de
 `UsuarioRepository.asignaciones()`: fecha de creación de la asignación y luego `idPersonaRol`.
 `activa` es `true` solo en la asignación que es el rol activo de la sesión. Después del login
 es la primera asignación de empleado. Si la sesión no tiene rol activo, todas salen en `false`.
-No incluye datos de la persona ni asignaciones PACIENTE.
+No incluye datos de la persona ni asignaciones PACIENTE. `codigoRol` es `null` (la clave
+siempre está) en un rol creado sin código; el frontend debe mostrar `nombreRol`.
 
 ```json
 [

@@ -60,13 +60,20 @@ public class AuthResource {
                         .add("idPersona", persona.getIdPersona().toString())
                         .add("nombres", persona.getNombres() == null || persona.getNombres().isBlank() ? usuario.getNombreUsuario() : persona.getNombres())
                         .add("apellidos", persona.getApellidos() == null ? "" : persona.getApellidos()))
-                .add("rolActivo", Json.createObjectBuilder()
-                        .add("idPersonaRol", rol.getIdPersonaRol().toString())
-                        .add("codigo", rol.getIdRol().getCodigo())
-                        .add("idClinica", rol.getIdClinica().getIdClinica().toString())
-                        .add("nombreClinica", rol.getIdClinica().getNombre()))
+                .add("rolActivo", rolActivo(rol))
                 .add("csrfToken", acceso.getCsrfToken()).build();
         return Response.ok(body.toString()).build();
+    }
+
+    /** B8: cualquier rol de empleado puede ser el activo; un rol creado sin código devuelve codigo null. */
+    private static jakarta.json.JsonObjectBuilder rolActivo(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol rol) {
+        var json = Json.createObjectBuilder().add("idPersonaRol", rol.getIdPersonaRol().toString());
+        if (rol.getIdRol().getCodigo() == null) json.addNull("codigo");
+        else json.add("codigo", rol.getIdRol().getCodigo());
+        if (rol.getIdRol().getNombre() == null) json.addNull("nombreRol");
+        else json.add("nombreRol", rol.getIdRol().getNombre());
+        return json.add("idClinica", rol.getIdClinica().getIdClinica().toString())
+                .add("nombreClinica", rol.getIdClinica().getNombre());
     }
 
     @POST @Path("logout")
