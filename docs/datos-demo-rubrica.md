@@ -90,17 +90,17 @@ Secuencia: Toma de presión arterial → Evaluación médica → Programación d
 
 Fechas de nacimiento fijas (no relativas). Cada persona tiene un teléfono y un correo válidos.
 
-| Persona | Nacimiento | Documentos | Teléfono | Correo | Roles y clínicas | Usuario (login) |
+| Persona | Nacimiento | Documentos | Teléfono | Correo | Roles y clínicas |
 |---|---|---|---|---|---|---|
-| Carlos Gómez | 1980-03-15 | DUI `01000001-1`, Pasaporte `A10000001` | 7100-0001 | carlos.gomez@galenosv.test | **Doctor** en Santa Ana y en San Salvador | Sí |
-| Lucía Pérez | 1988-07-22 | DUI `01000002-2` | 7100-0002 | lucia.perez@galenosv.test | **Enfermera** en Santa Ana | Sí |
-| Marta López | 1990-11-05 | DUI `01000003-3` | 7100-0003 | marta.lopez@galenosv.test | **Atención al público** en Santa Ana y en San Salvador | Sí |
-| Ana Martínez | 1992-04-10 (34 años) | DUI `01000004-4`, Pasaporte `B10000004` | 7100-0004 | ana.martinez@galenosv.test | **Paciente** en Santa Ana y en San Salvador | No |
-| Pedro Hernández | 1975-01-30 | DUI `01000005-5` | 7100-0005 | pedro.hernandez@galenosv.test | **Sin rol** (quinta persona del guion) | No |
-| Rosa Méndez | 1985-09-18 | DUI `01000006-6` | 7100-0006 | rosa.mendez@galenosv.test | **Enfermera** en San Salvador | Sí |
-| Jorge Ruiz | 1978-12-02 | DUI `01000007-7` | 7100-0007 | jorge.ruiz@galenosv.test | **Doctor** solo en San Salvador (persona "con roles solo en otras clínicas") | Sí |
-| Julia Flores | 1960-06-25 | DUI `01000008-8` | 7100-0008 | julia.flores@galenosv.test | **Paciente** en Santa Ana | No |
-| Juan Vásquez | 2001-02-14 | DUI `01000009-9` | 7100-0009 | juan.vasquez@galenosv.test | **Paciente** en Santa Ana | No |
+| Carlos Gómez | 1980-03-15 | DUI `01000001-1`, Pasaporte `A10000001` | 7100-0001 | carlos.gomez@galenosv.test | **Doctor** en Santa Ana y en San Salvador |
+| Lucía Pérez | 1988-07-22 | DUI `01000002-2` | 7100-0002 | lucia.perez@galenosv.test | **Enfermera** en Santa Ana |
+| Marta López | 1990-11-05 | DUI `01000003-3` | 7100-0003 | marta.lopez@galenosv.test | **Atención al público** en Santa Ana y en San Salvador |
+| Ana Martínez | 1992-04-10 (34 años) | DUI `01000004-4`, Pasaporte `B10000004` | 7100-0004 | ana.martinez@galenosv.test | **Paciente** en Santa Ana y en San Salvador |
+| Pedro Hernández | 1975-01-30 | DUI `01000005-5` | 7100-0005 | pedro.hernandez@galenosv.test | **Sin rol** (quinta persona del guion) |
+| Rosa Méndez | 1985-09-18 | DUI `01000006-6` | 7100-0006 | rosa.mendez@galenosv.test | **Enfermera** en San Salvador |
+| Jorge Ruiz | 1978-12-02 | DUI `01000007-7` | 7100-0007 | jorge.ruiz@galenosv.test | **Doctor** solo en San Salvador (persona "con roles solo en otras clínicas") |
+| Julia Flores | 1960-06-25 | DUI `01000008-8` | 7100-0008 | julia.flores@galenosv.test | **Paciente** en Santa Ana |
+| Juan Vásquez | 2001-02-14 | DUI `01000009-9` | 7100-0009 | juan.vasquez@galenosv.test | **Paciente** en Santa Ana |
 
 Clínica de trabajo con empleados y pacientes (guion "Cambio de clínica"): **Clínica Santa Ana**.
 
@@ -133,15 +133,15 @@ Textos de ejemplo para los valores (inventados): Triaje "PA 120/80, FC 72, T 36.
 Consulta médica "Paciente estable. Se indican exámenes de control."; Entrega de indicaciones
 "Se entregan indicaciones y cita de seguimiento.".
 
-## 10. Para qué sirve cada cuenta en la revisión del Segundo Parcial
+## 10. Acceso de las personas demo en la revisión del Segundo Parcial
 
 | Documento | Persona | Uso |
 |---|---|---|
-| DUI `01000004-4` o Pasaporte `B10000004` | Ana Martínez (paciente) | **HU1**: 2 clínicas; citas pasadas, de hoy y futuras. Rechazada en el login |
+| DUI `01000004-4` o Pasaporte `B10000004` | Ana Martínez (paciente) | **HU1**: 2 clínicas; citas pasadas, de hoy y futuras. Inicia sesión, pero el rol PACIENTE no abre páginas de personal |
 | DUI `01000001-1` o Pasaporte `A10000001` | Carlos Gómez (Doctor en 2 clínicas) | **HU2, HU3 y HU4**: selector con 2 clínicas; atiende la Consulta médica de SA-3 y SS-2 |
 | DUI `01000002-2` | Lucía Pérez (Enfermera) | HU3 y HU4: atiende el Triaje de SA-4 y SA-5 |
 | DUI `01000003-3` | Marta López (Atención al público, 2 clínicas) | HU3 y HU4: atiende el último paso de SA-6 y cierra la consulta |
-| DUI `01000005-5` | Pedro Hernández (sin rol) | HU2: rechazado |
+| DUI `01000005-5` | Pedro Hernández (sin rol) | HU2: inicia sesión; no puede abrir páginas que requieren rol |
 | `12345678-9` | nadie | HU1 y HU2: mensaje neutro |
 
 `reiniciar-demo.sh` debe devolver las 11 consultas a este estado inicial.

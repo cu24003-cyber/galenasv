@@ -37,7 +37,7 @@ public class PermisosApiFilter implements ContainerRequestFilter {
         // publico: rutas sin sesión (HU1/HU2); AutenticacionFilter también las excluye.
         if (Set.of("auth", "atencion", "publico").contains(raiz)) return;
         var actual = atencion.getRolActivo();
-        var contexto = autenticacion.contexto(acceso.getIdUsuario(), actual == null ? null : actual.getIdPersonaRol());
+        var contexto = autenticacion.contexto(acceso.getIdPersona(), actual == null ? null : actual.getIdPersonaRol());
         PersonaRol activo = contexto.asignacion();
         // B8: el código puede ser null (rol de empleado creado sin código); "" lo trata como empleado.
         String rol = Objects.toString(activo.getIdRol().getCodigo(), "");
@@ -49,7 +49,7 @@ public class PermisosApiFilter implements ContainerRequestFilter {
             return;
         }
         if (rol.equals("PACIENTE")) {
-            boolean expediente = (raiz.equals("personas") && partes.size() >= 2 && uuid(partes.get(1)).equals(contexto.usuario().getPersona().getIdPersona()))
+            boolean expediente = (raiz.equals("personas") && partes.size() >= 2 && uuid(partes.get(1)).equals(contexto.persona().getIdPersona()))
                     || (raiz.equals("personas-roles") && partes.size() >= 2 && uuid(partes.get(1)).equals(activo.getIdPersonaRol()));
             boolean catalogo = raiz.equals("tipos-documento") && partes.size() <= 2
                     || raiz.equals("clinicas") && partes.size() == 2 && uuid(partes.get(1)).equals(activo.getIdClinica().getIdClinica());

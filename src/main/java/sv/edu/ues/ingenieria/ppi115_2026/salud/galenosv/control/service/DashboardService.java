@@ -92,7 +92,7 @@ public class DashboardService {
 
     /** Relee la asignación: 401 si el usuario ya no está activo, 403 si el rol ya no es suyo o no es de empleado. */
     private PersonaRol asignacion(UUID idActivo) {
-        return autenticacion.contexto(acceso.getIdUsuario(), idActivo).asignacion();
+        return autenticacion.contexto(acceso.getIdPersona(), idActivo).asignacion();
     }
 
     private static LocalDate fecha(String valor) {

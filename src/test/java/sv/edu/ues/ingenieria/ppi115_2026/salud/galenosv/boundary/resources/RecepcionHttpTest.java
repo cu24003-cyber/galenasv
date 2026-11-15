@@ -34,7 +34,7 @@ class RecepcionHttpTest extends JerseyTest {
         rolActivo = new Rol(UUID.randomUUID()); rolActivo.setCodigo("ADMINISTRACION");
         var asignacion = new PersonaRol(UUID.randomUUID()); asignacion.setIdRol(rolActivo); asignacion.setIdClinica(new Clinica(UUID.randomUUID()));
         when(atencion.getRolActivo()).thenReturn(asignacion);
-        when(auth.contexto(any(),any())).thenReturn(new AutenticacionService.Contexto(new Usuario(),asignacion));
+        when(auth.contexto(any(),any())).thenReturn(new AutenticacionService.Contexto(new Persona(),asignacion));
         var rolPaciente = new Rol(UUID.randomUUID()); rolPaciente.setCodigo("PACIENTE");
         TypedQuery<Rol> query = mock(TypedQuery.class);
         when(recurso.em.createQuery(anyString(),eq(Rol.class))).thenReturn(query);

@@ -86,10 +86,6 @@ No suba `server.xml` a Git.
 mvn -DskipTests package
 ```
 
-El script del paso 5 lo exige: comprueba que existan
-`target/classes/.../ContrasenaService.class` y `target/galenosv/WEB-INF/lib/password4j-1.8.4.jar`.
-Si faltan, se detiene con `Primero ejecuta: mvn -DskipTests package`.
-
 Para correr las pruebas: `mvn test`. No necesita la base ni Liberty.
 
 ## 5. Crear la base y cargar los datos demo
@@ -116,11 +112,11 @@ El script hace, en este orden y dentro del contenedor (`docker exec … psql`):
 2. aplica `docs/migrations/20261111_base_completa.sql`;
 3. aplica `20261112_documento_tipo_valor_unico.sql`;
 4. aplica `20261113_orden_examen_examen.sql`, la columna `orden_examen.id_examen` de la HU4;
-5. carga `20261113_datos_demo_rubrica.sql`: los datos demo del guion del Primer Parcial
+5. aplica `20261115_login_por_documento.sql`, que elimina la tabla `usuario`;
+6. carga `20261113_datos_demo_rubrica.sql`: los datos demo del guion del Primer Parcial
    (`docs/datos-demo-rubrica.md`): clínicas, roles, tipos, exámenes, procedimientos, personas,
-   documentos, contactos, asignaciones y cuentas. Genera un hash aleatorio con
-   `ContrasenaService`, porque el login es por documento y no usa contraseña;
-6. carga `20261113_datos_demo_rubrica_consultas.sql`: las 11 consultas demo con sus pasos y órdenes.
+   documentos, contactos y asignaciones;
+7. carga `20261113_datos_demo_rubrica_consultas.sql`: las 11 consultas demo con sus pasos y órdenes.
 
 Debe terminar con `Base preparada: galenasv. …`. **Se puede repetir sin error** y deja los mismos
 datos (se verificó cargando dos veces). No borra datos. Para comprobar lo cargado:
@@ -148,7 +144,7 @@ Hasta la B8 la demo era "Clínica de demostración" con admin.demo, doctor.demo 
    docker exec CONTENEDOR pg_dump -U USUARIO -d BASE -Fc > "$RESPALDO"
    docker exec -i CONTENEDOR pg_restore -l < "$RESPALDO" | head -5
    ```
-2. **Limpieza** de la demo anterior. Borra sus clínicas, personas, cuentas, procedimiento,
+2. **Limpieza** de la demo anterior. Borra sus clínicas, personas, procedimiento,
    exámenes y consultas, incluido lo que se les agregó desde la app. Conserva el tipo de
    documento DUI. Si alguna fila de otra persona depende de la demo (por ejemplo, una asignación
    en "Clínica de demostración"), se detiene **sin borrar nada** y dice cuántas hay:
@@ -272,13 +268,13 @@ finalización (docs/flujo-consulta.md).
 | DUI `01000003-3` | Marta López | Atención al público en Santa Ana y en San Salvador | Entra; completa la Entrega de indicaciones de SA-6 y cierra la consulta. |
 | DUI `01000006-6` | Rosa Méndez | Enfermera en San Salvador | Entra. |
 | DUI `01000007-7` | Jorge Ruiz | Doctor solo en San Salvador | Entra. |
-| DUI `01000004-4` o Pasaporte `B10000004` | Ana Martínez | Paciente en Santa Ana y en San Salvador | **Rechazada** (401). HU1: citas pasadas, de hoy y futuras en 2 clínicas. |
-| DUI `01000008-8`, `01000009-9` | Julia Flores, Juan Vásquez | Paciente en Santa Ana | Rechazados (401). |
-| DUI `01000005-5` | Pedro Hernández | Ninguna | **Rechazado** (401). |
+| DUI `01000004-4` o Pasaporte `B10000004` | Ana Martínez | Paciente en Santa Ana y en San Salvador | Entra; su rol PACIENTE no permite abrir páginas de personal. HU1: citas pasadas, de hoy y futuras en 2 clínicas. |
+| DUI `01000008-8`, `01000009-9` | Julia Flores, Juan Vásquez | Paciente en Santa Ana | Entran; solo tienen acceso de paciente. |
+| DUI `01000005-5` | Pedro Hernández | Ninguna | Entra; sin rol no puede abrir páginas protegidas. |
 | `12345678-9` | Nadie | — | HU1 y HU2: mensaje neutro. |
 
-Cuentas (`usuario.nombre_usuario`): carlos.gomez, lucia.perez, marta.lopez, rosa.mendez y
-jorge.ruiz. El login no las usa: es por tipo y número de documento.
+El login usa el tipo y número de documento. El rol sigue determinando las páginas y operaciones
+disponibles.
 
 **Procedimientos** (cada paso con un rol distinto; el último es la finalización):
 
@@ -314,7 +310,6 @@ SA-1 a SA-8 son de Clínica Santa Ana; SS-1 a SS-3, de Clínica San Salvador.
 | Síntoma | Causa | Solución |
 | --- | --- | --- |
 | `403` con `"code":"auth.origen"` al iniciar sesión o en cualquier escritura | La petición no trae `Origin` (o `Referer`) aceptado: el frontend no corre en el puerto 3000, o se usa curl sin `-H 'Origin: http://localhost:3000'`. | Levantar ChivoMed en el puerto 3000, o definir `CHIVOMED_ORIGINS` antes de `mvn liberty:run` (sección 8). En curl, enviar la cabecera `Origin`. |
-| `401` `auth.credenciales` con `01000004-4` o `01000005-5` | Ana es paciente y Pedro no tiene rol: la HU2 solo admite empleados. | Usar `01000001-1` (Carlos), `01000002-2` (Lucía) o `01000003-3` (Marta). |
 | `403` `consulta.noResponsablePaso` al completar, retroceder u ordenar | El paso lo atiende otro rol (por ejemplo, Carlos intenta completar el Triaje). | Entrar con un empleado que tenga el rol del paso en esa clínica (tabla de la sección 10). |
 | `preparar-bd-desarrollo.sh` falla con `duplicate key value violates unique constraint "uq_documento_tipo_valor"` | Otra persona de la base ya tiene uno de los documentos demo (`0100000N-N`). | Revisar esa persona; si es la demo anterior, seguir la sección 5.1. |
 | La limpieza falla con `No se borró nada: hay datos de otras personas que dependen de la demo anterior` | Hay filas que no son de la demo colgando de ella (el mensaje dice cuáles). | Revisarlas y moverlas o borrarlas a mano, o dejar la demo anterior. La base quedó sin cambios. |

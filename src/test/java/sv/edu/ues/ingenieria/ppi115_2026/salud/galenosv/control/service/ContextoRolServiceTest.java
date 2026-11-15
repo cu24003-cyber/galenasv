@@ -20,7 +20,7 @@ class ContextoRolServiceTest {
     }
     @Test void soloListaLaCuentaActualYRechazaUuidAjenos() {
         UUID usuario = UUID.randomUUID(); PersonaRol propia = new PersonaRol(UUID.randomUUID());
-        when(acceso.vigente()).thenReturn(true); when(acceso.getIdUsuario()).thenReturn(usuario);
+        when(acceso.vigente()).thenReturn(true); when(acceso.getIdPersona()).thenReturn(usuario);
         when(autenticacion.asignaciones(usuario)).thenReturn(List.of(propia));
         assertSame(propia, servicio.cargar(propia.getIdPersonaRol()));
         assertThrows(ServiceException.class, () -> servicio.cargar(UUID.randomUUID()));

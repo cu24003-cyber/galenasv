@@ -33,7 +33,7 @@ public class RecepcionResource {
         @NotNull @PastOrPresent @jakarta.json.bind.annotation.JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX") public Date fechaNacimiento;
     }
     @POST public Response crear(@Valid @NotNull Paciente datos, @Context UriInfo uri) {
-        var contexto = autenticacion.contexto(acceso.getIdUsuario(), atencion.getRolActivo().getIdPersonaRol());
+        var contexto = autenticacion.contexto(acceso.getIdPersona(), atencion.getRolActivo().getIdPersonaRol());
         if (!"ADMINISTRACION".equals(contexto.asignacion().getIdRol().getCodigo())) throw new AccesoException(403, "auth.permiso", "Se requiere administración.");
         var roles = em.createQuery("SELECT r FROM Rol r WHERE r.codigo='PACIENTE' AND r.activo=true", Rol.class).getResultList();
         if (roles.size() != 1) throw new AccesoException(409, "registro.rolPaciente", "Configura un único rol de paciente activo antes de registrar.");

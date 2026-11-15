@@ -35,7 +35,7 @@ class DashboardServiceTest {
         servicio.reloj = Clock.fixed(AHORA, ZONA);
         activo = asignacion(asignacionId, "DOCTOR", rolDoctor);
         lenient().when(acceso.vigente()).thenReturn(true);
-        lenient().when(acceso.getIdUsuario()).thenReturn(usuario);
+        lenient().when(acceso.getIdPersona()).thenReturn(usuario);
         lenient().when(atencion.getRolActivo()).thenReturn(new PersonaRol(asignacionId));
         lenient().when(autenticacion.contexto(usuario, asignacionId)).thenAnswer(i -> new AutenticacionService.Contexto(null, activo));
     }

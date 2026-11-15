@@ -42,7 +42,7 @@ class PermisosApiFilterCuerpoTest {
         filtro.atencion = mock(AtencionSesion.class);
         filtro.autenticacion = mock(AutenticacionService.class);
         when(filtro.atencion.getRolActivo()).thenReturn(activo);
-        when(filtro.autenticacion.contexto(any(), any())).thenReturn(new AutenticacionService.Contexto(new Usuario(), activo));
+        when(filtro.autenticacion.contexto(any(), any())).thenReturn(new AutenticacionService.Contexto(new Persona(), activo));
         when(filtro.em.find(ConsultaProcedimientoPaso.class, paso)).thenReturn(p);
 
         request = mock(ContainerRequestContext.class);

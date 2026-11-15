@@ -7,7 +7,7 @@
 -- psql -X -v ON_ERROR_STOP=1 -d NOMBRE_BASE -f docs/migrations/20261113_limpieza_demo_anterior.sql
 --
 -- También borra lo que cuelga de esas filas y se creó desde la app: consultas de las personas demo
--- con sus procedimientos, pasos, órdenes y resultados; documentos, contactos, cuentas y
+-- con sus procedimientos, pasos, órdenes y resultados; documentos y contactos;
 -- asignaciones de las personas demo; pasos, secuencias y exámenes asignables del procedimiento demo.
 -- Si alguna fila de otra persona depende de la demo (una asignación en la clínica demo, un paso de
 -- otra consulta hecho por un empleado demo o del procedimiento demo, una orden de un examen demo…)
@@ -87,7 +87,6 @@ DELETE FROM public.examen_tipo_examen
 WHERE id_examen IN (SELECT id FROM lim_examen) OR id_tipo_examen IN (SELECT id FROM lim_tipo);
 DELETE FROM public.examen WHERE id_examen IN (SELECT id FROM lim_examen);
 DELETE FROM public.tipo_examen WHERE id_tipo_examen IN (SELECT id FROM lim_tipo);
-DELETE FROM public.usuario WHERE id_persona IN (SELECT id FROM lim_persona);
 DELETE FROM public.documento WHERE id_persona IN (SELECT id FROM lim_persona);
 DELETE FROM public.medio_contacto WHERE id_persona IN (SELECT id FROM lim_persona);
 DELETE FROM public.persona_rol WHERE id_persona_rol IN (SELECT id FROM lim_pr);
@@ -98,7 +97,6 @@ DO $$ BEGIN
     IF EXISTS (SELECT 1 FROM public.clinica WHERE id_clinica::text LIKE 'de110000-%')
        OR EXISTS (SELECT 1 FROM public.persona WHERE id_persona::text LIKE 'de110001-%')
        OR EXISTS (SELECT 1 FROM public.persona_rol WHERE id_persona_rol::text LIKE 'de110002-%')
-       OR EXISTS (SELECT 1 FROM public.usuario WHERE id_usuario::text LIKE 'de110003-%')
        OR EXISTS (SELECT 1 FROM public.documento WHERE id_documento::text LIKE 'de110005-%')
        OR EXISTS (SELECT 1 FROM public.consulta WHERE id_consulta::text LIKE 'de110009-%')
        OR EXISTS (SELECT 1 FROM public.procedimiento WHERE id_procedimiento::text LIKE 'de110006-%')

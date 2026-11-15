@@ -34,9 +34,8 @@ class PermisosApiHttpTest extends JerseyTest {
         activo=new PersonaRol(UUID.randomUUID()); activo.setIdRol(rol); activo.setIdClinica(new Clinica(clinica)); activo.setIdPersona(new Persona(UUID.randomUUID()));
         paciente=new PersonaRol(UUID.randomUUID()); paciente.setIdClinica(new Clinica(clinica)); paciente.setIdPersona(new Persona(UUID.randomUUID()));
         ajeno=new PersonaRol(UUID.randomUUID()); ajeno.setIdClinica(new Clinica(UUID.randomUUID())); ajeno.setIdPersona(new Persona(UUID.randomUUID()));
-        Usuario usuario=new Usuario(); usuario.setPersona(activo.getIdPersona());
         when(atencion.getRolActivo()).thenReturn(activo);
-        when(auth.contexto(any(),any())).thenAnswer(i -> new AutenticacionService.Contexto(usuario, activo));
+        when(auth.contexto(any(),any())).thenAnswer(i -> new AutenticacionService.Contexto(activo.getIdPersona(), activo));
         when(em.find(PersonaRol.class,paciente.getIdPersonaRol())).thenReturn(paciente);
         when(em.find(PersonaRol.class,ajeno.getIdPersonaRol())).thenReturn(ajeno);
         when(em.find(PersonaRol.class,activo.getIdPersonaRol())).thenReturn(activo);

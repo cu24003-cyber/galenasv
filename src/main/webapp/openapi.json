@@ -13309,7 +13309,7 @@
         ],
         "operationId": "asignacionesAtencion",
         "summary": "Listar las asignaciones de empleado activas de la cuenta en todas sus clínicas",
-        "description": "Orden de UsuarioRepository.asignaciones(). activa es true solo en el rol activo de la sesión. Exige sesión aunque PermisosApiFilter no limite /atencion.",
+        "description": "Orden de PersonaRolRepository.listarPorPersona(). activa es true solo en el rol activo de la sesión. Exige sesión aunque PermisosApiFilter no limite /atencion.",
         "responses": {
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -13945,7 +13945,7 @@
             }
           }
         },
-        "description": "Sin contraseña. Solo personas con una asignación activa de ADMINISTRACION o DOCTOR; el rol inicial es la asignación de empleado más antigua. Documento inexistente, de otro tipo, tipo inactivo, usuario inactivo o persona sin rol de empleado (incluido PACIENTE) devuelven el mismo 401 auth.credenciales."
+        "description": "Sin contraseña ni cuenta de usuario. Requiere que exista el documento, que su tipo esté activo y que esté vinculado a una persona existente. El rol inicial es la asignación de empleado activa más antigua, si existe; pacientes y personas sin rol también inician sesión, pero el rol determina las páginas y operaciones protegidas. Documento inexistente, tipo inactivo o persona inexistente devuelven 401 auth.credenciales."
       }
     },
     "/auth/me": {
@@ -15955,11 +15955,13 @@
             "properties": {
               "idUsuario": {
                 "type": "string",
-                "format": "uuid"
+                "format": "uuid",
+                "description": "Alias de idPersona por compatibilidad; no representa una cuenta."
               },
               "idPersona": {
                 "type": "string",
-                "format": "uuid"
+                "format": "uuid",
+                "description": "Identidad autenticada mediante documento."
               },
               "nombres": {
                 "type": "string"
@@ -15971,6 +15973,7 @@
           },
           "rolActivo": {
             "type": "object",
+            "nullable": true,
             "required": [
               "idPersonaRol",
               "codigo",
@@ -15984,9 +15987,11 @@
               },
               "codigo": {
                 "type": "string",
+                "nullable": true,
                 "enum": [
                   "ADMINISTRACION",
                   "DOCTOR",
+                  "ENFERMERA",
                   "PACIENTE"
                 ]
               },

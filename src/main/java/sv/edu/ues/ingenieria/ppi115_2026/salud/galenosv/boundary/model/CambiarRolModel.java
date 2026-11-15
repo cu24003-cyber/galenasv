@@ -31,11 +31,13 @@ public class CambiarRolModel implements Serializable {
     @EJB private ContextoRolService servicio;
     @Inject private AtencionSesion sesion;
     private List<PersonaRol> asignaciones = List.of();
+    private List<Clinica> clinicas = List.of();
     private String clinicaId, personaId, asignacionId;
 
     @PostConstruct public void iniciar() {
         try {
-            asignaciones = servicio.listar();
+            asignaciones = servicio.listarParaCambio();
+            clinicas = servicio.listarClinicasParaCambio();
             PersonaRol actual = sesion.getRolActivo();
             if (actual != null) {
                 clinicaId = actual.getIdClinica().getIdClinica().toString();
@@ -51,7 +53,7 @@ public class CambiarRolModel implements Serializable {
                 throw ServiceException.localizada("rolCambio.seleccioneClinicaPersona", "Seleccione una clínica y una persona.");
             cambiarPersona();
             if (asignacionId == null) throw ServiceException.localizada("rolCambio.sinRol", "La persona no tiene un rol activo en la clínica seleccionada.");
-            PersonaRol elegida = servicio.cargar(UUID.fromString(asignacionId));
+            PersonaRol elegida = servicio.cargarParaCambio(UUID.fromString(asignacionId));
             if (!elegida.getIdClinica().getIdClinica().toString().equals(clinicaId)
                     || !elegida.getIdPersona().getIdPersona().toString().equals(personaId))
                 throw ServiceException.localizada("rolCambio.clinicaAjena", "La persona y el rol deben pertenecer a la clínica seleccionada.");
@@ -76,8 +78,7 @@ public class CambiarRolModel implements Serializable {
     }
     public List<PersonaRol> getAsignaciones() { return asignaciones; }
     public List<Clinica> getClinicas() {
-        return asignaciones.stream().map(PersonaRol::getIdClinica).distinct()
-                .sorted(Comparator.comparing(Clinica::getNombre)).toList();
+        return clinicas.stream().sorted(Comparator.comparing(Clinica::getNombre)).toList();
     }
     public List<Persona> getPersonas() {
         return asignaciones.stream().filter(r -> r.getIdClinica().getIdClinica().toString().equals(clinicaId))

@@ -11,12 +11,12 @@ import java.util.UUID;
 @SessionScoped
 public class AccesoSesion implements Serializable {
     private static final long serialVersionUID = 1L;
-    private UUID idUsuario;
+    private UUID idPersona;
     private String csrfToken;
     private Instant inicio;
 
-    public void autenticar(UUID idUsuario) {
-        this.idUsuario = java.util.Objects.requireNonNull(idUsuario);
+    public void autenticar(UUID idPersona) {
+        this.idPersona = java.util.Objects.requireNonNull(idPersona);
         inicio = Instant.now();
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
@@ -24,8 +24,8 @@ public class AccesoSesion implements Serializable {
     }
 
     public boolean vigente() {
-        return idUsuario != null && inicio != null && Instant.now().isBefore(inicio.plus(Duration.ofHours(8)));
+        return idPersona != null && inicio != null && Instant.now().isBefore(inicio.plus(Duration.ofHours(8)));
     }
-    public UUID getIdUsuario() { return idUsuario; }
+    public UUID getIdPersona() { return idPersona; }
     public String getCsrfToken() { return csrfToken; }
 }

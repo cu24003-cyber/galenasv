@@ -29,7 +29,7 @@ import jakarta.ws.rs.core.Response;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.resources.dto.AtencionDto;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionSesion;
 
-/** Comparte el contexto de JSF y admite únicamente asignaciones de la cuenta autenticada. */
+/** Comparte el contexto de JSF y admite únicamente asignaciones de la persona autenticada. */
 @Path("atencion")
 @RequestScoped
 @Transactional(rollbackOn = Exception.class)
@@ -46,7 +46,7 @@ public class AtencionResource {
     @GET
     public Response contexto() {
         var activo = sesion.getRolActivo();
-        autenticacion.contexto(acceso.getIdUsuario(), activo == null ? null : activo.getIdPersonaRol());
+        autenticacion.contexto(acceso.getIdPersona(), activo == null ? null : activo.getIdPersonaRol());
         var json = Json.createObjectBuilder();
         if (sesion.getRolActivo() == null) json.addNull("idPersonaRol");
         else json.add("idPersonaRol", sesion.getRolActivo().getIdPersonaRol().toString());
@@ -57,8 +57,8 @@ public class AtencionResource {
     }
 
     /**
-     * Asignaciones de empleado activas de la cuenta, en todas sus clínicas y en el orden de
-     * UsuarioRepository.asignaciones(). PermisosApiFilter no limita /atencion, y listar()
+     * Asignaciones de empleado activas de la persona, en todas sus clínicas y en el orden de
+     * PersonaRolRepository.listarPorPersona(). PermisosApiFilter no limita /atencion, y listar()
      * devuelve [] sin sesión, por eso la sesión se exige aquí también.
      */
     @GET
@@ -107,7 +107,7 @@ public class AtencionResource {
     public Response salirDeConsulta() {
         if (!acceso.vigente()) throw new AccesoException(401, "auth.sesion", "Vuelva a iniciar sesión.");
         var activo = sesion.getRolActivo();
-        autenticacion.contexto(acceso.getIdUsuario(), activo == null ? null : activo.getIdPersonaRol());
+        autenticacion.contexto(acceso.getIdPersona(), activo == null ? null : activo.getIdPersonaRol());
         sesion.setConsulta(null);
         return Response.noContent().build();
     }
@@ -115,7 +115,9 @@ public class AtencionResource {
     @PUT
     @Path("rol-activo")
     public Response cambiarRol(@Valid @NotNull AtencionDto.Responsable datos) {
-        var contexto = autenticacion.contexto(acceso.getIdUsuario(), datos.getIdPersonaRol());
+        var contexto = autenticacion.contexto(acceso.getIdPersona(), datos.getIdPersonaRol());
+        if (!AutenticacionService.esEmpleado(contexto.asignacion()))
+            throw new AccesoException(403, "auth.asignacion", "Seleccione un rol de empleado activo.");
         sesion.cambiarRol(contexto.asignacion());
         request.changeSessionId();
         return contexto();

@@ -177,7 +177,7 @@ class RestApiTest extends JerseyTest {
         when(sesion.getRolActivo()).thenReturn((PersonaRol) records.get(PersonaRol.class).get(ID));
         acceso = mock(AccesoSesion.class);
         AutenticacionService autenticacion = mock(AutenticacionService.class);
-        when(acceso.getIdUsuario()).thenReturn(ID);
+        when(acceso.getIdPersona()).thenReturn(ID);
         when(acceso.vigente()).thenReturn(true);
         roles = mock(ContextoRolService.class);
         bindings.put(ContextoRolService.class, roles);

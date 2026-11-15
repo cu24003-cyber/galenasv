@@ -53,7 +53,7 @@ Detalle completo en `docs/autenticacion.md`. Resumen del contrato (HU1, HU2):
 | --- | --- | --- |
 | `GET /api/publico/tipos-documento` | No | 200 con `[{idTipoDocumento, nombre, indicaciones, expresionRegular}]`, solo tipos activos, ordenados por nombre. `indicaciones` y `expresionRegular` pueden ser `null`. |
 | `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"01000001-1"}` → 204 y cookie nueva. |
-| `GET /api/auth/me` | Sí | Usuario, rol activo y `csrfToken`. |
+| `GET /api/auth/me` | Sí | Identidad basada en persona, rol activo o `null`, y `csrfToken`. |
 | `POST /api/auth/logout` | Sí + `X-CSRF-Token` | 204. |
 
 Errores de `POST /api/auth/login`:
@@ -61,7 +61,7 @@ Errores de `POST /api/auth/login`:
 | Código | Caso |
 | --- | --- |
 | 400 `json.invalido` / validación | `idTipoDocumento` no es UUID; número vacío, mayor de 50 caracteres o con saltos de línea. |
-| 401 `auth.credenciales` | Mismo mensaje para documento inexistente, documento de otro tipo, tipo inactivo, usuario inactivo, persona sin asignación activa y persona que solo es PACIENTE. |
+| 401 `auth.credenciales` | Documento inexistente, de tipo inactivo o no vinculado a una persona existente. |
 | 403 `auth.origen` | `Origin`/`Referer` no permitido. |
 | 429 `auth.demasiadosIntentos` | Más de diez intentos por dirección en cinco minutos. |
 
@@ -80,13 +80,13 @@ abierta y sin cambios: sus pasos, valores y órdenes se conservan, y se puede vo
 seleccionar con `PUT /api/consultas/{id}/sesion`. Después se puede cambiar de rol con
 `PUT /api/atencion/rol-activo`, que con una consulta en curso daba 409
 `rolCambio.cerrarAntesCambiar`. Es idempotente: sin consulta en curso también responde 204.
-Errores: 401 `auth.sesion` sin sesión o con usuario inactivo; 403 `auth.asignacion` si la
-asignación activa ya no es de la cuenta; 403 `auth.csrf` sin el token.
+Errores: 401 `auth.sesion` sin sesión, sesión vencida o persona sin documento de tipo activo;
+403 `auth.asignacion` si la asignación activa ya no pertenece a la persona; 403 `auth.csrf` sin el token.
 
 `GET /api/atencion/asignaciones` devuelve todas las asignaciones de empleado activas
-(cualquier rol activo excepto `PACIENTE`, en una clínica activa; B8) de la cuenta autenticada, en todas sus
+(cualquier rol activo excepto `PACIENTE`, en una clínica activa; B8) de la persona autenticada, en todas sus
 clínicas. Usa `ContextoRolService.listar()` y conserva el orden de
-`UsuarioRepository.asignaciones()`: fecha de creación de la asignación y luego `idPersonaRol`.
+`PersonaRolRepository.listarPorPersona()`: fecha de creación de la asignación y luego `idPersonaRol`.
 `activa` es `true` solo en la asignación que es el rol activo de la sesión. Después del login
 es la primera asignación de empleado. Si la sesión no tiene rol activo, todas salen en `false`.
 No incluye datos de la persona ni asignaciones PACIENTE. `codigoRol` es `null` (la clave
@@ -106,11 +106,11 @@ Errores:
 
 | Ruta | Código | Caso |
 | --- | --- | --- |
-| `GET asignaciones` | 401 `auth.sesion` | Sin sesión, sesión vencida o usuario inactivo. |
+| `GET asignaciones` | 401 `auth.sesion` | Sin sesión, sesión vencida, persona inexistente o sin documento de tipo activo. |
 | `PUT rol-activo` | 400 `validacion.invalida` | Falta `idPersonaRol` o no es UUID. |
-| `PUT rol-activo` | 401 `auth.sesion` | Sin sesión o usuario inactivo. |
+| `PUT rol-activo` | 401 `auth.sesion` | Sin sesión, persona inexistente o sin documento de tipo activo. |
 | `PUT rol-activo` | 403 `auth.csrf` | Falta el token CSRF o no coincide. |
-| `PUT rol-activo` | 403 `auth.asignacion` | La asignación no es una asignación de empleado activa de la cuenta. |
+| `PUT rol-activo` | 403 `auth.asignacion` | La asignación no es un rol de empleado activo de la persona. |
 | `PUT rol-activo` | 409 `rolCambio.cerrarAntesCambiar` | Hay una consulta en curso y se pide otra asignación. Primero se cierra la consulta; no se renueva la sesión. Es un conflicto de estado, igual que `consulta.cerrarAntesCrear`. |
 
 ### Dashboard de consultas (HU3)
@@ -199,7 +199,7 @@ Errores:
 | 400 `dashboard.fecha` | `desde` o `hasta` no tiene el formato `yyyy-MM-dd`. |
 | 400 `dashboard.rangoInvertido` | `desde` es posterior a `hasta`. |
 | 400 `dashboard.rangoExcedido` | Más de 31 días. |
-| 401 `auth.sesion` | Sin sesión, sesión vencida o usuario inactivo. |
+| 401 `auth.sesion` | Sin sesión, sesión vencida o persona inexistente/sin documento de tipo activo. |
 | 403 `auth.rolActivo` | La sesión no tiene un rol activo. |
 | 403 `auth.asignacion` | El rol activo ya no es una asignación de empleado activa de la cuenta. |
 | 404 `consulta.noExiste` | Ruta `atencion/consultas/{idConsulta}`: la consulta no existe o es de otra clínica (misma respuesta). Un id que no es UUID da 404 de la ruta. |

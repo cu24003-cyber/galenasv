@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 -- Ejecutar después de 20261113_datos_demo_rubrica.sql y 20261113_datos_demo_rubrica_consultas.sql
 -- (recién cargados o con -v reiniciar=1). Solo lee; no modifica datos.
--- Comprueba docs/datos-demo-rubrica.md: catálogos, personas, cuentas y las 11 consultas.
+-- Comprueba docs/datos-demo-rubrica.md: catálogos, personas, documentos y las 11 consultas.
 DO $$
 DECLARE
     hoy date := (now() AT TIME ZONE 'America/El_Salvador')::date;
@@ -98,25 +98,24 @@ BEGIN
         RAISE EXCEPTION 'Asignables de Evaluación médica: %', obtenido;
     END IF;
 
-    -- 8. Personas, documentos, contactos, roles y cuentas.
+    -- 8. Personas, documentos, contactos y roles.
     SELECT string_agg(p.nombres || ' ' || p.apellidos || ' ' || to_char((p.fecha_nacimiento AT TIME ZONE 'America/El_Salvador')::date, 'YYYY-MM-DD')
                       || ' [' || coalesce((SELECT string_agg(t.nombre || ' ' || d.valor, ', ' ORDER BY t.nombre)
                                              FROM public.documento d JOIN public.tipo_documento t USING (id_tipo_documento)
                                             WHERE d.id_persona = p.id_persona), '') || ']'
                       || ' {' || coalesce((SELECT string_agg(r.codigo || '@' || c.nombre, ', ' ORDER BY r.codigo, c.nombre)
                                              FROM public.persona_rol a JOIN public.rol r USING (id_rol) JOIN public.clinica c USING (id_clinica)
-                                            WHERE a.id_persona = p.id_persona), '') || '}'
-                      || coalesce(' @' || (SELECT u.nombre_usuario FROM public.usuario u WHERE u.id_persona = p.id_persona AND u.activo), ''),
+                                            WHERE a.id_persona = p.id_persona), '') || '}',
                       E'\n' ORDER BY p.id_persona)
       INTO obtenido FROM public.persona p WHERE p.id_persona::text LIKE 'de12000b-%';
     esperado := concat_ws(E'\n',
-        'Carlos Gómez 1980-03-15 [DUI 01000001-1, Pasaporte A10000001] {DOCTOR@Clínica San Salvador, DOCTOR@Clínica Santa Ana} @carlos.gomez',
-        'Lucía Pérez 1988-07-22 [DUI 01000002-2] {ENFERMERA@Clínica Santa Ana} @lucia.perez',
-        'Marta López 1990-11-05 [DUI 01000003-3] {ADMINISTRACION@Clínica San Salvador, ADMINISTRACION@Clínica Santa Ana} @marta.lopez',
+        'Carlos Gómez 1980-03-15 [DUI 01000001-1, Pasaporte A10000001] {DOCTOR@Clínica San Salvador, DOCTOR@Clínica Santa Ana}',
+        'Lucía Pérez 1988-07-22 [DUI 01000002-2] {ENFERMERA@Clínica Santa Ana}',
+        'Marta López 1990-11-05 [DUI 01000003-3] {ADMINISTRACION@Clínica San Salvador, ADMINISTRACION@Clínica Santa Ana}',
         'Ana Martínez 1992-04-10 [DUI 01000004-4, Pasaporte B10000004] {PACIENTE@Clínica San Salvador, PACIENTE@Clínica Santa Ana}',
         'Pedro Hernández 1975-01-30 [DUI 01000005-5] {}',
-        'Rosa Méndez 1985-09-18 [DUI 01000006-6] {ENFERMERA@Clínica San Salvador} @rosa.mendez',
-        'Jorge Ruiz 1978-12-02 [DUI 01000007-7] {DOCTOR@Clínica San Salvador} @jorge.ruiz',
+        'Rosa Méndez 1985-09-18 [DUI 01000006-6] {ENFERMERA@Clínica San Salvador}',
+        'Jorge Ruiz 1978-12-02 [DUI 01000007-7] {DOCTOR@Clínica San Salvador}',
         'Julia Flores 1960-06-25 [DUI 01000008-8] {PACIENTE@Clínica Santa Ana}',
         'Juan Vásquez 2001-02-14 [DUI 01000009-9] {PACIENTE@Clínica Santa Ana}');
     IF obtenido IS DISTINCT FROM esperado THEN RAISE EXCEPTION E'Personas:\n%\nEsperado:\n%', obtenido, esperado; END IF;

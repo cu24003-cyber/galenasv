@@ -8,8 +8,6 @@ DECLARE
         (SELECT nullif(count(*), 0) || ' clínica(s)' FROM public.clinica WHERE id_clinica::text LIKE 'de110000-%'),
         (SELECT nullif(count(*), 0) || ' persona(s)' FROM public.persona WHERE id_persona::text LIKE 'de110001-%'),
         (SELECT nullif(count(*), 0) || ' asignación(es)' FROM public.persona_rol WHERE id_persona_rol::text LIKE 'de110002-%'),
-        (SELECT nullif(count(*), 0) || ' cuenta(s)' FROM public.usuario
-          WHERE id_usuario::text LIKE 'de110003-%' OR lower(nombre_usuario) IN ('admin.demo', 'doctor.demo', 'paciente.demo')),
         (SELECT nullif(count(*), 0) || ' documento(s)' FROM public.documento WHERE id_documento::text LIKE 'de110005-%'),
         (SELECT nullif(count(*), 0) || ' procedimiento(s)' FROM public.procedimiento WHERE id_procedimiento::text LIKE 'de110006-%'),
         (SELECT nullif(count(*), 0) || ' paso(s) de procedimiento' FROM public.procedimiento_paso WHERE id_procedimiento_paso::text LIKE 'de110007-%'),

@@ -5,48 +5,60 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Usuario;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
-import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.UsuarioRepository;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.DocumentoRepository;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.PersonaRepository;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.PersonaRolRepository;
 
 @Stateless
 public class AutenticacionService {
-    @Inject UsuarioRepository usuarios;
-    public record Contexto(Usuario usuario, PersonaRol asignacion) {}
-    /** Código del único rol que no es de empleado: el paciente nunca inicia sesión (HU2). */
+    @Inject DocumentoRepository documentos;
+    @Inject PersonaRepository personas;
+    @Inject PersonaRolRepository asignaciones;
+    public record Contexto(Persona persona, PersonaRol asignacion) {}
+    /** Código del rol de paciente, que conserva permisos limitados a su propio expediente. */
     public static final String PACIENTE = "PACIENTE";
 
     /**
-     * HU2: login de empleados por tipo y número de documento, sin contraseña. Todo rechazo
-     * usa el mismo 401 para no revelar qué documentos existen ni a quién pertenecen.
+     * HU2: autentica con un documento de tipo activo y una persona existente. Las páginas
+     * y operaciones posteriores determinan el acceso según el rol disponible.
      */
     public Contexto iniciar(UUID idTipoDocumento, String numeroDocumento) {
         if (idTipoDocumento == null || numeroDocumento == null || numeroDocumento.isBlank()) throw credencialesInvalidas();
-        Usuario usuario = usuarios.buscarPorDocumento(idTipoDocumento, numeroDocumento);
-        if (usuario == null || !Boolean.TRUE.equals(usuario.getActivo())) throw credencialesInvalidas();
-        // La consulta ya viene ordenada por antigüedad; se toma la primera asignación de empleado.
-        return empleados(usuarios.asignaciones(usuario.getPersona().getIdPersona())).findFirst()
-                .map(asignacion -> new Contexto(usuario, asignacion))
-                .orElseThrow(this::credencialesInvalidas);
+        Persona persona = documentos.buscarPersonaPorDocumento(idTipoDocumento, numeroDocumento);
+        if (persona == null) throw credencialesInvalidas();
+        List<PersonaRol> roles = asignacionesActivas(persona.getIdPersona());
+        PersonaRol rol = empleados(roles).findFirst().orElseGet(() -> roles.stream().findFirst().orElse(null));
+        return new Contexto(persona, rol);
     }
 
-    public Usuario usuarioActivo(UUID idUsuario) {
-        Usuario usuario = idUsuario == null ? null : usuarios.buscarSesion(idUsuario);
-        if (usuario == null || !Boolean.TRUE.equals(usuario.getActivo())) {
+    public Persona personaActiva(UUID idPersona) {
+        Persona persona = idPersona == null ? null : personas.find(idPersona);
+        if (persona == null || !documentos.tieneDocumentoActivo(idPersona)) {
             throw new AccesoException(401, "auth.sesion", "Vuelva a iniciar sesión.");
         }
-        return usuario;
+        return persona;
     }
 
-    public List<PersonaRol> asignaciones(UUID idUsuario) {
-        return usuarios.asignaciones(usuarioActivo(idUsuario).getPersona().getIdPersona());
+    public List<PersonaRol> asignaciones(UUID idPersona) {
+        personaActiva(idPersona);
+        return empleados(asignacionesActivas(idPersona)).toList();
     }
 
-    public Contexto contexto(UUID idUsuario, UUID idPersonaRol) {
-        Usuario usuario = usuarioActivo(idUsuario);
-        PersonaRol rol = empleados(usuarios.asignaciones(usuario.getPersona().getIdPersona()))
-                .filter(a -> a.getIdPersonaRol().equals(idPersonaRol)).findFirst().orElseThrow(this::sinAsignacion);
-        return new Contexto(usuario, rol);
+    public Contexto contexto(UUID idPersona, UUID idPersonaRol) {
+        Persona persona = personaActiva(idPersona);
+        PersonaRol rol = idPersonaRol == null ? null : asignacionesActivas(idPersona).stream()
+                .filter(a -> a.getIdPersonaRol().equals(idPersonaRol)).findFirst().orElse(null);
+        if (rol == null) throw sinAsignacion();
+        return new Contexto(persona, rol);
+    }
+
+    private List<PersonaRol> asignacionesActivas(UUID idPersona) {
+        return asignaciones.listarPorPersona(idPersona).stream()
+                .filter(a -> a.getIdRol() != null && Boolean.TRUE.equals(a.getIdRol().getActivo())
+                        && a.getIdClinica() != null && Boolean.TRUE.equals(a.getIdClinica().getActivo()))
+                .toList();
     }
 
     /**
@@ -65,7 +77,7 @@ public class AutenticacionService {
     }
 
     private AccesoException credencialesInvalidas() {
-        return new AccesoException(401, "auth.credenciales", "Documento no registrado o sin acceso autorizado.");
+        return new AccesoException(401, "auth.credenciales", "No encontramos una persona con ese documento activo.");
     }
 
     private AccesoException sinAsignacion() {
