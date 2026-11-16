@@ -20,6 +20,8 @@ public class PermisosApiFilter implements ContainerRequestFilter {
     @Inject AccesoSesion acceso;
     @Inject AtencionSesion atencion;
     @PersistenceContext EntityManager em;
+    private boolean soloLectura;
+    private boolean lecturaExamenesAsignables;
     private static final Set<String> CATALOGOS = Set.of("roles", "clinicas", "tipos-documento", "tipos-medio-contacto",
             "tipos-examen", "examenes", "examenes-tipos-examen", "procedimientos", "procedimientos-pasos",
             "procedimientos-pasos-examenes", "procedimientos-pasos-secuencias");
@@ -42,6 +44,8 @@ public class PermisosApiFilter implements ContainerRequestFilter {
         // B8: el código puede ser null (rol de empleado creado sin código); "" lo trata como empleado.
         String rol = Objects.toString(activo.getIdRol().getCodigo(), "");
         boolean lectura = Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
+        soloLectura = Set.of("GET", "HEAD").contains(request.getMethod());
+        lecturaExamenesAsignables = partes.contains("examenes-asignables");
         // Empleado: rol activo distinto de PACIENTE. PACIENTE conserva su rama de expediente propio.
         if (!rol.equals("PACIENTE") && !AutenticacionService.esEmpleado(activo)) throw denegado();
         if (raiz.equals("recepcion")) {
@@ -80,6 +84,9 @@ public class PermisosApiFilter implements ContainerRequestFilter {
             if (i + 1 < partes.size()) propietario |= verificar(recurso, uuid(partes.get(i+1)), activo, rol);
         }
         boolean coleccion = partes.size() % 2 == 1 && !accion;
+        // El listado genérico serializa notas clínicas de toda la clínica. El dashboard entrega
+        // la cola resumida; el historial detallado usa consultas con rol responsable.
+        if (soloLectura && coleccion && recurso.equals("consultas")) throw denegado();
         if (CATALOGOS.contains(recurso)) {
             if (!lectura && !rol.equals("ADMINISTRACION")) throw denegado();
         } else if (Set.of("personas", "personas-roles", "documentos", "medios-contacto").contains(recurso)) {
@@ -165,9 +172,23 @@ public class PermisosApiFilter implements ContainerRequestFilter {
             if (propietario.getIdClinica() == null) throw denegado();
             mismaClinica(propietario.getIdClinica().getIdClinica(), activo);
             if (rol.equals("PACIENTE") && !propietario.getIdPersonaRol().equals(activo.getIdPersonaRol())) throw denegado();
+            if (soloLectura && CLINICOS.contains(recurso) && !lecturaExamenesAsignables
+                    && !rolPuedeLeer(recurso, id, activo.getIdRol().getIdRol())) throw denegado();
+            if (soloLectura && recurso.equals("consultas") && !rolPuedeLeer(recurso, id, activo.getIdRol().getIdRol())) throw denegado();
             return true;
         }
         return false;
+    }
+    private boolean rolPuedeLeer(String recurso, UUID id, UUID rol) {
+        String jpql = switch (recurso) {
+            case "consultas" -> "SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta.idConsulta=:id AND (p.idProcedimientoPaso.idRol.idRol=:rol OR (p.idProcedimientoPaso.idRol IS NULL AND p.idPersonaRol.idRol.idRol=:rol))";
+            case "consultas-procedimientos" -> "SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsultaProcedimiento=:id AND (p.idProcedimientoPaso.idRol.idRol=:rol OR (p.idProcedimientoPaso.idRol IS NULL AND p.idPersonaRol.idRol.idRol=:rol))";
+            case "consultas-procedimientos-pasos" -> "SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimientoPaso=:id AND (p.idProcedimientoPaso.idRol.idRol=:rol OR (p.idProcedimientoPaso.idRol IS NULL AND p.idPersonaRol.idRol.idRol=:rol))";
+            case "ordenes-examen" -> "SELECT COUNT(o) FROM OrdenExamen o WHERE o.idOrdenExamen=:id AND (o.idConsultaProcedimientoPaso.idProcedimientoPaso.idRol.idRol=:rol OR (o.idConsultaProcedimientoPaso.idProcedimientoPaso.idRol IS NULL AND o.idConsultaProcedimientoPaso.idPersonaRol.idRol.idRol=:rol))";
+            case "examenes-resultados" -> "SELECT COUNT(r) FROM ExamenResultado r WHERE r.idExamenResultado=:id AND (r.idOrdenExamen.idConsultaProcedimientoPaso.idProcedimientoPaso.idRol.idRol=:rol OR (r.idOrdenExamen.idConsultaProcedimientoPaso.idProcedimientoPaso.idRol IS NULL AND r.idOrdenExamen.idConsultaProcedimientoPaso.idPersonaRol.idRol.idRol=:rol))";
+            default -> "SELECT 0 FROM Consulta c WHERE c.idConsulta=:id";
+        };
+        return em.createQuery(jpql, Long.class).setParameter("id", id).setParameter("rol", rol).getSingleResult() > 0;
     }
     private <T> T existente(Class<T> tipo, UUID id) { T valor = em.find(tipo, id); if (valor == null) throw new AccesoException(404, "recurso.noExiste", "El registro no existe."); return valor; }
     private void mismaClinica(UUID id, PersonaRol activo) { if (!id.equals(activo.getIdClinica().getIdClinica())) throw denegado(); }

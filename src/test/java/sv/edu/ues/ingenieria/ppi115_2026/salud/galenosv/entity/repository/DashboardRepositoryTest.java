@@ -94,7 +94,7 @@ class DashboardRepositoryTest {
         var jpql = preparar();
         assertTrue(repositorio.valorPaso(id, clinica).isEmpty());
         String q = jpql.getValue();
-        assertEquals("SELECT p.idConsultaProcedimientoPaso, def.nombre, p.estado, p.fechaFin, p.valor", select(q));
+        assertEquals("SELECT p.idConsultaProcedimientoPaso, def.nombre, p.estado, p.fechaFin, p.valor, def.idRol.idRol", select(q));
         assertTrue(q.contains("p.idConsultaProcedimientoPaso=:id AND p.idConsultaProcedimiento.idConsulta.idPersonaRol.idClinica.idClinica=:clinica"));
         verify(consulta).setParameter("id", id);
         verify(consulta).setParameter("clinica", clinica);

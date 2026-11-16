@@ -74,12 +74,15 @@ public class DashboardService {
         return armar(filas, activo, LocalDate.now(reloj)).getFirst();
     }
 
-    /** Valor completo de un paso de una consulta de la clínica del rol activo; si no, 404. */
+    /** Valor completo: solo el rol responsable del paso; el ámbito clínico se valida en la consulta. */
     public ValorPaso valor(UUID idPaso) {
         PersonaRol activo = asignacion(exigirSesion());
-        return repositorio.valorPaso(idPaso, activo.getIdClinica().getIdClinica()).stream().findFirst()
-                .map(f -> new ValorPaso((UUID) f[0], (String) f[1], (String) f[2], local((OffsetDateTime) f[3]), (String) f[4]))
+        Object[] fila = repositorio.valorPaso(idPaso, activo.getIdClinica().getIdClinica()).stream().findFirst()
                 .orElseThrow(() -> new AccesoException(404, "consulta.pasoNoExiste", "El paso no existe."));
+        UUID rolPaso = (UUID) fila[5];
+        if (rolPaso != null && !rolPaso.equals(activo.getIdRol().getIdRol()))
+            throw new AccesoException(403, "consulta.noResponsablePaso", "Este paso lo atiende otro rol.");
+        return new ValorPaso((UUID) fila[0], (String) fila[1], (String) fila[2], local((OffsetDateTime) fila[3]), (String) fila[4]);
     }
 
     private UUID exigirSesion() {

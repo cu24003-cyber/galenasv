@@ -123,7 +123,7 @@ Errores:
 | Operación | Sesión | Respuesta |
 | --- | --- | --- |
 | `GET /api/atencion/dashboard?desde=yyyy-MM-dd&hasta=yyyy-MM-dd` | Sí (sin CSRF por ser GET) | 200 con las consultas de la clínica del rol activo, en orden ascendente por `fechaInicio` y luego `idConsulta`. |
-| `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}`. |
+| `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}` solo para el rol responsable del paso; otro rol de la clínica recibe 403 `consulta.noResponsablePaso`. |
 | `GET /api/atencion/consultas/{idConsulta}` | Sí | 200 con **una** consulta, con el mismo JSON que su elemento del dashboard (HU3/HU4). |
 
 - **Roles:** cualquier rol de empleado (activo y distinto de PACIENTE). La clínica es la de la
@@ -386,7 +386,7 @@ Las rutas anidadas admiten operaciones según el flujo de la app. Cada colecció
 | `/api/personas/{id}/medios-contacto` | GET, POST | GET, PUT, PATCH, DELETE |
 | `/api/personas/{id}/personas-roles` | GET, POST | GET, PUT, PATCH, DELETE |
 | `/api/roles/{id}/personas-roles` | GET, POST | GET, PUT, PATCH, DELETE |
-| `/api/personas-roles/{id}/consultas` | GET, POST | GET, PUT, PATCH |
+| `/api/personas-roles/{id}/consultas` | POST | GET, PUT, PATCH |
 | `/api/consultas/{id}/procedimientos` | GET, POST | GET |
 | `/api/consultas-procedimientos-pasos/{id}/ordenes-examen` | GET, POST | GET |
 | `/api/ordenes-examen/{id}/resultados` | GET, POST | GET |
@@ -445,12 +445,17 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 
 | Rol activo | Qué deja pasar el filtro |
 | --- | --- |
-| Empleado: cualquier rol activo distinto de `PACIENTE`, incluso sin código (Atención al público, Enfermera, Doctor…) | Lectura de catálogos y de personas, consultas y datos clínicos **de su clínica**; las acciones del flujo (`sesion`, `cierre`, `finalizacion`, `retroceso`, `responsable`, `examenes`, `examenes-asignables`, órdenes y resultados); crear consultas por `POST /api/personas-roles/{id}/consultas`. |
+| Empleado: cualquier rol activo distinto de `PACIENTE`, incluso sin código (Atención al público, Enfermera, Doctor…) | Lectura de catálogos y de personas de su clínica; dashboard resumido de la clínica; detalle clínico solo si su rol atiende un paso de esa consulta. Las acciones del flujo (`sesion`, `cierre`, `finalizacion`, `retroceso`, `responsable`, `examenes`, `examenes-asignables`, órdenes y resultados); crear consultas por `POST /api/personas-roles/{id}/consultas`. |
 | `ADMINISTRACION` (nombre visible "Atención al público") | Lo anterior, más la escritura de catálogos, de personas y `/api/recepcion/*`. |
 | `PACIENTE` | Solo su expediente (no puede iniciar sesión desde la HU2). |
 
-El filtro no decide qué rol atiende cada paso: eso lo valida AtencionService con el rol
-responsable del paso. Una ruta de otra clínica sigue dando 403 `auth.permiso`.
+El filtro no decide qué rol puede completar o modificar un paso: eso lo valida AtencionService
+con el rol responsable del paso. Las lecturas de datos clínicos completos también se limitan a
+consultas donde el rol activo participa en un paso; `GET /api/consultas` no está habilitado porque
+devolvería notas de toda la clínica. Para consultar la cola general se usa `/api/atencion/dashboard`,
+que omite notas, valores y resultados. El endpoint de valor exige el rol del paso. Listar exámenes
+asignables sigue permitido a cualquier empleado de la clínica. Una ruta de otra clínica sigue
+dando 403 `auth.permiso`.
 
 Reglas de AtencionService (detalle en `docs/flujo-consulta.md`, "Quién atiende cada paso"):
 

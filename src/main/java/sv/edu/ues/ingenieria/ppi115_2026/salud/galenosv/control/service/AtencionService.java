@@ -164,13 +164,23 @@ public class AtencionService {
         OffsetDateTime inicio = desde == null ? null : desde.atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
         OffsetDateTime finExclusivo = hasta == null ? null : hasta.plusDays(1).atStartOfDay(zona).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
         String jpql = "SELECT c FROM Consulta c JOIN FETCH c.idPersonaRol paciente JOIN FETCH paciente.idPersona JOIN FETCH paciente.idClinica WHERE paciente.idClinica=:clinica"
+                + " AND EXISTS (SELECT p FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta=c AND (p.idProcedimientoPaso.idRol=:rol OR (p.idProcedimientoPaso.idRol IS NULL AND p.idPersonaRol.idRol=:rol)))"
                 + (inicio == null ? "" : " AND c.fechaInicio >= :desde")
                 + (finExclusivo == null ? "" : " AND c.fechaInicio < :hasta") + " ORDER BY c.fechaInicio DESC";
         TypedQuery<Consulta> consulta = em.createQuery(jpql, Consulta.class)
-                .setParameter("clinica", medico.getIdClinica());
+                .setParameter("clinica", medico.getIdClinica()).setParameter("rol", medico.getIdRol());
         if (inicio != null) consulta.setParameter("desde", inicio);
         if (finExclusivo != null) consulta.setParameter("hasta", finExclusivo);
         return consulta.getResultList();
+    }
+    /** Historial detallado: la consulta debe tener un paso atendido por el rol activo. */
+    public Consulta cargarHistorial(UUID id) {
+        Consulta consulta = cargar(id);
+        PersonaRol medico = empleadoActivo();
+        Long visible = em.createQuery("SELECT COUNT(p) FROM ConsultaProcedimientoPaso p WHERE p.idConsultaProcedimiento.idConsulta=:consulta AND (p.idProcedimientoPaso.idRol=:rol OR (p.idProcedimientoPaso.idRol IS NULL AND p.idPersonaRol.idRol=:rol))", Long.class)
+                .setParameter("consulta", consulta).setParameter("rol", medico.getIdRol()).getSingleResult();
+        if (visible == 0) throw ServiceException.localizada("consulta.noVisible", "No puede consultar el historial de esta consulta.");
+        return consulta;
     }
     private Consulta abierta(UUID id) {
         Consulta c=em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE);

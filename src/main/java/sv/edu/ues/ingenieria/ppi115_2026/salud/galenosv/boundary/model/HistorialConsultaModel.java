@@ -64,7 +64,7 @@ public class HistorialConsultaModel implements Serializable {
     public void seleccionar(Consulta consulta) {
         limpiar();
         try {
-            seleccionada = servicio.cargar(consulta.getIdConsulta());
+            seleccionada = servicio.cargarHistorial(consulta.getIdConsulta());
         } catch (ServiceException e) { error(Mensajes.mensaje(e)); return; }
         catch (EJBException e) { errorDetalle(e); return; }
         try {

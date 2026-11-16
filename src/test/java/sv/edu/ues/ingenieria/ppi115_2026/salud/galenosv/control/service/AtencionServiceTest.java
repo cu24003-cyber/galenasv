@@ -77,6 +77,17 @@ class AtencionServiceTest {
         Consulta c = abierta(); c.getIdPersonaRol().setIdClinica(new Clinica(UUID.randomUUID()));
         assertThrows(ServiceException.class, () -> servicio.cargar(id));
     }
+    @Test void elDetalleDelHistorialExigeUnPasoDelRolActivo() {
+        Consulta c = abierta();
+        @SuppressWarnings("unchecked") TypedQuery<Long> q = mock(TypedQuery.class);
+        when(em.createQuery(contains("SELECT COUNT(p)"), eq(Long.class))).thenReturn(q);
+        when(q.setParameter(anyString(), any())).thenReturn(q);
+        when(q.getSingleResult()).thenReturn(0L);
+        ServiceException error = assertThrows(ServiceException.class, () -> servicio.cargarHistorial(id));
+        assertEquals("consulta.noVisible", error.getMessageKey());
+        when(q.getSingleResult()).thenReturn(1L);
+        assertSame(c, servicio.cargarHistorial(id));
+    }
     @Test void permiteRetomarConsultaAbiertaDeLaMismaClinica() {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID()); paciente.setIdPersona(new Persona(UUID.randomUUID()));
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
@@ -159,6 +170,7 @@ class AtencionServiceTest {
         servicio.historial(java.time.LocalDate.of(2026,10,1),java.time.LocalDate.of(2026,10,2));
         verify(consultas).setParameter("desde",OffsetDateTime.parse("2026-10-01T06:00:00Z"));
         verify(consultas).setParameter("hasta",OffsetDateTime.parse("2026-10-03T06:00:00Z"));
+        verify(consultas).setParameter("rol", medico.getIdRol());
         assertThrows(ServiceException.class,()->servicio.historial(java.time.LocalDate.of(2026,10,3),java.time.LocalDate.of(2026,10,2)));
     }
     @Test void noPermiteModificarConsultaProgramadaParaUnDiaFuturo() {
@@ -467,6 +479,7 @@ class AtencionServiceTest {
         verify(consultas).setParameter("clinica", medico.getIdClinica());
         verify(pacientes).setParameter("clinica", medico.getIdClinica());
         verify(em).createQuery(contains("WHERE paciente.idClinica=:clinica"), eq(Consulta.class));
+        verify(consultas).setParameter("rol", medico.getIdRol());
         verify(em).createQuery(contains("WHERE r.idClinica=:clinica"), eq(PersonaRol.class));
     }
     @Test void sinRolMedicoNoExponeHistorialNiPacientes() {

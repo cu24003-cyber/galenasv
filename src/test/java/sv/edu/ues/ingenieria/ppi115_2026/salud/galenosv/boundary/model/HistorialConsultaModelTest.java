@@ -91,7 +91,7 @@ class HistorialConsultaModelTest {
         }
     }
     @Test void cambiarDetalleLimpiaLaOrdenYElResultadoAnterior() {
-        Consulta consulta = new Consulta(UUID.randomUUID()); when(servicio.cargar(consulta.getIdConsulta())).thenReturn(consulta);
+        Consulta consulta = new Consulta(UUID.randomUUID()); when(servicio.cargarHistorial(consulta.getIdConsulta())).thenReturn(consulta);
         model.setOrdenId(UUID.randomUUID().toString()); model.setResultado("Anterior"); model.setInterpretacion("Anterior");
         model.seleccionar(consulta);
         assertSame(consulta, model.getSeleccionada()); assertNull(model.getOrdenId());
@@ -99,7 +99,7 @@ class HistorialConsultaModelTest {
     }
     @Test void falloEnUnaSeccionNoOcultaLosDatosDeLaConsultaYaAutorizada() {
         Consulta consulta = new Consulta(UUID.randomUUID());
-        when(servicio.cargar(consulta.getIdConsulta())).thenReturn(consulta);
+        when(servicio.cargarHistorial(consulta.getIdConsulta())).thenReturn(consulta);
         when(servicio.pasos(consulta.getIdConsulta())).thenThrow(new jakarta.ejb.EJBException("Fallo al leer los pasos"));
         FacesContext faces = mock(FacesContext.class);
         try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
@@ -111,9 +111,9 @@ class HistorialConsultaModelTest {
     }
     @Test void falloDeAutorizacionLimpiaTodoElDetalleAnterior() {
         Consulta primera = new Consulta(UUID.randomUUID()), ajena = new Consulta(UUID.randomUUID());
-        when(servicio.cargar(primera.getIdConsulta())).thenReturn(primera);
+        when(servicio.cargarHistorial(primera.getIdConsulta())).thenReturn(primera);
         model.seleccionar(primera);
-        when(servicio.cargar(ajena.getIdConsulta())).thenThrow(new ServiceException("Consulta ajena"));
+        when(servicio.cargarHistorial(ajena.getIdConsulta())).thenThrow(new ServiceException("Consulta ajena"));
         FacesContext faces = mock(FacesContext.class);
         try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
             contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
@@ -150,7 +150,7 @@ class HistorialConsultaModelTest {
         segundo.setIdClinica(clinica); segundo.setIdRol(medico);
         Consulta anterior = new Consulta(UUID.randomUUID());
         sesion.cambiarRol(primero); when(servicio.historial()).thenReturn(List.of(anterior), List.of());
-        model.iniciar(); when(servicio.cargar(anterior.getIdConsulta())).thenReturn(anterior); model.seleccionar(anterior);
+        model.iniciar(); when(servicio.cargarHistorial(anterior.getIdConsulta())).thenReturn(anterior); model.seleccionar(anterior);
         model.setPacienteId(UUID.randomUUID().toString()); model.setReferencia("Anterior");
         sesion.cambiarRol(segundo); model.verificarContexto();
         assertTrue(model.getConsultas().isEmpty()); assertNull(model.getSeleccionada());

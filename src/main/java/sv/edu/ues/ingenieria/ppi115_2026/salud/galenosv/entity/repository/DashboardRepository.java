@@ -90,12 +90,12 @@ public class DashboardRepository {
     }
 
     /**
-     * [id, nombre del paso, estado, fechaFin, valor] solo si el paso es de una consulta de esa
+     * [id, nombre del paso, estado, fechaFin, valor, idRol responsable] solo si el paso es de una consulta de esa
      * clínica. Un id inexistente y uno de otra clínica dan la misma lista vacía.
      */
     public List<Object[]> valorPaso(UUID id, UUID clinica) {
         if (id == null || clinica == null) return List.of();
-        return em.createQuery("SELECT p.idConsultaProcedimientoPaso, def.nombre, p.estado, p.fechaFin, p.valor"
+        return em.createQuery("SELECT p.idConsultaProcedimientoPaso, def.nombre, p.estado, p.fechaFin, p.valor, def.idRol.idRol"
                 + " FROM ConsultaProcedimientoPaso p LEFT JOIN p.idProcedimientoPaso def"
                 + " WHERE p.idConsultaProcedimientoPaso=:id AND p.idConsultaProcedimiento.idConsulta.idPersonaRol.idClinica.idClinica=:clinica", Object[].class)
                 .setParameter("id", id).setParameter("clinica", clinica)

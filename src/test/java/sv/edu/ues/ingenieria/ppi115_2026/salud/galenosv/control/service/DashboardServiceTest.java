@@ -415,11 +415,20 @@ class DashboardServiceTest {
 
     @Test void valorDevuelveLosCincoCamposConLaClinicaValidada() {
         UUID paso = UUID.randomUUID();
-        when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(new Object[]{paso, "Signos", "COMPLETADO", utc("2026-11-13T14:30Z"), "120/80"}));
+        when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(new Object[]{paso, "Signos", "COMPLETADO", utc("2026-11-13T14:30Z"), "120/80", rolDoctor}));
         var v = servicio.valor(paso);
         assertEquals(new DashboardService.ValorPaso(paso, "Signos", "COMPLETADO",
                 utc("2026-11-13T14:30Z").atZoneSameInstant(ZONA).toOffsetDateTime(), "120/80"), v);
         verify(repositorio).valorPaso(paso, clinica);
+    }
+
+    @Test void valorDeOtroRolSeRechazaAunqueSeaDeLaMismaClinica() {
+        UUID paso = UUID.randomUUID();
+        when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(
+                new Object[]{paso, "Signos", "COMPLETADO", utc("2026-11-13T14:30Z"), "dato clínico", rolAdmin}));
+        var e = assertThrows(AccesoException.class, () -> servicio.valor(paso));
+        assertEquals(403, e.getStatus());
+        assertEquals("consulta.noResponsablePaso", e.getMessageKey());
     }
 
     @Test void valorInexistenteODeOtraClinicaDa404() {
@@ -441,7 +450,7 @@ class DashboardServiceTest {
     @Test void valorConAdministracionUsaSuClinica() {
         activo = asignacion(asignacionId, "ADMINISTRACION", rolAdmin);
         UUID paso = UUID.randomUUID();
-        when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(new Object[]{paso, "Signos", "PENDIENTE", null, null}));
+        when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(new Object[]{paso, "Signos", "PENDIENTE", null, null, rolAdmin}));
         assertNull(servicio.valor(paso).valor());
     }
 }
