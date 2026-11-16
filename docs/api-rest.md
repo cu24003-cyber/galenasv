@@ -61,7 +61,7 @@ Errores de `POST /api/auth/login`:
 | Código | Caso |
 | --- | --- |
 | 400 `json.invalido` / validación | `idTipoDocumento` no es UUID; número vacío, mayor de 50 caracteres o con saltos de línea. |
-| 401 `auth.credenciales` | Documento inexistente, de tipo inactivo o no vinculado a una persona existente. |
+| 401 `auth.credenciales` | Documento inexistente, de tipo inactivo o no vinculado a una persona existente; también si la persona no tiene una asignación de empleado activa en una clínica activa. Una asignación `PACIENTE`, una persona sin rol y roles o clínicas inactivos no permiten iniciar sesión. |
 | 403 `auth.origen` | `Origin`/`Referer` no permitido. |
 | 429 `auth.demasiadosIntentos` | Más de diez intentos por dirección en cinco minutos. |
 
@@ -101,6 +101,11 @@ siempre está) en un rol creado sin código; el frontend debe mostrar `nombreRol
 
 `PermisosApiFilter` no limita `/atencion`, así que el recurso exige la sesión por sí mismo.
 Esto se suma a `AutenticacionFilter`.
+
+La pantalla JSF **Cambiar rol** usa la misma lista de asignaciones de empleado de la sesión:
+solo permite elegir roles propios, activos y de clínicas activas. La asignación enviada se vuelve
+a validar contra esa lista al aplicar el cambio; modificar el formulario para indicar otra persona
+no concede acceso a sus roles.
 
 Errores:
 

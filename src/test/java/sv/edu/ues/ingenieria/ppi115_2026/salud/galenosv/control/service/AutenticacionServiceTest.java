@@ -40,19 +40,17 @@ class AutenticacionServiceTest {
         verify(documentos).buscarPersonaPorDocumento(tipo, "00000000-9");
         verifyNoInteractions(roles);
     }
-    @Test void personaConDocumentoActivoPuedeIniciarSinCuentaNiAsignacion() {
+    @Test void personaSinAsignacionEmpleadoNoPuedeIniciar() {
         identidad(tipo, "00000000-1");
-        var contexto = servicio.iniciar(tipo, "00000000-1");
-        assertEquals(idPersona, contexto.persona().getIdPersona());
-        assertNull(contexto.asignacion());
+        var error = assertThrows(AccesoException.class, () -> servicio.iniciar(tipo, "00000000-1"));
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
     }
-    @Test void rolPacientePuedeIniciarPeroNoSeTrataComoEmpleado() {
+    @Test void pacienteNoPuedeIniciarComoEmpleado() {
         PersonaRol paciente = asignacion("PACIENTE", 0);
         when(documentos.buscarPersonaPorDocumento(tipo, "00000000-2")).thenReturn(persona());
         when(roles.listarPorPersona(idPersona)).thenReturn(List.of(paciente));
-        var contexto = servicio.iniciar(tipo, "00000000-2");
-        assertSame(paciente, contexto.asignacion());
-        assertFalse(AutenticacionService.esEmpleado(contexto.asignacion()));
+        var error = assertThrows(AccesoException.class, () -> servicio.iniciar(tipo, "00000000-2"));
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
     }
     @Test void rolInicialPrefiereLaAsignacionDeEmpleadoMasAntigua() {
         PersonaRol paciente = asignacion("PACIENTE", 0), doctor = asignacion("DOCTOR", 1), admin = asignacion("ADMINISTRACION", 2);
@@ -60,11 +58,25 @@ class AutenticacionServiceTest {
         when(roles.listarPorPersona(idPersona)).thenReturn(List.of(paciente, doctor, admin));
         assertSame(doctor, servicio.iniciar(tipo, "00000000-3").asignacion());
     }
-    @Test void asignacionInactivaNoSeUsaPeroLaIdentidadSigueValida() {
+    @Test void rolDeEmpleadoSinCodigoPermiteIniciar() {
+        PersonaRol rol = asignacion(null, 0);
+        when(documentos.buscarPersonaPorDocumento(tipo, "00000000-6")).thenReturn(persona());
+        when(roles.listarPorPersona(idPersona)).thenReturn(List.of(rol));
+        assertSame(rol, servicio.iniciar(tipo, "00000000-6").asignacion());
+    }
+    @Test void asignacionInactivaNoPermiteIniciar() {
         PersonaRol inactiva = asignacion("DOCTOR", 0); inactiva.getIdRol().setActivo(false);
         when(documentos.buscarPersonaPorDocumento(tipo, "00000000-4")).thenReturn(persona());
         when(roles.listarPorPersona(idPersona)).thenReturn(List.of(inactiva));
-        assertNull(servicio.iniciar(tipo, "00000000-4").asignacion());
+        var error = assertThrows(AccesoException.class, () -> servicio.iniciar(tipo, "00000000-4"));
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
+    }
+    @Test void clinicaInactivaNoPermiteIniciar() {
+        PersonaRol asignacion = asignacion("DOCTOR", 0); asignacion.getIdClinica().setActivo(false);
+        when(documentos.buscarPersonaPorDocumento(tipo, "00000000-7")).thenReturn(persona());
+        when(roles.listarPorPersona(idPersona)).thenReturn(List.of(asignacion));
+        var error = assertThrows(AccesoException.class, () -> servicio.iniciar(tipo, "00000000-7"));
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
     }
     @Test void tipoNuloONumeroVacioSeRechazanSinConsultar() {
         assertEquals(401, assertThrows(AccesoException.class, () -> servicio.iniciar(null, "00000000-1")).getStatus());

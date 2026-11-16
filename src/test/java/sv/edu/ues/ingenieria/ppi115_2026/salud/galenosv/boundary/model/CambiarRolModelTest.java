@@ -31,13 +31,12 @@ class CambiarRolModelTest {
     private Clinica clinica(String nombre) {
         Clinica clinica = new Clinica(UUID.randomUUID()); clinica.setNombre(nombre); return clinica;
     }
-    @Test void filtraPersonasYRolesPorClinicaSinDuplicarPersonas() {
+    @Test void soloOfreceAsignacionesDisponiblesDeLaSesion() {
         Clinica primera = clinica("Primera"), segunda = clinica("Segunda");
-        Persona ana = new Persona(UUID.randomUUID()), luis = new Persona(UUID.randomUUID());
+        Persona ana = new Persona(UUID.randomUUID());
         PersonaRol medico = asignacion(primera, ana, "Médico"), enfermera = asignacion(primera, ana, "Enfermería");
-        PersonaRol otro = asignacion(segunda, luis, "Médico");
-        when(servicio.listar()).thenReturn(List.of(medico, enfermera, otro)); model.iniciar();
-        assertEquals(List.of(primera, segunda), model.getClinicas()); assertTrue(model.getPersonas().isEmpty());
+        when(servicio.listar()).thenReturn(List.of(medico, enfermera)); model.iniciar();
+        assertEquals(List.of(primera), model.getClinicas()); assertTrue(model.getPersonas().isEmpty());
         model.setClinicaId(primera.getIdClinica().toString()); model.cambiarClinica();
         assertEquals(List.of(ana), model.getPersonas()); assertEquals(List.of(medico, enfermera), model.getRolesPersona());
         model.setPersonaId(ana.getIdPersona().toString()); model.cambiarPersona();
@@ -45,9 +44,7 @@ class CambiarRolModelTest {
         assertEquals(medico.getIdPersonaRol().toString(), model.getAsignacionId());
         model.setAsignacionId(medico.getIdPersonaRol().toString());
         model.setClinicaId(segunda.getIdClinica().toString()); model.cambiarClinica();
-        assertEquals(luis.getIdPersona().toString(), model.getPersonaId()); assertEquals(otro.getIdPersonaRol().toString(), model.getAsignacionId()); assertEquals(List.of(luis), model.getPersonas());
-        model.setPersonaId(luis.getIdPersona().toString()); model.cambiarPersona();
-        assertEquals(otro.getIdPersonaRol().toString(), model.getAsignacionId());
+        assertNull(model.getPersonaId()); assertNull(model.getAsignacionId()); assertTrue(model.getPersonas().isEmpty());
     }
     @Test void iniciaConLaClinicaPersonaYRolDeLaSesion() {
         PersonaRol actual = asignacion(clinica("Actual"), new Persona(UUID.randomUUID()), "Médico");
@@ -88,5 +85,19 @@ class CambiarRolModelTest {
         PersonaRol medico = asignacion(clinica, persona, "Médico");
         sesion.cambiarRol(medico); when(servicio.listar()).thenReturn(List.of(enfermeria, medico)); model.iniciar();
         model.cambiarPersona(); assertEquals(medico.getIdPersonaRol().toString(), model.getAsignacionId());
+    }
+
+    @Test void rechazaPersonaAjenaAunqueSeEnvieEnElFormulario() {
+        Persona propia = new Persona(UUID.randomUUID()), ajena = new Persona(UUID.randomUUID());
+        PersonaRol asignacionAjena = asignacion(clinica("Clínica"), ajena, "Médico");
+        when(servicio.listar()).thenReturn(List.of()); model.iniciar();
+        model.setClinicaId(asignacionAjena.getIdClinica().getIdClinica().toString());
+        model.setPersonaId(propia.getIdPersona().toString());
+        model.setAsignacionId(asignacionAjena.getIdPersonaRol().toString());
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            assertNull(model.aplicar()); assertNull(sesion.getRolActivo()); verify(faces).validationFailed();
+        }
     }
 }

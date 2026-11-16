@@ -21,15 +21,15 @@ public class AutenticacionService {
     public static final String PACIENTE = "PACIENTE";
 
     /**
-     * HU2: autentica con un documento de tipo activo y una persona existente. Las páginas
-     * y operaciones posteriores determinan el acceso según el rol disponible.
+     * HU2: autentica con un documento de tipo activo y una asignación de empleado activa en
+     * una clínica activa.
      */
     public Contexto iniciar(UUID idTipoDocumento, String numeroDocumento) {
         if (idTipoDocumento == null || numeroDocumento == null || numeroDocumento.isBlank()) throw credencialesInvalidas();
         Persona persona = documentos.buscarPersonaPorDocumento(idTipoDocumento, numeroDocumento);
         if (persona == null) throw credencialesInvalidas();
         List<PersonaRol> roles = asignacionesActivas(persona.getIdPersona());
-        PersonaRol rol = empleados(roles).findFirst().orElseGet(() -> roles.stream().findFirst().orElse(null));
+        PersonaRol rol = empleados(roles).findFirst().orElseThrow(this::credencialesInvalidas);
         return new Contexto(persona, rol);
     }
 

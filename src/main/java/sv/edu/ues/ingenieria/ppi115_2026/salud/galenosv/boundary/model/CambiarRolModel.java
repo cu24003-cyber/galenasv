@@ -36,8 +36,8 @@ public class CambiarRolModel implements Serializable {
 
     @PostConstruct public void iniciar() {
         try {
-            asignaciones = servicio.listarParaCambio();
-            clinicas = servicio.listarClinicasParaCambio();
+            asignaciones = servicio.listar();
+            clinicas = asignaciones.stream().map(PersonaRol::getIdClinica).distinct().toList();
             PersonaRol actual = sesion.getRolActivo();
             if (actual != null) {
                 clinicaId = actual.getIdClinica().getIdClinica().toString();
@@ -53,7 +53,7 @@ public class CambiarRolModel implements Serializable {
                 throw ServiceException.localizada("rolCambio.seleccioneClinicaPersona", "Seleccione una clínica y una persona.");
             cambiarPersona();
             if (asignacionId == null) throw ServiceException.localizada("rolCambio.sinRol", "La persona no tiene un rol activo en la clínica seleccionada.");
-            PersonaRol elegida = servicio.cargarParaCambio(UUID.fromString(asignacionId));
+            PersonaRol elegida = servicio.cargar(UUID.fromString(asignacionId));
             if (!elegida.getIdClinica().getIdClinica().toString().equals(clinicaId)
                     || !elegida.getIdPersona().getIdPersona().toString().equals(personaId))
                 throw ServiceException.localizada("rolCambio.clinicaAjena", "La persona y el rol deben pertenecer a la clínica seleccionada.");

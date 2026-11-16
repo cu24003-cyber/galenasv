@@ -174,7 +174,11 @@ class RestApiTest extends JerseyTest {
         ((OrdenExamen) records.get(OrdenExamen.class).get(ID)).setIdConsultaProcedimientoPaso(paso);
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento) records.get(entityType(TipoDocumentoResource.class)).get(ID)).setExpresionRegular(".");
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto) records.get(entityType(TipoMedioContactoResource.class)).get(ID)).setExpresionRegular(".");
-        when(sesion.getRolActivo()).thenReturn((PersonaRol) records.get(PersonaRol.class).get(ID));
+        PersonaRol asignacionActual = (PersonaRol) records.get(PersonaRol.class).get(ID);
+        asignacionActual.getIdRol().setActivo(true);
+        asignacionActual.getIdRol().setCodigo("DOCTOR");
+        asignacionActual.getIdClinica().setActivo(true);
+        when(sesion.getRolActivo()).thenReturn(asignacionActual);
         acceso = mock(AccesoSesion.class);
         AutenticacionService autenticacion = mock(AutenticacionService.class);
         when(acceso.getIdPersona()).thenReturn(ID);

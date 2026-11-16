@@ -56,20 +56,14 @@ class AuthResourceTest {
         verify(intentos).registrar("192.0.2.10");
         verify(request, never()).getSession(anyBoolean()); assertFalse(acceso.vigente()); assertNull(atencion.getRolActivo());
     }
-    @Test void personaSinAsignacionIniciaSesionYMeDevuelveRolNulo() {
+    @Test void personaSinAsignacionEsRechazadaAntesDeCrearSesion() {
         UUID dui = UUID.randomUUID();
-        var contexto = new AutenticacionService.Contexto(new Persona(idPersona), null);
-        when(servicio.iniciar(dui, "00000000-5")).thenReturn(contexto);
+        when(servicio.iniciar(dui, "00000000-5"))
+                .thenThrow(new AccesoException(401, "auth.credenciales", "No encontramos una persona con ese documento activo."));
         when(request.getRemoteAddr()).thenReturn("192.0.2.10");
-        when(request.getSession(false)).thenReturn(null);
-        when(request.getSession(true)).thenReturn(http);
-        assertEquals(204, resource.login(credenciales(dui, "00000000-5")).getStatus());
-        assertEquals(idPersona, acceso.getIdPersona());
-        assertNull(atencion.getRolActivo());
-        when(request.getSession(false)).thenReturn(http);
-        when(servicio.personaActiva(idPersona)).thenReturn(contexto.persona());
-        var json = Json.createReader(new StringReader((String) resource.me().getEntity())).readObject();
-        assertTrue(json.isNull("rolActivo"));
+        var error = assertThrows(AccesoException.class, () -> resource.login(credenciales(dui, "00000000-5")));
+        assertEquals(401, error.getStatus()); assertEquals("auth.credenciales", error.getMessageKey());
+        verify(request, never()).getSession(anyBoolean()); assertFalse(acceso.vigente());
     }
     @Test void demasiadosIntentosNoLleganAlServicio() {
         when(request.getRemoteAddr()).thenReturn("192.0.2.10");
