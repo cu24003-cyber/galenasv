@@ -3,7 +3,9 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.model;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AtencionSesion;
 
 import jakarta.faces.context.FacesContext;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,13 +26,34 @@ class HistorialConsultaModelTest {
     @Test void crearConservaDatosYActivaElFlujoDeLaConsulta() {
         UUID paciente = UUID.randomUUID(); Consulta creada = new Consulta(UUID.randomUUID());
         model.setPacienteId(paciente.toString()); model.setReferencia("REF"); model.setObservaciones("Notas");
-        when(servicio.crear(paciente, "REF", "Notas")).thenReturn(creada);
+        when(servicio.crear(paciente, "REF", "Notas", null)).thenReturn(creada);
         assertEquals("/paginas/consulta.xhtml?faces-redirect=true", model.crear());
         assertEquals(creada.getIdConsulta(), sesion.getConsulta());
+        verify(servicio).crear(paciente, "REF", "Notas", null);
+    }
+    @Test void futuraSeGuardaYVuelveAlListadoSinAbrirLaAtencion() {
+        UUID paciente = UUID.randomUUID(); Consulta creada = new Consulta(UUID.randomUUID());
+        ZoneId zona = ZoneId.of("America/El_Salvador");
+        LocalDateTime local = java.time.LocalDate.now(zona).plusDays(30).atTime(8, 30);
+        OffsetDateTime fecha = local.atZone(zona).toOffsetDateTime();
+        creada.setFechaInicio(fecha);
+        model.setPacienteId(paciente.toString()); model.setFechaInicio(local);
+        when(servicio.crear(paciente, null, null, fecha)).thenReturn(creada);
+        FacesContext faces = mock(FacesContext.class);
+        jakarta.faces.context.ExternalContext externo = mock(jakarta.faces.context.ExternalContext.class);
+        jakarta.faces.context.Flash flash = mock(jakarta.faces.context.Flash.class);
+        when(faces.getExternalContext()).thenReturn(externo); when(externo.getFlash()).thenReturn(flash);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            assertEquals("/paginas/consultas.xhtml?faces-redirect=true", model.crear());
+            verify(flash).setKeepMessages(true);
+            verify(faces).addMessage(isNull(), any());
+        }
+        assertNull(sesion.getConsulta());
     }
     @Test void falloDeCreacionConservaFormularioYNoActivaConsulta() {
         UUID paciente = UUID.randomUUID(); model.setPacienteId(paciente.toString()); model.setReferencia("REF");
-        doThrow(new ServiceException("Paciente de otra clínica")).when(servicio).crear(paciente, "REF", null);
+        doThrow(new ServiceException("Paciente de otra clínica")).when(servicio).crear(paciente, "REF", null, null);
         FacesContext faces = mock(FacesContext.class);
         try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
             contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
@@ -42,6 +65,19 @@ class HistorialConsultaModelTest {
         Consulta consulta = new Consulta(UUID.randomUUID()); when(servicio.cargar(consulta.getIdConsulta())).thenReturn(consulta);
         assertEquals("/paginas/consulta.xhtml?faces-redirect=true", model.retomar(consulta));
         assertEquals(consulta.getIdConsulta(), sesion.getConsulta()); verify(servicio).cargar(consulta.getIdConsulta());
+        verify(servicio).exigirAtendible(consulta.getIdConsulta());
+    }
+    @Test void noRetomaConsultaProgramadaParaElFuturo() {
+        Consulta consulta = new Consulta(UUID.randomUUID()); when(servicio.cargar(consulta.getIdConsulta())).thenReturn(consulta);
+        doThrow(ServiceException.localizada("consulta.fechaFutura", "Consulta futura"))
+                .when(servicio).exigirAtendible(consulta.getIdConsulta());
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            assertNull(model.retomar(consulta));
+            assertNull(sesion.getConsulta());
+            verify(faces).validationFailed();
+        }
     }
     @Test void noRetomaConsultaAjenaNiCerrada() {
         Consulta ajena = new Consulta(UUID.randomUUID()), cerrada = new Consulta(UUID.randomUUID());

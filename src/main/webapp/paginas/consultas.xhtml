@@ -24,6 +24,9 @@
                             <f:selectItems value="#{historialConsultaModel.pacientes}" var="r" itemValue="#{r.idPersonaRol.toString()}"
                                            itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos}" />
                         </p:selectOneMenu>
+                        <p:outputLabel for="fechaInicio" value="#{msg['ui.fechaInicio']}" />
+                        <p:datePicker id="fechaInicio" value="#{historialConsultaModel.fechaInicio}" pattern="dd/MM/yyyy HH:mm"
+                                      showIcon="true" showTime="true" stepMinute="15" />
                         <p:outputLabel for="referencia" value="#{msg['ui.referenciaExterna']}" />
                         <p:inputText id="referencia" value="#{historialConsultaModel.referencia}" maxlength="255"><f:validateLength maximum="255" /></p:inputText>
                         <p:outputLabel for="observaciones" value="#{msg['ui.observaciones']}" />

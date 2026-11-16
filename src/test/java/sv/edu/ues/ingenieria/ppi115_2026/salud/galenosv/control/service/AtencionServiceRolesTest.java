@@ -226,6 +226,7 @@ class AtencionServiceRolesTest {
         @SuppressWarnings("unchecked") TypedQuery<Consulta> q = mock(TypedQuery.class);
         when(em.createQuery(anyString(), eq(Consulta.class))).thenReturn(q);
         when(q.setParameter(anyString(), any())).thenReturn(q);
+        when(q.setMaxResults(anyInt())).thenReturn(q);
         when(q.getResultList()).thenReturn(List.of());
         for (PersonaRol empleado : List.of(lucia, marta)) {
             activo(empleado);
@@ -258,6 +259,7 @@ class AtencionServiceRolesTest {
         @SuppressWarnings("unchecked") TypedQuery<Consulta> q = mock(TypedQuery.class);
         when(em.createQuery(anyString(), eq(Consulta.class))).thenReturn(q);
         when(q.setParameter(anyString(), any())).thenReturn(q);
+        when(q.setMaxResults(anyInt())).thenReturn(q);
         when(q.getResultList()).thenReturn(List.of());
         assertSame(real, servicio.crear(real.getIdPersonaRol(), null, null).getIdPersonaRol());
     }

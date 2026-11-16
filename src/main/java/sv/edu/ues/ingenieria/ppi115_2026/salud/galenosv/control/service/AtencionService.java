@@ -94,24 +94,42 @@ public class AtencionService {
         return iniciarConsulta(rolId, responsableId, null, null, true);
     }
     public Consulta crear(UUID pacienteId, String referencia, String observaciones) {
+        return crear(pacienteId, referencia, observaciones, null);
+    }
+    public Consulta crear(UUID pacienteId, String referencia, String observaciones, OffsetDateTime fechaInicio) {
         if (sesion != null && sesion.getConsulta() != null) throw ServiceException.localizada("consulta.cerrarAntesCrear", "Cierre la consulta en curso antes de crear otra.");
-        return iniciarConsulta(pacienteId, null, referencia, observaciones, false);
+        return iniciarConsulta(pacienteId, null, referencia, observaciones, false, fechaInicio);
     }
     private Consulta iniciarConsulta(UUID rolId, UUID responsableId, String referencia, String observaciones, boolean retomar) {
+        return iniciarConsulta(rolId, responsableId, referencia, observaciones, retomar, null);
+    }
+    private Consulta iniciarConsulta(UUID rolId, UUID responsableId, String referencia, String observaciones, boolean retomar, OffsetDateTime fechaInicio) {
         PersonaRol medico = retomar ? empleadoActivo() : operadorConsulta();
         if (retomar && !medico.getIdPersonaRol().equals(responsableId)) throw ServiceException.localizada("consulta.empleadoPropio", "El empleado activo debe abrir su propia consulta.");
         String referenciaValidada = texto(referencia, "La referencia", "consulta.longitudReferencia", 255);
         String notasValidadas = texto(observaciones, "Las observaciones", "consulta.longitudObservaciones", 255);
         PersonaRol rol=rolId == null ? null : em.find(PersonaRol.class,rolId,LockModeType.PESSIMISTIC_WRITE);
-        if(rol==null || rol.getIdRol()==null || rol.getIdClinica()==null || !AutenticacionService.PACIENTE.equals(rol.getIdRol().getCodigo()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw ServiceException.localizada("consulta.rolPaciente", "Seleccione el rol del paciente.");
+        if(rol==null || rol.getIdRol()==null || rol.getIdPersona()==null || rol.getIdPersona().getIdPersona()==null || rol.getIdClinica()==null || !AutenticacionService.PACIENTE.equals(rol.getIdRol().getCodigo()) || !Boolean.TRUE.equals(rol.getIdRol().getActivo())) throw ServiceException.localizada("consulta.rolPaciente", "Seleccione el rol del paciente.");
+        em.lock(rol.getIdPersona(), LockModeType.PESSIMISTIC_WRITE);
         responsable(medico.getIdPersonaRol(), rol);
-        List<Consulta> abiertas=em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL",Consulta.class).setParameter("rol",rol).getResultList();
-        if(!abiertas.isEmpty()) {
-            if (!retomar) throw ServiceException.localizada("consulta.pacienteEnCurso", "El paciente ya tiene una consulta en curso. Retómela desde su historial.");
-            comprobarClinica(abiertas.get(0));
-            return cargar(abiertas.get(0).getIdConsulta());
+        ZoneId zona = ZoneId.of("America/El_Salvador");
+        OffsetDateTime inicio = fechaInicio == null ? ahora() : fechaInicio;
+        if (retomar) {
+            OffsetDateTime manana = LocalDate.now(zona).plusDays(1).atStartOfDay(zona).toOffsetDateTime();
+            List<Consulta> abiertas = em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol=:rol AND c.fechaFin IS NULL AND c.fechaInicio < :manana ORDER BY c.fechaInicio DESC", Consulta.class)
+                    .setParameter("rol", rol).setParameter("manana", manana).getResultList();
+            if (!abiertas.isEmpty()) {
+                comprobarClinica(abiertas.get(0));
+                return cargar(abiertas.get(0).getIdConsulta());
+            }
         }
-        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(ahora());
+        LocalDate dia = inicio.atZoneSameInstant(zona).toLocalDate();
+        OffsetDateTime desde = dia.atStartOfDay(zona).toOffsetDateTime();
+        OffsetDateTime hasta = dia.plusDays(1).atStartOfDay(zona).toOffsetDateTime();
+        List<Consulta> delDia = em.createQuery("SELECT c FROM Consulta c WHERE c.idPersonaRol.idPersona.idPersona=:persona AND c.fechaInicio >= :desde AND c.fechaInicio < :hasta", Consulta.class)
+                .setParameter("persona", rol.getIdPersona().getIdPersona()).setParameter("desde", desde).setParameter("hasta", hasta).setMaxResults(1).getResultList();
+        if (!delDia.isEmpty()) throw ServiceException.localizada("consulta.fechaOcupada", "Ya existe una consulta para esta persona en esa fecha.");
+        Consulta c=new Consulta(UUID.randomUUID()); c.setIdPersonaRol(rol); c.setFechaInicio(inicio);
         c.setReferenciaExterna(referenciaValidada); c.setObservaciones(notasValidadas);
         em.persist(c); em.flush(); return retomar ? cargar(c.getIdConsulta()) : c;
     }
@@ -123,6 +141,7 @@ public class AtencionService {
      */
     public void exigirAtendible(UUID id) {
         Consulta c = cargar(id);
+        exigirFechaAtendible(c);
         if (c.getFechaFin() != null) throw ServiceException.localizada("consulta.yaCerrada", "La consulta ya está cerrada.");
         PersonaRol actual = empleadoActivo();
         List<ConsultaProcedimientoPaso> lista = pasos(id);
@@ -155,8 +174,17 @@ public class AtencionService {
     }
     private Consulta abierta(UUID id) {
         Consulta c=em.find(Consulta.class,id,LockModeType.PESSIMISTIC_WRITE);
-        comprobarClinica(c);
+        comprobarClinica(c); exigirFechaAtendible(c);
         if(c.getFechaFin()!=null) throw ServiceException.localizada("consulta.yaCerrada", "La consulta ya está cerrada."); return c;
+    }
+    public static boolean esFutura(Consulta consulta) {
+        ZoneId zona = ZoneId.of("America/El_Salvador");
+        return consulta.getFechaInicio() != null
+                && consulta.getFechaInicio().atZoneSameInstant(zona).toLocalDate().isAfter(LocalDate.now(zona));
+    }
+    private static void exigirFechaAtendible(Consulta consulta) {
+        if (esFutura(consulta))
+            throw ServiceException.localizada("consulta.fechaFutura", "La consulta todavía no se puede atender porque está programada para una fecha futura.");
     }
     public void guardar(UUID id,String referencia,String observaciones) {
         Consulta c=abierta(id); c.setReferenciaExterna(texto(referencia, "La referencia", "consulta.longitudReferencia", 255)); c.setObservaciones(texto(observaciones, "Las observaciones", "consulta.longitudObservaciones", 255));
@@ -431,7 +459,7 @@ public class AtencionService {
                 .setParameter("id", consulta).getResultList();
     }
     public ExamenResultado registrarResultado(UUID consulta, UUID ordenId, String resultado, String interpretacion) {
-        cargar(consulta);
+        exigirFechaAtendible(cargar(consulta));
         OrdenExamen orden = ordenId == null ? null : em.find(OrdenExamen.class, ordenId);
         if (orden == null || orden.getIdConsultaProcedimientoPaso() == null
                 || !consulta.equals(orden.getIdConsultaProcedimientoPaso().getIdConsultaProcedimiento().getIdConsulta().getIdConsulta())) {

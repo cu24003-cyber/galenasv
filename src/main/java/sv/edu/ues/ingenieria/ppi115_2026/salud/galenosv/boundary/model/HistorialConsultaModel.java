@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -34,6 +35,7 @@ public class HistorialConsultaModel implements Serializable {
     @Inject private AtencionSesion sesion;
     private List<PersonaRol> pacientes = List.of();
     private String pacienteId, referencia, observaciones;
+    private LocalDateTime fechaInicio;
     private LocalDate desde, hasta;
     private UUID contextoId;
     private List<Consulta> consultas = List.of();
@@ -55,7 +57,7 @@ public class HistorialConsultaModel implements Serializable {
     public void verificarContexto() {
         UUID actual = sesion.getRolActivo() == null ? null : sesion.getRolActivo().getIdPersonaRol();
         if (!Objects.equals(contextoId, actual)) {
-            pacienteId = null; referencia = null; observaciones = null; desde = null; hasta = null;
+            pacienteId = null; referencia = null; observaciones = null; fechaInicio = null; desde = null; hasta = null;
             iniciar();
         }
     }
@@ -81,7 +83,14 @@ public class HistorialConsultaModel implements Serializable {
     public String crear() {
         try {
             if (pacienteId == null || pacienteId.isBlank()) throw ServiceException.localizada("ui.seleccionePacienteClinica", "Seleccione un paciente de su clínica.");
-            Consulta nueva = servicio.crear(java.util.UUID.fromString(pacienteId), referencia, observaciones);
+            OffsetDateTime inicio = fechaInicio == null ? null : fechaInicio.atZone(ZoneId.of("America/El_Salvador")).toOffsetDateTime();
+            Consulta nueva = servicio.crear(java.util.UUID.fromString(pacienteId), referencia, observaciones, inicio);
+            if (AtencionService.esFutura(nueva)) {
+                FacesContext faces = FacesContext.getCurrentInstance();
+                faces.getExternalContext().getFlash().setKeepMessages(true);
+                faces.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, Mensajes.texto("consulta.citaGuardada"), null));
+                return "/paginas/consultas.xhtml?faces-redirect=true";
+            }
             sesion.setConsulta(nueva.getIdConsulta());
             return "/paginas/consulta.xhtml?faces-redirect=true";
         } catch (ServiceException e) { error(Mensajes.mensaje(e)); }
@@ -94,6 +103,7 @@ public class HistorialConsultaModel implements Serializable {
             if (propia.getFechaFin() != null) throw ServiceException.localizada("consulta.yaCerrada", "La consulta ya está cerrada.");
             if (sesion.getConsulta() != null && !sesion.getConsulta().equals(propia.getIdConsulta()))
                 throw ServiceException.localizada("consulta.cerrarAntesRetomar", "Cierre la consulta en curso antes de retomar otra.");
+            servicio.exigirAtendible(propia.getIdConsulta());
             sesion.setConsulta(propia.getIdConsulta());
             return "/paginas/consulta.xhtml?faces-redirect=true";
         } catch (ServiceException e) { error(Mensajes.mensaje(e)); }
@@ -147,6 +157,8 @@ public class HistorialConsultaModel implements Serializable {
     public void setReferencia(String valor) { referencia = valor; }
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String valor) { observaciones = valor; }
+    public LocalDateTime getFechaInicio() { return fechaInicio; }
+    public void setFechaInicio(LocalDateTime fechaInicio) { this.fechaInicio = fechaInicio; }
     public Consulta getSeleccionada() { return seleccionada; }
     public List<ConsultaProcedimiento> getProcedimientos() { return procedimientos; }
     public List<ConsultaProcedimientoPaso> getPasos() { return pasos; }

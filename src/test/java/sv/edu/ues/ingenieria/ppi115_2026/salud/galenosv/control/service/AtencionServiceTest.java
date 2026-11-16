@@ -2,6 +2,8 @@ package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,7 @@ class AtencionServiceTest {
         when(q.getResultList()).thenReturn(resultado); return q;
     }
     @Test void retomaConsultaExistenteSinCambiarInicio() {
-        PersonaRol pr=new PersonaRol(UUID.randomUUID()); Rol rol=new Rol(); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true); pr.setIdRol(rol);
+        PersonaRol pr=new PersonaRol(UUID.randomUUID()); Rol rol=new Rol(); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true); pr.setIdRol(rol); pr.setIdPersona(new Persona(UUID.randomUUID()));
         when(em.find(PersonaRol.class,pr.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(pr);
         Consulta c=new Consulta(id); c.setFechaInicio(OffsetDateTime.parse("2026-09-29T10:15:30-06:00")); c.setIdPersonaRol(pr);
         TypedQuery<Consulta> q=query(Consulta.class,List.of(c)); when(q.getSingleResult()).thenReturn(c);
@@ -76,7 +78,7 @@ class AtencionServiceTest {
         assertThrows(ServiceException.class, () -> servicio.cargar(id));
     }
     @Test void permiteRetomarConsultaAbiertaDeLaMismaClinica() {
-        PersonaRol paciente = new PersonaRol(UUID.randomUUID());
+        PersonaRol paciente = new PersonaRol(UUID.randomUUID()); paciente.setIdPersona(new Persona(UUID.randomUUID()));
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
@@ -158,6 +160,36 @@ class AtencionServiceTest {
         verify(consultas).setParameter("desde",OffsetDateTime.parse("2026-10-01T06:00:00Z"));
         verify(consultas).setParameter("hasta",OffsetDateTime.parse("2026-10-03T06:00:00Z"));
         assertThrows(ServiceException.class,()->servicio.historial(java.time.LocalDate.of(2026,10,3),java.time.LocalDate.of(2026,10,2)));
+    }
+    @Test void noPermiteModificarConsultaProgramadaParaUnDiaFuturo() {
+        Consulta c=abierta();
+        c.setFechaInicio(OffsetDateTime.now(java.time.ZoneId.of("America/El_Salvador")).plusDays(1));
+        ServiceException error=assertThrows(ServiceException.class,()->servicio.guardar(id,"REF","notas"));
+        assertEquals("consulta.fechaFutura",error.getMessageKey());
+        ServiceException noRetomable=assertThrows(ServiceException.class,()->servicio.exigirAtendible(id));
+        assertEquals("consulta.fechaFutura",noRetomable.getMessageKey());
+        ServiceException noResultado=assertThrows(ServiceException.class,()->servicio.registrarResultado(id,UUID.randomUUID(),"resultado",null));
+        assertEquals("consulta.fechaFutura",noResultado.getMessageKey());
+    }
+    @Test void permiteAtenderConsultaConFechaDeHoy() {
+        Consulta c=abierta();
+        c.setFechaInicio(java.time.LocalDate.now(java.time.ZoneId.of("America/El_Salvador"))
+                .atStartOfDay(java.time.ZoneId.of("America/El_Salvador")).toOffsetDateTime());
+        servicio.guardar(id,"REF","notas");
+        assertEquals("notas",c.getObservaciones());
+    }
+    @Test void crearConFechaFuturaLaConservaComoFechaDeLaConsulta() {
+        Clinica clinica=medico.getIdClinica();
+        PersonaRol paciente=new PersonaRol(id); paciente.setIdClinica(clinica); paciente.setIdPersona(new Persona(UUID.randomUUID()));
+        Rol rolPaciente=new Rol(UUID.randomUUID()); rolPaciente.setCodigo("PACIENTE"); rolPaciente.setActivo(true);
+        paciente.setIdRol(rolPaciente);
+        when(em.find(PersonaRol.class,id,LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
+        query(Consulta.class,List.of());
+        OffsetDateTime fecha=OffsetDateTime.now(java.time.ZoneId.of("America/El_Salvador")).plusDays(2);
+        servicio.crear(id,"REF","notas",fecha);
+        ArgumentCaptor<Consulta> captor=ArgumentCaptor.forClass(Consulta.class);
+        verify(em).persist(captor.capture());
+        assertEquals(fecha,captor.getValue().getFechaInicio());
     }
     @Test void completarPasoCreaSuSucesorConElRolCorrespondiente() {
         Consulta c=abierta(); ConsultaProcedimiento cp=new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
@@ -377,6 +409,7 @@ class AtencionServiceTest {
     }
     private PersonaRol paciente(Clinica clinica) {
         PersonaRol paciente = new PersonaRol(UUID.randomUUID());
+        paciente.setIdPersona(new Persona(UUID.randomUUID()));
         Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true);
         paciente.setIdRol(rol); paciente.setIdClinica(clinica);
         when(em.find(PersonaRol.class, paciente.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
@@ -399,12 +432,23 @@ class AtencionServiceTest {
         assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, null));
         verify(em, never()).persist(any());
     }
-    @Test void creacionNoDuplicaNiSobrescribeConsultaAbierta() {
+    @Test void creacionRechazaFechaOcupadaAunqueLaConsultaExistenteEsteCerrada() {
         PersonaRol paciente = paciente(medico.getIdClinica());
-        Consulta existente = new Consulta(id); existente.setIdPersonaRol(paciente);
+        Consulta existente = new Consulta(id); existente.setIdPersonaRol(paciente); existente.setFechaInicio(OffsetDateTime.now()); existente.setFechaFin(OffsetDateTime.now());
         existente.setObservaciones("Original"); query(Consulta.class, List.of(existente));
-        assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, "Cambio"));
+        ServiceException error = assertThrows(ServiceException.class, () -> servicio.crear(paciente.getIdPersonaRol(), null, "Cambio"));
+        assertEquals("consulta.fechaOcupada", error.getMessageKey());
         assertEquals("Original", existente.getObservaciones()); verify(em, never()).persist(any());
+    }
+    @Test void permiteVariasConsultasFuturasEnDiasDistintos() {
+        PersonaRol paciente = paciente(medico.getIdClinica());
+        query(Consulta.class, List.of());
+        ZoneId zona = ZoneId.of("America/El_Salvador");
+        OffsetDateTime primeraFecha = LocalDate.now(zona).plusDays(2).atTime(9, 0).atZone(zona).toOffsetDateTime();
+        OffsetDateTime segundaFecha = LocalDate.now(zona).plusDays(3).atTime(9, 0).atZone(zona).toOffsetDateTime();
+        servicio.crear(paciente.getIdPersonaRol(), null, null, primeraFecha);
+        servicio.crear(paciente.getIdPersonaRol(), null, null, segundaFecha);
+        verify(em, times(2)).persist(any(Consulta.class));
     }
     @Test void creacionNoPermiteAbrirOtraConsultaDuranteLaAtencion() {
         when(sesion.getConsulta()).thenReturn(id);
@@ -472,7 +516,7 @@ class AtencionServiceTest {
     /** B8: Atención al público (ADMINISTRACION) es empleado: crea la consulta y ve el historial de su clínica. */
     @Test void administracionAbreConsultaYConsultaElHistorialDeSuClinica() {
         medico.getIdRol().setCodigo("ADMINISTRACION"); medico.getIdRol().setNombre("Secretaría");
-        PersonaRol paciente = new PersonaRol(UUID.randomUUID()); Rol rol = new Rol(UUID.randomUUID());
+        PersonaRol paciente = new PersonaRol(UUID.randomUUID()); paciente.setIdPersona(new Persona(UUID.randomUUID())); Rol rol = new Rol(UUID.randomUUID());
         rol.setNombre("Paciente"); rol.setCodigo("PACIENTE"); rol.setActivo(true); paciente.setIdRol(rol); paciente.setIdClinica(medico.getIdClinica());
         when(em.find(PersonaRol.class,paciente.getIdPersonaRol(),LockModeType.PESSIMISTIC_WRITE)).thenReturn(paciente);
         query(Consulta.class,List.of());

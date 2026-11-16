@@ -44,11 +44,12 @@ public class ConsultaResource extends AbstractResource<Consulta, ConsultaDto> {
     @Override
     protected Consulta crearEntidad(UUID id, ConsultaDto datos) {
         if (idPadre() == null) return super.crearEntidad(id, datos);
-        if (datos.getFechaInicio() != null || datos.getFechaFin() != null) {
-            throw new ApiException(Response.Status.BAD_REQUEST, "campos.servidor", "Las fechas de la consulta las genera el servidor.");
+        if (datos.getFechaFin() != null) {
+            throw new ApiException(Response.Status.BAD_REQUEST, "campos.servidor", "La fecha de cierre la genera el servidor.");
         }
-        Consulta consulta = atencion.crear(datos.getIdPersonaRol(), datos.getReferenciaExterna(), datos.getObservaciones());
-        if (!"ADMINISTRACION".equals(sesion.getRolActivo().getIdRol().getCodigo())) sesion.setConsulta(consulta.getIdConsulta());
+        Consulta consulta = atencion.crear(datos.getIdPersonaRol(), datos.getReferenciaExterna(), datos.getObservaciones(), datos.getFechaInicio());
+        if (!"ADMINISTRACION".equals(sesion.getRolActivo().getIdRol().getCodigo()) && !AtencionService.esFutura(consulta))
+            sesion.setConsulta(consulta.getIdConsulta());
         return consulta;
     }
 

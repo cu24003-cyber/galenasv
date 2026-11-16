@@ -648,15 +648,29 @@ class RestApiTest extends JerseyTest {
     void creaConsultaDesdeElPacienteConElServicioDeAtencionYLaSesion() {
         Consulta nueva = new Consulta(MISSING);
         nueva.setIdPersonaRol((PersonaRol) records.get(PersonaRol.class).get(ID));
-        when(atencion.crear(ID, "REF", "notas")).thenReturn(nueva);
+        when(atencion.crear(ID, "REF", "notas", null)).thenReturn(nueva);
         try (Response response = target("personas-roles/" + ID + "/consultas").request()
                 .post(Entity.json("{\"referenciaExterna\":\"REF\",\"observaciones\":\"notas\"}"))) {
             assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
             assertEquals(MISSING.toString(), json(response).getString("idConsulta"));
         }
-        verify(atencion).crear(ID, "REF", "notas");
+        verify(atencion).crear(ID, "REF", "notas", null);
         verify(sesion).setConsulta(MISSING);
         verify(services.get(Consulta.class), never()).crear(any());
+    }
+
+    @Test
+    void creaConsultaFuturaSinSeleccionarlaComoAtencionActiva() {
+        Consulta nueva = new Consulta(MISSING);
+        nueva.setIdPersonaRol((PersonaRol) records.get(PersonaRol.class).get(ID));
+        nueva.setFechaInicio(java.time.OffsetDateTime.now(java.time.ZoneId.of("America/El_Salvador")).plusDays(30));
+        when(atencion.crear(eq(ID), isNull(), isNull(), any())).thenReturn(nueva);
+        String fecha = nueva.getFechaInicio().toString();
+        try (Response response = target("personas-roles/" + ID + "/consultas").request()
+                .post(Entity.json("{\"fechaInicio\":\"" + fecha + "\"}"))) {
+            assertEquals(201, response.getStatus(), () -> response.readEntity(String.class));
+        }
+        verify(sesion, never()).setConsulta(any());
     }
 
     @Test
@@ -1071,10 +1085,10 @@ class RestApiTest extends JerseyTest {
 
     @Test
     void erroresDelFlujoNoPersistenPorCrudNiCambianLaSesion() {
-        when(atencion.crear(ID, null, null)).thenThrow(new ServiceException(
-                "consulta.pacienteEnCurso", "El paciente ya tiene una consulta en curso.", null));
+        when(atencion.crear(ID, null, null, null)).thenThrow(ServiceException.localizada(
+                "consulta.fechaOcupada", "Ya existe una consulta para esta persona en esa fecha."));
         try (Response response = target("personas-roles/" + ID + "/consultas").request().post(Entity.json("{}"))) {
-            assertEquals("consulta.pacienteEnCurso", assertError(response, 409).getString("code"));
+            assertEquals("consulta.fechaOcupada", assertError(response, 409).getString("code"));
         }
         doThrow(new ServiceException("consulta.yaCerrada", "La consulta ya está cerrada.", null))
                 .when(atencion).guardar(ID, "Texto", "cambio");
@@ -1489,6 +1503,7 @@ class RestApiTest extends JerseyTest {
                 Arguments.of(new ServiceException("error.noExisteActualizar", "No existe.", null), 404),
                 Arguments.of(new ServiceException("tipoDocumento.enUso", "Tiene documentos asociados.", null), 409),
                 Arguments.of(ServiceException.localizada("consulta.cerrarAntesCrear", "Cierre la consulta."), 409),
+                Arguments.of(ServiceException.localizada("consulta.fechaOcupada", "Fecha ocupada."), 409),
                 Arguments.of(ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta."), 409),
                 Arguments.of(ServiceException.localizada("consulta.retrocesoPrimerPaso", "Primer paso."), 409),
                 Arguments.of(ServiceException.localizada("consulta.retrocesoConRegistros", "Con registros."), 409),

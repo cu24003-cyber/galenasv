@@ -40,7 +40,8 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             "consulta.examenPasoCompletado", "consulta.cerrarAntesCrear", "consulta.completeAntesCerrar",
             "consulta.procedimientoSinFinal", "rolCambio.cerrarAntesCambiar",
             "consulta.retrocesoPrimerPaso", "consulta.retrocesoConRegistros",
-            "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado", "consulta.sinPasoParaRol");
+            "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado", "consulta.sinPasoParaRol",
+            "consulta.fechaOcupada");
     /** B8: el rol activo no puede hacer esta acción de la consulta. */
     private static final Set<String> FORBIDDEN = Set.of("consulta.rolClinica", "consulta.soloEmpleado",
             "consulta.noResponsablePaso", "consulta.soloFinalizador");

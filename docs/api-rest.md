@@ -414,7 +414,7 @@ El CRUD directo anterior de las entidades se conserva. Para seguir el comportami
 
 | Ruta del flujo | Escrituras nuevas habilitadas |
 | --- | --- |
-| POST /api/personas-roles/{id}/consultas | Crea una atención para un rol Paciente activo. PUT y PATCH del hijo editan sus notas; PATCH /api/consultas/{id} también usa el flujo. |
+| POST /api/personas-roles/{id}/consultas | Crea una consulta para un rol Paciente activo. `fechaInicio` opcional (`OffsetDateTime` ISO-8601 con offset) permite programarla; si se omite, se usa el instante actual. Una persona puede tener consultas en fechas distintas, pero solo una por día local de El Salvador (incluidas las cerradas); una fecha ocupada responde 409 `consulta.fechaOcupada`. Si es futura, responde 201 sin seleccionarla como atención activa; si es de hoy o pasada, conserva la selección actual. PUT y PATCH del hijo editan sus notas; PATCH /api/consultas/{id} también usa el flujo. |
 | POST /api/consultas/{id}/procedimientos | Inicia el procedimiento y genera los pasos iniciales después de comprobar todo el personal requerido. |
 | /api/consultas-procedimientos/{id}/pasos | Los pasos se generan por el flujo; no hay escrituras genéricas en esta colección. |
 | POST /api/consultas-procedimientos-pasos/{id}/ordenes-examen | Crea la orden de un examen asignable en un paso pendiente de la consulta (HU4). Exige `idExamen`. |
@@ -426,7 +426,7 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | --- | --- | --- |
 | `PUT /api/atencion/rol-activo` | `idPersonaRol` | Selecciona rol y clínica; conserva la restricción de cambio de rol durante una atención. |
 | `DELETE /api/atencion/consulta` | Sin cuerpo | 204. Sale de la consulta en curso sin cerrarla; queda abierta (B8). |
-| `PUT /api/consultas/{id}/sesion` | Sin cuerpo | Retoma una consulta abierta de la clínica activa que tenga un paso pendiente del rol activo, o que este rol deba cerrar (B8). |
+| `PUT /api/consultas/{id}/sesion` | Sin cuerpo | Retoma una consulta abierta de hoy o pasada de la clínica activa que tenga un paso pendiente del rol activo, o que este rol deba cerrar (B8). Una consulta futura responde 409 `consulta.fechaFutura`. |
 | `PUT /api/consultas/{id}/cierre` | `referenciaExterna`, `observaciones` opcionales | Cierra cuando los pasos están completos y cada procedimiento llega a un paso final; libera la consulta en sesión. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/responsable` | `idPersonaRol` | Cambia el responsable de un paso pendiente, respetando rol activo y clínica. |
 | `PUT /api/consultas-procedimientos-pasos/{id}/finalizacion` | `valor` opcional | Completa el paso y genera sus sucesores cuando se cumplen los predecesores. |
@@ -456,6 +456,8 @@ Reglas de AtencionService (detalle en `docs/flujo-consulta.md`, "Quién atiende 
 | 403 `consulta.soloEmpleado` | "Solo un empleado con rol activo puede atender consultas." | El rol activo ya no está activo, o es PACIENTE. |
 | 403 `consulta.rolClinica` | "Seleccione su rol y clínica." | La sesión no tiene rol activo. |
 | 409 `consulta.sinPasoParaRol` | "Esta consulta no tiene un paso pendiente para su rol." | `PUT /api/consultas/{id}/sesion` sin un paso pendiente del rol activo y sin que le toque cerrarla. |
+| 409 `consulta.fechaFutura` | "La consulta todavía no se puede atender porque está programada para una fecha futura." | Intento de seleccionar, modificar, avanzar, retroceder, ordenar, registrar resultados o cerrar una consulta cuyo día local en El Salvador aún no llega. |
+| 409 `consulta.fechaOcupada` | "Ya existe una consulta para esta persona en esa fecha." | Crear una consulta cuando la persona ya tiene otra en el mismo día local de El Salvador, aunque la existente esté cerrada o pertenezca a otro rol/clínica. |
 
 Al completar un paso (`finalizacion`), su responsable pasa a ser el rol activo de quien lo
 completó; así el dashboard muestra quién lo realizó.

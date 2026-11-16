@@ -16,6 +16,9 @@
             <var>msg</var>
         </resource-bundle>
     </application>
+    <factory>
+        <exception-handler-factory>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.web.RecuperarVistaExpiradaHandlerFactory</exception-handler-factory>
+    </factory>
     <converter>
         <converter-id>tipoDocumentoConverter</converter-id>
         <converter-class>sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.model.TipoDocumentoModel$TipoDocumentoConverter</converter-class>
