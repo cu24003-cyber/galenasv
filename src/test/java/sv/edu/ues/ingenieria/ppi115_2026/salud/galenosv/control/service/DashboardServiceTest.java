@@ -422,13 +422,24 @@ class DashboardServiceTest {
         verify(repositorio).valorPaso(paso, clinica);
     }
 
-    @Test void valorDeOtroRolSeRechazaAunqueSeaDeLaMismaClinica() {
-        UUID paso = UUID.randomUUID();
+    @Test void doctorLeeTriajeDeEnfermeraDeSuClinica() {
+        UUID paso = UUID.randomUUID(), rolEnfermera = UUID.randomUUID();
         when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(
-                new Object[]{paso, "Signos", "COMPLETADO", utc("2026-11-13T14:30Z"), "dato clínico", rolAdmin}));
-        var e = assertThrows(AccesoException.class, () -> servicio.valor(paso));
+                new Object[]{paso, "Triaje", "COMPLETADO", utc("2026-11-13T14:30Z"), "Registro ficticio de triaje", rolEnfermera}));
+        assertEquals(new DashboardService.ValorPaso(paso, "Triaje", "COMPLETADO",
+                utc("2026-11-13T14:30Z").atZoneSameInstant(ZONA).toOffsetDateTime(), "Registro ficticio de triaje"),
+                servicio.valor(paso));
+        verify(autenticacion).contexto(usuario, asignacionId);
+        verify(repositorio).valorPaso(paso, clinica);
+        verifyNoMoreInteractions(repositorio);
+    }
+
+    @Test void valorConAsignacionRevocadaNoConsulta() {
+        when(autenticacion.contexto(usuario, asignacionId)).thenThrow(new AccesoException(403, "auth.asignacion", "x"));
+        var e = assertThrows(AccesoException.class, () -> servicio.valor(UUID.randomUUID()));
         assertEquals(403, e.getStatus());
-        assertEquals("consulta.noResponsablePaso", e.getMessageKey());
+        assertEquals("auth.asignacion", e.getMessageKey());
+        verifyNoInteractions(repositorio);
     }
 
     @Test void valorInexistenteODeOtraClinicaDa404() {
@@ -436,6 +447,8 @@ class DashboardServiceTest {
         when(repositorio.valorPaso(paso, clinica)).thenReturn(List.of());
         var e = assertThrows(AccesoException.class, () -> servicio.valor(paso));
         assertEquals(404, e.getStatus()); assertEquals("consulta.pasoNoExiste", e.getMessageKey());
+        verify(repositorio).valorPaso(paso, clinica);
+        verifyNoMoreInteractions(repositorio);
     }
 
     @Test void valorSinSesionOSinRolNoConsulta() {

@@ -123,7 +123,7 @@ Errores:
 | Operación | Sesión | Respuesta |
 | --- | --- | --- |
 | `GET /api/atencion/dashboard?desde=yyyy-MM-dd&hasta=yyyy-MM-dd` | Sí (sin CSRF por ser GET) | 200 con las consultas de la clínica del rol activo, en orden ascendente por `fechaInicio` y luego `idConsulta`. |
-| `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}` solo para el rol responsable del paso; otro rol de la clínica recibe 403 `consulta.noResponsablePaso`. |
+| `GET /api/atencion/dashboard/pasos/{idConsultaProcedimientoPaso}/valor` | Sí | 200 con `{idConsultaProcedimientoPaso, nombre, estado, fechaFin, valor}` para cualquier empleado con asignación activa en la clínica de la consulta, aunque el paso corresponda a otro rol (HU3). Un paso inexistente o de otra clínica devuelve 404 `consulta.pasoNoExiste`. La escritura mantiene la restricción al rol responsable del paso. |
 | `GET /api/atencion/consultas/{idConsulta}` | Sí | 200 con **una** consulta, con el mismo JSON que su elemento del dashboard (HU3/HU4). |
 
 - **Roles:** cualquier rol de empleado (activo y distinto de PACIENTE). La clínica es la de la
