@@ -148,12 +148,13 @@ El script hace, en este orden y dentro del contenedor (`docker exec … psql`):
 1. crea la base si no existe;
 2. aplica `docs/migrations/20261111_base_completa.sql`;
 3. aplica `20261112_documento_tipo_valor_unico.sql`;
-4. aplica `20261113_orden_examen_examen.sql`, la columna `orden_examen.id_examen` de la HU4;
+4. aplica `20261113_orden_examen_examen.sql`, columna histórica usada por los fixtures demo;
 5. aplica `20261115_login_por_documento.sql`, que elimina la tabla `usuario`;
 6. carga `20261113_datos_demo_rubrica.sql`: los datos demo del guion del Primer Parcial
    (`docs/datos-demo-rubrica.md`): clínicas, roles, tipos, exámenes, procedimientos, personas,
    documentos, contactos y asignaciones;
-7. carga `20261113_datos_demo_rubrica_consultas.sql`: las 11 consultas demo con sus pasos y órdenes.
+7. carga `20261113_datos_demo_rubrica_consultas.sql`: las 11 consultas demo con sus pasos y órdenes;
+8. aplica `20261121_ordenes_base_original.sql` para conservar esas asociaciones en el formato actual. Ejecutar con el backend detenido. Estos scripts son solo para desarrollo; no para la base original del ingeniero.
 
 Debe terminar con `Base preparada: galenasv. …`. **Se puede repetir sin error** y deja los mismos
 datos (se verificó cargando dos veces). No borra datos. Para comprobar lo cargado:
@@ -357,7 +358,7 @@ SA-1 a SA-8 son de Clínica Santa Ana; SS-1 a SS-3, de Clínica San Salvador.
 | `docker run` falla: `port is already allocated` en `5432` | Hay un PostgreSQL local u otro contenedor usando el puerto. | Publicar otro puerto (`-p 5433:5432`) y poner `PG_PORT=5433` en `.env`. |
 | `preparar-bd-desarrollo.sh` termina con `Primero ejecuta: mvn -DskipTests package` | Falta compilar. | Paso 4. |
 | `preparar-bd-desarrollo.sh` falla con `No such container` o `role "…" does not exist` | El contenedor o el usuario de PostgreSQL tienen otro nombre. | Pasar los argumentos: `bash scripts/preparar-bd-desarrollo.sh CONTENEDOR BASE USUARIO`. |
-| Error 500 al leer o crear órdenes; en `messages.log` aparece `column … id_examen does not exist` | Falta la migración `20261113_orden_examen_examen.sql`, por ejemplo en una base preparada antes de la HU4. | Volver a ejecutar `bash scripts/preparar-bd-desarrollo.sh …` (se puede repetir) y recompilar o reiniciar Liberty. |
+| El despliegue indica órdenes con `id_examen` pendientes de conversión | La base propia conserva asociaciones en la columna antigua. | Detener la app, respaldar y seguir [la conversión](conversion-ordenes-base-original.md). La base original + parche no necesita esa columna. |
 | `…/examenes-asignables` devuelve `[]` en "Consulta médica" | Faltan los datos demo, o el examen o su tipo están inactivos. | Volver a ejecutar `preparar-bd-desarrollo.sh`. |
 | El login con `01000001-1` da 401, o `publico/tipos-documento` devuelve `[]` | No se cargaron los datos demo, o `PG_DB` apunta a otra base. | Revisar `PG_DB` en `.env` y volver a ejecutar `preparar-bd-desarrollo.sh`. |
 | `reiniciar-demo.sh` falla con `Faltan los datos demo del guion` | La base no se preparó con el script. | Ejecutar primero `preparar-bd-desarrollo.sh`. |

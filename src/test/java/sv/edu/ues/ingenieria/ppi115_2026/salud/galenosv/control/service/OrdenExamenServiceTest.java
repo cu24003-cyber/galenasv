@@ -1,6 +1,7 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 
-import jakarta.persistence.PersistenceException;
+import jakarta.persistence.*;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.OrdenE
 
 @ExtendWith(MockitoExtension.class)
 class OrdenExamenServiceTest {
+
+    @Mock EntityManager em;
 
     @Mock
     private OrdenExamenRepository ordenExamenRepository;
@@ -99,5 +102,14 @@ class OrdenExamenServiceTest {
         doThrow(new PersistenceException("Error BD")).when(ordenExamenRepository).delete(id);
 
         assertThrows(ServiceException.class, () -> ordenExamenService.eliminar(id));
+    }
+
+    @Test void escrituraDirectaBloqueaElExamenYRechazaSiFueEliminado() {
+        OrdenExamen orden = new OrdenExamen(); UUID examen = UUID.randomUUID(); orden.setIdExamen(examen);
+        assertThrows(ServiceException.class, () -> ordenExamenService.crear(orden));
+        verify(ordenExamenRepository, never()).create(any());
+        when(em.find(Examen.class, examen, LockModeType.PESSIMISTIC_WRITE)).thenReturn(new Examen(examen));
+        ordenExamenService.crear(orden);
+        verify(ordenExamenRepository).create(orden);
     }
 }

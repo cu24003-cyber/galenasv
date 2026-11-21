@@ -1218,10 +1218,23 @@ class RestApiTest extends JerseyTest {
     private OrdenExamen ordenConExamen() {
         OrdenExamen orden = new OrdenExamen(A1);
         orden.setIdConsultaProcedimientoPaso((ConsultaProcedimientoPaso) records.get(ConsultaProcedimientoPaso.class).get(ID));
-        orden.setIdExamen((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen) records.get(
-                sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen.class).get(ID));
+        orden.setIdExamen(ID);
         orden.setFechaCreacion(java.time.OffsetDateTime.parse("2026-11-13T09:00:00-06:00"));
         return orden;
+    }
+
+    @Test
+    void editarIndicacionesConservaElExamenSinExponerElFormatoInterno() {
+        OrdenExamen existente = (OrdenExamen) records.get(OrdenExamen.class).get(ID);
+        existente.setIdExamen(ID);
+        try (Response response = target("ordenes-examen/" + ID).request().put(Entity.json(
+                "{\"idConsultaProcedimientoPaso\":\"" + ID + "\",\"indicaciones\":\"Texto editado\"}"))) {
+            assertEquals(200, response.getStatus());
+            JsonObject orden = json(response);
+            assertEquals(ID.toString(), orden.getString("idExamen"));
+            assertEquals("Texto editado", orden.getString("indicaciones"));
+        }
+        assertEquals(ID, existente.getIdExamen());
     }
 
     @Test

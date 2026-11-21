@@ -79,7 +79,7 @@ public class OrdenExamenResource extends AbstractResource<OrdenExamen, OrdenExam
         dto.setFechaCreacion(entidad.getFechaCreacion());
         dto.setIndicaciones(entidad.getIndicaciones());
         dto.setIdConsultaProcedimientoPaso(entidad.getIdConsultaProcedimientoPaso() == null ? null : entidad.getIdConsultaProcedimientoPaso().getIdConsultaProcedimientoPaso());
-        dto.setIdExamen(entidad.getIdExamen() == null ? null : entidad.getIdExamen().getIdExamen());
+        dto.setIdExamen(entidad.getIdExamen());
         return dto;
     }
 
@@ -88,6 +88,7 @@ public class OrdenExamenResource extends AbstractResource<OrdenExamen, OrdenExam
         entidad.setFechaCreacion(dto.getFechaCreacion());
         entidad.setIndicaciones(dto.getIndicaciones());
         entidad.setIdConsultaProcedimientoPaso(relacion(consultaProcedimientoPasoService, dto.getIdConsultaProcedimientoPaso(), "idConsultaProcedimientoPaso"));
-        entidad.setIdExamen(relacion(examenService, dto.getIdExamen(), "idExamen"));
+        relacion(examenService, dto.getIdExamen(), "idExamen");
+        if (dto.getIdExamen() != null) entidad.setIdExamen(dto.getIdExamen());
     }
 }

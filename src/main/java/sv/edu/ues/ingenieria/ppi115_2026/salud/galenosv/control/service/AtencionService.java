@@ -441,6 +441,8 @@ public class AtencionService {
         exigirResponsable(paso);
         if (paso.getFechaFin() != null) throw ServiceException.localizada("consulta.ordenPasoCompletado", "No se pueden crear órdenes en un paso completado.");
         if (examenId == null) throw ServiceException.localizada("consulta.examenObligatorio", "Seleccione el examen que ordena.");
+        Examen examen = em.find(Examen.class, examenId, LockModeType.PESSIMISTIC_WRITE);
+        if (examen == null) throw ServiceException.localizada("consulta.examenNoAsignable", "El examen no está activo o no se puede ordenar en este paso.");
         boolean asignable = paso.getIdProcedimientoPaso() != null && em.createQuery("SELECT COUNT(pe) FROM ConsultaProcedimientoPaso p JOIN p.idProcedimientoPaso def,"
                         + " ProcedimientoPasoExamen pe WHERE p.idConsultaProcedimientoPaso=:paso AND pe.idProcedimientoPaso=def"
                         + " AND pe.idExamen.idExamen=:examen AND pe.activo=true AND pe.idExamen.activo=true" + conTipoActivo("pe.idExamen"), Long.class)
@@ -449,7 +451,7 @@ public class AtencionService {
         String texto = indicaciones == null || indicaciones.isBlank() ? null : indicaciones.trim();
         if (texto != null && texto.length() > 255) throw ServiceException.localizada("consulta.indicacionesValidas", "Ingrese indicaciones de hasta 255 caracteres.");
         OrdenExamen o = new OrdenExamen(UUID.randomUUID());
-        o.setIdConsultaProcedimientoPaso(paso); o.setIdExamen(em.find(Examen.class, examenId));
+        o.setIdConsultaProcedimientoPaso(paso); o.setIdExamen(examenId);
         o.setIndicaciones(texto); o.setFechaCreacion(ahora()); em.persist(o);
         return o;
     }

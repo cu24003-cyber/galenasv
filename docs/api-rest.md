@@ -571,11 +571,24 @@ recorta). La consulta debe estar abierta y el paso PENDIENTE.
 Las órdenes anteriores a la migración no tienen examen: en su JSON se omite `idExamen`, como los
 demás campos nulos. La vista JSF de Consulta sigue creando órdenes solo con indicaciones.
 
-**Despliegue.** La entidad `OrdenExamen` mapea `orden_examen.id_examen`: aplique
-`docs/migrations/20261113_orden_examen_examen.sql` **antes** de desplegar este código; sin la
-columna, toda lectura o escritura de órdenes falla. Los datos demo de exámenes (con sus tipos y órdenes) están en
-`docs/migrations/20261113_datos_demo_rubrica.sql` y `…_consultas.sql`, y los aplica
-`scripts/preparar-bd-desarrollo.sh`.
+**Compatibilidad con original + parche.** `OrdenExamen` ya no mapea `orden_examen.id_examen`.
+Guarda el UUID y las indicaciones en un formato versionado dentro del `text` existente; el JSON de
+la API conserva `idExamen` e `indicaciones` separados. El límite de 255 aplica al texto del usuario,
+no al almacenamiento interno. Las vistas JSF también reciben el texto decodificado.
+El texto legado se conserva sin inferir un examen. Un formato desconocido o dañado se conserva
+como texto y no genera una asociación; no se repara ni sobrescribe automáticamente.
+
+Al editar solo las indicaciones se conserva el examen; el recurso genérico también conserva
+la asociación si el DTO omite `idExamen` o lo envía null. Esto no habilita permisos nuevos: el
+filtro sigue rechazando las ediciones clínicas directas no permitidas por el flujo.
+Crear órdenes y eliminar exámenes coordinan un bloqueo sobre el examen. Un examen con órdenes
+no se elimina, incluso sin asociaciones en el catálogo: 409 `error.relacionado`; se puede desactivar.
+
+La base del ingeniero solo requiere el original y el parche. No ejecutar nuestros scripts de
+preparación demo sobre ella. Para una base propia con órdenes en la columna adicional antigua,
+seguir [la conversión con respaldo](conversion-ordenes-base-original.md) antes de desplegar.
+El arranque se rechaza si quedan asociaciones antiguas sin convertir. Los scripts de desarrollo
+convierten sus fixtures después de cargarlos; las migraciones históricas permanecen intactas.
 
 El cierre conserva la referencia y las observaciones existentes cuando se omiten o se envían null. El cierre repetido no altera las fechas de una consulta ya cerrada. Los conflictos de estado, como editar una consulta cerrada, crear órdenes de pasos completados o cerrar con pendientes, devuelven 409. Las acciones de un paso también funcionan sobre su ruta anidada y comprueban que pertenezca al procedimiento indicado.
 

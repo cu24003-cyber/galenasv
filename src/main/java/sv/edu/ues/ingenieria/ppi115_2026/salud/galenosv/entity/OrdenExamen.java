@@ -29,8 +29,7 @@ import java.util.UUID;
 @Table(name = "orden_examen")
 @NamedQueries({
     @NamedQuery(name = "OrdenExamen.findAll", query = "SELECT o FROM OrdenExamen o"),
-    @NamedQuery(name = "OrdenExamen.findByFechaCreacion", query = "SELECT o FROM OrdenExamen o WHERE o.fechaCreacion = :fechaCreacion"),
-    @NamedQuery(name = "OrdenExamen.findByIndicaciones", query = "SELECT o FROM OrdenExamen o WHERE o.indicaciones = :indicaciones")})
+    @NamedQuery(name = "OrdenExamen.findByFechaCreacion", query = "SELECT o FROM OrdenExamen o WHERE o.fechaCreacion = :fechaCreacion")})
 public class OrdenExamen implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -47,10 +46,6 @@ public class OrdenExamen implements Serializable {
     @JoinColumn(name = "id_consulta_procedimiento_paso", referencedColumnName = "id_consulta_procedimiento_paso")
     @ManyToOne(fetch = FetchType.LAZY)
     private ConsultaProcedimientoPaso idConsultaProcedimientoPaso;
-    /** Examen ordenado (HU4). Null en órdenes anteriores a la migración 20261113_orden_examen_examen. */
-    @JoinColumn(name = "id_examen", referencedColumnName = "id_examen")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Examen idExamen;
 
     @PrePersist
     protected void prePersist() {
@@ -83,19 +78,19 @@ public class OrdenExamen implements Serializable {
     }
 
     public String getIndicaciones() {
-        return indicaciones;
+        return ContenidoOrden.leer(indicaciones).indicaciones();
     }
 
     public void setIndicaciones(String indicaciones) {
-        this.indicaciones = indicaciones;
+        this.indicaciones = ContenidoOrden.guardar(getIdExamen(), indicaciones);
     }
 
-    public Examen getIdExamen() {
-        return idExamen;
+    public UUID getIdExamen() {
+        return ContenidoOrden.leer(indicaciones).idExamen();
     }
 
-    public void setIdExamen(Examen idExamen) {
-        this.idExamen = idExamen;
+    public void setIdExamen(UUID idExamen) {
+        this.indicaciones = ContenidoOrden.guardar(idExamen, getIndicaciones());
     }
 
     public Collection<ExamenResultado> getExamenResultadoCollection() {

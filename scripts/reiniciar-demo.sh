@@ -21,3 +21,6 @@ if [[ "$respuesta" != "s" && "$respuesta" != "S" ]]; then
 fi
 docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -v reiniciar=1 -U "$usuario_postgres" -d "$base_datos" \
     < "$raiz/docs/migrations/20261113_datos_demo_rubrica_consultas.sql"
+# Ejecutar con el backend detenido: convertir también las órdenes de los fixtures históricos.
+docker exec -i "$contenedor" psql -X -v ON_ERROR_STOP=1 -U "$usuario_postgres" -d "$base_datos" \
+    < "$raiz/docs/migrations/20261121_ordenes_base_original.sql"

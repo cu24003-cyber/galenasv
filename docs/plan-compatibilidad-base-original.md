@@ -1,7 +1,7 @@
-# Plan pendiente: compatibilidad con la base original + parche
+# Compatibilidad con la base original + parche: avance
 
 Fecha: 2026-11-20.
-Estado: análisis guardado por solicitud del usuario. No implementar hasta que pida retomarlo.
+Estado: retomado por autorización del usuario el 2026-11-21. Roles y órdenes adaptados; quedan los controles finales y empaquetado.
 
 ## Objetivo y restricciones
 
@@ -49,15 +49,15 @@ Alcance: entidad Rol, autenticación, consultas públicas, permisos REST, recepc
 
 Alternativa recomendada bajo la restricción de conservar el esquema: almacenar el UUID del examen y las indicaciones en un formato estructurado y versionado dentro de `orden_examen.indicaciones`, que ya es `text`. El backend codifica/decodifica; la API sigue exponiendo `idExamen` e `indicaciones` separados. Reutilizar las capacidades JSON existentes, sin agregar dependencias por este motivo.
 
-Es una propuesta de compatibilidad, no una decisión validada con ejecución. Su límite: no hay FK que proteja la relación orden-examen; el backend debe validar asignabilidad, existencia y eliminaciones, contemplando concurrencia. Debe conservar el límite del texto de usuario sin confundirlo con el tamaño de los metadatos.
+Implementado y validado con PostgreSQL real, incluyendo reinicio, resultados, conversión y concurrencia. Su límite: no hay FK que proteja la relación orden-examen; el backend debe validar asignabilidad, existencia y eliminaciones, contemplando concurrencia. Debe conservar el límite del texto de usuario sin confundirlo con el tamaño de los metadatos.
 
 Cubrir todas las lecturas y escrituras: rutas REST directas/anidadas, entidad y relación inversa de Examen, servicios, vistas JSF y ediciones de indicaciones. El formato interno no debe mostrarse al usuario ni perderse al editar el texto. Distinguir texto antiguo de metadatos propios y manejar contenido inválido sin inventar una relación.
 
-Conservar selección múltiple, «Ya ordenado», resultados por orden, recargas y reinicios. Las órdenes antiguas con solo texto siguen legibles y sin examen identificado; no inferir su examen por nombre. Conservar las asociaciones de nuestra base actual requeriría una conversión de datos aparte antes de dejar de usar la columna, previa definición del alcance y respaldo. No ejecutarla como parte de este análisis.
+Conservar selección múltiple, «Ya ordenado», resultados por orden, recargas y reinicios. Las órdenes antiguas con solo texto siguen legibles y sin examen identificado; no inferir su examen por nombre. La conversión transaccional está preparada y probada en una copia: `docs/migrations/20261121_ordenes_base_original.sql`. Seguir `docs/conversion-ordenes-base-original.md` con respaldo antes de desplegar sobre nuestra base. No se ejecutó sobre datos actuales.
 
 ### 4. Documentos sin la restricción única adicional
 
-`DocumentoRepository.buscarPersonaPorDocumento` toma la primera coincidencia. Sin unicidad, un mismo tipo/número podría pertenecer a varias personas.
+`DocumentoRepository.buscarPersonaPorDocumento` ya rechaza coincidencias entre varias personas (primer bloque). Sin unicidad, un mismo tipo/número podría pertenecer a varias personas.
 
 Rechazar identidades ambiguas en login y consultas públicas de citas; no devolver información de varias personas ni elegir una arbitrariamente. Controlar duplicados al guardar, incluyendo solicitudes simultáneas. La validación «consultar y luego insertar» sin coordinación no reemplaza una restricción única. El flujo visible sigue usando tipo y número de documento.
 
@@ -83,7 +83,11 @@ El usuario autorizó comenzar la adaptación y confirmó los nombres acordados. 
 roles sin columna `codigo`, consultas de pacientes por nombre, protección del renombrado y rechazo de
 documentos ambiguos en login/HU1. Contrato JSON del frontend conservado.
 
-Pendiente: órdenes sin `orden_examen.id_examen`, controles de duplicados al guardar documentos
+Segundo bloque implementado: órdenes sin `orden_examen.id_examen`, persistencia de examen/indicaciones,
+protección de borrado y conversión de asociaciones antiguas probada en copia. Ver
+[reporte de órdenes](reportes/compatibilidad-ordenes-20261121.md).
+
+Pendiente: controles de duplicados al guardar documentos
 (incluida concurrencia), revisión final de referencias sin las FK adicionales, recorrido HU1–HU4 completo
 y empaquetado (`provided`, bibliotecas externas, contexto y Docker). No ejecutar las migraciones de
 desarrollo sobre la base del ingeniero. No migrar ni borrar datos actuales como parte de este bloque.

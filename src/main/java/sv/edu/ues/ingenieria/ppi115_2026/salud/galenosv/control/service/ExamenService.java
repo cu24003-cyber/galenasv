@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.*;
 import java.util.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ContenidoOrden;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ExamenTipoExamen;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoExamen;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.ExamenRepository;
@@ -86,12 +87,27 @@ public class ExamenService extends AbstractService<Examen, UUID> {
         em.flush();
     }
 
+    @Override
+    public void eliminar(UUID id) {
+        Examen examen = em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE);
+        if (examen == null) throw new ServiceException("error.noExisteEliminar", "El examen ya no existe.", null);
+        exigirSinOrdenes(id);
+        super.eliminar(id);
+    }
+
+    private void exigirSinOrdenes(UUID id) {
+        long usos = em.createQuery("SELECT COUNT(o) FROM OrdenExamen o WHERE o.indicaciones LIKE :referencia", Long.class)
+                .setParameter("referencia", ContenidoOrden.prefijo(id) + "%").getSingleResult();
+        if (usos > 0) throw new ServiceException("error.relacionado", "El examen tiene órdenes registradas. Puede desactivarlo.", null);
+    }
+
     public void eliminarConTipos(UUID id) {
         Examen examen = em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (examen == null) throw new ServiceException("El examen ya no existe.");
         Long usos = em.createQuery("SELECT COUNT(e) FROM ProcedimientoPasoExamen e WHERE e.idExamen=:examen", Long.class)
                 .setParameter("examen", examen).getSingleResult();
         if (usos > 0) throw new ServiceException("El examen está asociado a un procedimiento. Puede desactivarlo.");
+        exigirSinOrdenes(id);
         em.createQuery("DELETE FROM ExamenTipoExamen e WHERE e.idExamen=:examen").setParameter("examen", examen).executeUpdate();
         em.remove(examen);
         em.flush();

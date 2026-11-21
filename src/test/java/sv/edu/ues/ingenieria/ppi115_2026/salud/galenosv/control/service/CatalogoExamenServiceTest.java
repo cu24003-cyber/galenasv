@@ -72,4 +72,20 @@ class CatalogoExamenServiceTest {
         assertThrows(ServiceException.class, () -> servicio.eliminarConTipos(examen.getIdExamen()));
         verify(em, never()).remove(any()); verify(em, never()).createQuery(anyString());
     }
+
+    @SuppressWarnings("unchecked")
+    @Test void eliminarConTiposNoBorraUnExamenQueTieneOrdenes() {
+        UUID id = UUID.randomUUID(); Examen examen = new Examen(id);
+        when(em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE)).thenReturn(examen);
+        TypedQuery<Long> catalogo = mock(TypedQuery.class), ordenes = mock(TypedQuery.class);
+        when(em.createQuery(startsWith("SELECT COUNT(e)"), eq(Long.class))).thenReturn(catalogo);
+        when(catalogo.setParameter("examen", examen)).thenReturn(catalogo);
+        when(catalogo.getSingleResult()).thenReturn(0L);
+        when(em.createQuery(startsWith("SELECT COUNT(o)"), eq(Long.class))).thenReturn(ordenes);
+        when(ordenes.setParameter(eq("referencia"), any())).thenReturn(ordenes);
+        when(ordenes.getSingleResult()).thenReturn(1L);
+        assertEquals("error.relacionado", assertThrows(ServiceException.class,
+                () -> servicio.eliminarConTipos(id)).getMessageKey());
+        verify(em, never()).remove(any()); verify(em, never()).createQuery(anyString());
+    }
 }

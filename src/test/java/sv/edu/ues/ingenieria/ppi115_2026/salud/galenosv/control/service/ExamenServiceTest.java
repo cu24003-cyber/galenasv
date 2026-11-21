@@ -1,6 +1,6 @@
 package sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service;
 
-import jakarta.persistence.PersistenceException;
+import jakarta.persistence.*;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +14,9 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.Examen
 
 @ExtendWith(MockitoExtension.class)
 class ExamenServiceTest {
+
+    @Mock EntityManager em;
+    @Mock TypedQuery<Long> ordenes;
 
     @Mock
     private ExamenRepository examenRepository;
@@ -37,7 +40,7 @@ class ExamenServiceTest {
     @Test
     void eliminar_noEjecutaDelete_siNoExisteElId() {
         UUID id = UUID.randomUUID();
-        when(examenRepository.find(id)).thenReturn(null);
+        when(em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE)).thenReturn(null);
 
         assertThrows(ServiceException.class, () -> examenService.eliminar(id));
 
@@ -96,8 +99,24 @@ class ExamenServiceTest {
         UUID id = UUID.randomUUID();
         Examen e = new Examen();
         when(examenRepository.find(id)).thenReturn(e);
+        when(em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE)).thenReturn(e);
+        when(em.createQuery(anyString(), eq(Long.class))).thenReturn(ordenes);
+        when(ordenes.setParameter(eq("referencia"), any())).thenReturn(ordenes);
+        when(ordenes.getSingleResult()).thenReturn(0L);
         doThrow(new PersistenceException("Error BD")).when(examenRepository).delete(id);
 
         assertThrows(ServiceException.class, () -> examenService.eliminar(id));
+    }
+
+    @Test void noEliminaUnExamenConOrdenesAunqueNoEsteEnUnProcedimiento() {
+        UUID id = UUID.randomUUID(); Examen examen = new Examen(id);
+        when(em.find(Examen.class, id, LockModeType.PESSIMISTIC_WRITE)).thenReturn(examen);
+        when(em.createQuery(anyString(), eq(Long.class))).thenReturn(ordenes);
+        when(ordenes.setParameter(eq("referencia"), any())).thenReturn(ordenes);
+        when(ordenes.getSingleResult()).thenReturn(1L);
+        assertEquals("error.relacionado", assertThrows(ServiceException.class,
+                () -> examenService.eliminar(id)).getMessageKey());
+        verify(examenRepository, never()).delete(any());
+        verify(ordenes).setParameter("referencia", sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ContenidoOrden.prefijo(id) + "%");
     }
 }

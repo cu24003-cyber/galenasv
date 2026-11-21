@@ -791,7 +791,7 @@ class AtencionServiceTest {
             cp.setIdConsulta(c);
             paso.setIdConsultaProcedimiento(cp); paso.setIdProcedimientoPaso(new ProcedimientoPaso(UUID.randomUUID())); paso.setEstado("PENDIENTE");
             when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
-            when(em.find(Examen.class, examen.getIdExamen())).thenReturn(examen);
+            when(em.find(Examen.class, examen.getIdExamen(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(examen);
             when(em.createQuery(anyString(), eq(Long.class))).thenAnswer(inv -> {
                 jpql.add(inv.getArgument(0));
                 @SuppressWarnings("unchecked") TypedQuery<Long> t = mock(TypedQuery.class);
@@ -816,7 +816,7 @@ class AtencionServiceTest {
         ArgumentCaptor<OrdenExamen> captor = ArgumentCaptor.forClass(OrdenExamen.class);
         verify(em).persist(captor.capture());
         assertSame(orden, captor.getValue());
-        assertSame(o.examen, orden.getIdExamen());
+        assertEquals(o.examen.getIdExamen(), orden.getIdExamen());
         assertSame(o.paso, orden.getIdConsultaProcedimientoPaso());
         assertEquals("En ayunas", orden.getIndicaciones());
         assertNotNull(orden.getFechaCreacion().getOffset());
