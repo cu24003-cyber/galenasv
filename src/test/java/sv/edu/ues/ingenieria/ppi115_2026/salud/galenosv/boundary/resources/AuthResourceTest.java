@@ -31,7 +31,7 @@ class AuthResourceTest {
     }
     private AutenticacionService.Contexto contexto(String codigo) {
         Persona persona = new Persona(idPersona); persona.setNombres("Julio"); persona.setApellidos("Prueba");
-        Rol rol = new Rol(UUID.randomUUID()); rol.setCodigo(codigo); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo); rol.setActivo(true);
         Clinica clinica = new Clinica(UUID.randomUUID()); clinica.setNombre("Clínica de prueba"); clinica.setActivo(true);
         PersonaRol asignacion = new PersonaRol(UUID.randomUUID()); asignacion.setIdPersona(persona); asignacion.setIdRol(rol); asignacion.setIdClinica(clinica);
         return new AutenticacionService.Contexto(persona, asignacion);

@@ -12,10 +12,10 @@ class RecepcionResourceTest {
     @Test @SuppressWarnings("unchecked") void creaPersonaYAsignacionPacienteConLaClinicaDeLaSesion() {
         var recurso=new RecepcionResource(); recurso.registro=mock(RegistroPersonaService.class); recurso.autenticacion=mock(AutenticacionService.class);
         recurso.acceso=mock(AccesoSesion.class); recurso.atencion=mock(AtencionSesion.class); recurso.em=mock(EntityManager.class);
-        var admin=new PersonaRol(UUID.randomUUID()); var rol=new Rol(UUID.randomUUID()); rol.setCodigo("ADMINISTRACION");
+        var admin=new PersonaRol(UUID.randomUUID()); var rol=new Rol(UUID.randomUUID()); rol.setNombre("Atención al público");
         var clinica=new Clinica(UUID.randomUUID()); admin.setIdRol(rol); admin.setIdClinica(clinica);
         when(recurso.atencion.getRolActivo()).thenReturn(admin); when(recurso.autenticacion.contexto(any(),any())).thenReturn(new AutenticacionService.Contexto(new Persona(),admin));
-        var paciente=new Rol(UUID.randomUUID()); paciente.setCodigo("PACIENTE");
+        var paciente=new Rol(UUID.randomUUID()); paciente.setNombre("Paciente");
         TypedQuery<Rol> query=mock(TypedQuery.class); when(recurso.em.createQuery(anyString(),eq(Rol.class))).thenReturn(query); when(query.getResultList()).thenReturn(List.of(paciente));
         UUID personaId=UUID.randomUUID(),asignacionId=UUID.randomUUID();
         when(recurso.registro.guardar(any(),eq(paciente),eq(clinica),isNull())).thenAnswer(i->{ ((Persona)i.getArgument(0)).setIdPersona(personaId);return asignacionId; });

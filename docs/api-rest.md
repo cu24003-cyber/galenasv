@@ -61,7 +61,7 @@ Errores de `POST /api/auth/login`:
 | Código | Caso |
 | --- | --- |
 | 400 `json.invalido` / validación | `idTipoDocumento` no es UUID; número vacío, mayor de 50 caracteres o con saltos de línea. |
-| 401 `auth.credenciales` | Documento inexistente, de tipo inactivo o no vinculado a una persona existente; también si la persona no tiene una asignación de empleado activa en una clínica activa. Una asignación `PACIENTE`, una persona sin rol y roles o clínicas inactivos no permiten iniciar sesión. |
+| 401 `auth.credenciales` | Documento inexistente, ambiguo (el mismo tipo/número pertenece a varias personas), de tipo inactivo o no vinculado a una persona existente; también si la persona no tiene una asignación de empleado activa en una clínica activa. Una asignación `PACIENTE`, una persona sin rol y roles o clínicas inactivos no permiten iniciar sesión. |
 | 403 `auth.origen` | `Origin`/`Referer` no permitido. |
 | 429 `auth.demasiadosIntentos` | Más de diez intentos por dirección en cinco minutos. |
 
@@ -261,7 +261,10 @@ Restricciones que producen `validacion.invalida` (el `field` es el nombre de la 
 }
 ```
 
-Respuestas iguales, para no revelar qué documentos existen:
+Respuestas iguales, para no revelar qué documentos existen. Un tipo/número compartido por
+personas distintas se trata como no encontrado en clínicas, citas y ticket; nunca se elige
+arbitrariamente una de ellas. Varias filas del mismo documento de una única persona no hacen
+ambigua su identidad:
 
 | Ruta | Documento inexistente, de otro tipo o con tipo inactivo | Documento válido sin datos |
 | --- | --- | --- |
@@ -441,7 +444,24 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 
 ### Permisos por rol (B8)
 
-`PermisosApiFilter` distingue tres casos por el código del rol activo:
+`codigo` y `codigoRol` se calculan desde `Rol.nombre`; ya no requieren la columna `rol.codigo`.
+Se ignoran mayúsculas y espacios exteriores; se conservan las tildes. Los nombres acordados son:
+
+| Nombre almacenado | Código devuelto |
+| --- | --- |
+| Paciente | `PACIENTE` |
+| Atención al público / Administración | `ADMINISTRACION` |
+| Doctor / Enfermera / Farmacéutico | `DOCTOR` / `ENFERMERA` / `FARMACEUTICO` |
+| Cualquier otro nombre | `null` (empleado si el rol y la clínica están activos) |
+
+Al crear los roles especiales, usar esos nombres. En PUT/PATCH de `/api/roles/{id}` y en la edición JSF,
+no se puede cambiar un rol entre Paciente, Administración y empleado mediante un renombrado:
+responde 400 `rol.nombreReservado`. Se permiten cambios de mayúsculas/espacios, alternar los dos
+nombres administrativos y renombrar empleados sin convertirlos en roles especiales. Los UUID
+siguen identificando los roles responsables de cada paso. El campo JSON `codigo` sigue siendo
+calculado por el servidor; no sirve para asignar privilegios desde el cliente.
+
+`PermisosApiFilter` distingue tres casos por ese código derivado del rol activo:
 
 | Rol activo | Qué deja pasar el filtro |
 | --- | --- |

@@ -21,10 +21,12 @@ public class DocumentoRepository extends AbstractRepository<Documento, UUID> {
     /** Busca una persona por el documento exacto, si su tipo está activo. */
     public Persona buscarPersonaPorDocumento(UUID idTipoDocumento, String valor) {
         if (idTipoDocumento == null || valor == null || valor.isBlank()) return null;
-        return em.createQuery("SELECT p FROM Documento d JOIN d.idPersona p JOIN d.idTipoDocumento t "
+        var personas = em.createQuery("SELECT DISTINCT p FROM Documento d JOIN d.idPersona p JOIN d.idTipoDocumento t "
                 + "WHERE t.idTipoDocumento=:tipo AND t.activo=true AND d.valor=:valor", Persona.class)
                 .setParameter("tipo", idTipoDocumento).setParameter("valor", valor.strip())
-                .getResultStream().findFirst().orElse(null);
+                .setMaxResults(2).getResultList();
+        // Sin UNIQUE en la base original, un documento ambiguo nunca identifica a una persona.
+        return personas.size() == 1 ? personas.get(0) : null;
     }
 
     /** Una sesión deja de ser válida si la persona pierde todos sus tipos de documento activos. */

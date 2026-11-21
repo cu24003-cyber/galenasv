@@ -28,7 +28,7 @@ class PermisosApiFilterCuerpoTest {
     UUID paso = UUID.randomUUID();
 
     @BeforeEach void preparar() {
-        Rol rol = new Rol(UUID.randomUUID()); rol.setCodigo("DOCTOR"); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Doctor"); rol.setActivo(true);
         Clinica clinica = new Clinica(UUID.randomUUID());
         PersonaRol activo = new PersonaRol(UUID.randomUUID()); activo.setIdRol(rol); activo.setIdClinica(clinica);
         PersonaRol paciente = new PersonaRol(UUID.randomUUID()); paciente.setIdClinica(clinica);

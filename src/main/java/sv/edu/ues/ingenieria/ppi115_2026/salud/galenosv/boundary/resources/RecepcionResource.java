@@ -35,7 +35,7 @@ public class RecepcionResource {
     @POST public Response crear(@Valid @NotNull Paciente datos, @Context UriInfo uri) {
         var contexto = autenticacion.contexto(acceso.getIdPersona(), atencion.getRolActivo().getIdPersonaRol());
         if (!"ADMINISTRACION".equals(contexto.asignacion().getIdRol().getCodigo())) throw new AccesoException(403, "auth.permiso", "Se requiere administración.");
-        var roles = em.createQuery("SELECT r FROM Rol r WHERE r.codigo='PACIENTE' AND r.activo=true", Rol.class).getResultList();
+        var roles = em.createQuery("SELECT r FROM Rol r WHERE LOWER(TRIM(r.nombre))='paciente' AND r.activo=true", Rol.class).getResultList();
         if (roles.size() != 1) throw new AccesoException(409, "registro.rolPaciente", "Configura un único rol de paciente activo antes de registrar.");
         Persona persona = new Persona(); persona.setNombres(datos.nombres.trim()); persona.setApellidos(datos.apellidos.trim()); persona.setFechaNacimiento(datos.fechaNacimiento);
         var idAsignacion = registro.guardar(persona, roles.getFirst(), contexto.asignacion().getIdClinica(), null);

@@ -16,6 +16,8 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.Locale;
+import jakarta.persistence.Transient;
 
 /**
  *
@@ -37,8 +39,6 @@ public class Rol implements Serializable {
     private UUID idRol;
     @Column(name = "nombre" , length = 155)
     private String nombre;
-    @Column(name = "codigo", length = 20, unique = true)
-    private String codigo;
     @Column(name = "activo")
     private Boolean activo;
     @Column(name = "observaciones")
@@ -71,8 +71,18 @@ public class Rol implements Serializable {
         this.nombre = nombre;
     }
 
-    public String getCodigo() { return codigo; }
-    public void setCodigo(String codigo) { this.codigo = codigo; }
+    /** Código de la API: el esquema original solo guarda el nombre del rol. */
+    @Transient
+    public String getCodigo() {
+        return switch (nombre == null ? "" : nombre.trim().toLowerCase(Locale.ROOT)) {
+            case "paciente" -> "PACIENTE";
+            case "atención al público", "administración" -> "ADMINISTRACION";
+            case "doctor" -> "DOCTOR";
+            case "enfermera" -> "ENFERMERA";
+            case "farmacéutico" -> "FARMACEUTICO";
+            default -> null;
+        };
+    }
 
     public Boolean getActivo() {
         return activo;

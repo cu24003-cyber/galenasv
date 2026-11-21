@@ -39,7 +39,7 @@ class AtencionServiceRolesTest {
     List<ConsultaProcedimientoPaso> pasos = new ArrayList<>();
 
     static Rol rol(String codigo, String nombre) {
-        Rol r = new Rol(UUID.randomUUID()); r.setCodigo(codigo); r.setNombre(nombre); r.setActivo(true); return r;
+        Rol r = new Rol(UUID.randomUUID()); r.setNombre(nombre); r.setActivo(true); return r;
     }
     PersonaRol empleado(Rol rol) {
         PersonaRol p = new PersonaRol(UUID.randomUUID()); p.setIdRol(rol); p.setIdClinica(clinica);
@@ -247,13 +247,13 @@ class AtencionServiceRolesTest {
         assertEquals("consulta.rolClinica", rechazo(servicio::historial));
     }
 
-    @Test void elPacienteSeReconocePorCodigoYNoPorNombre() {
+    @Test void elPacienteSeReconoceSoloPorElNombreAcordado() {
         activo(marta);
-        Rol sinCodigo = rol(null, "Paciente");
+        Rol sinCodigo = rol(null, "Paciente externo");
         PersonaRol falso = empleado(sinCodigo);
         when(em.find(PersonaRol.class, falso.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(falso);
         assertEquals("consulta.rolPaciente", rechazo(() -> servicio.crear(falso.getIdPersonaRol(), null, null)));
-        Rol renombrado = rol("PACIENTE", "Paciente externo");
+        Rol renombrado = rol("PACIENTE", " Paciente ");
         PersonaRol real = empleado(renombrado);
         when(em.find(PersonaRol.class, real.getIdPersonaRol(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(real);
         @SuppressWarnings("unchecked") TypedQuery<Consulta> q = mock(TypedQuery.class);

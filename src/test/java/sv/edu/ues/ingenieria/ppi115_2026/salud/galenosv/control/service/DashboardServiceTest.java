@@ -41,7 +41,7 @@ class DashboardServiceTest {
     }
 
     PersonaRol asignacion(UUID id, String codigo, UUID idRol) {
-        Rol rol = new Rol(idRol); rol.setCodigo(codigo); rol.setNombre(codigo); rol.setActivo(true);
+        Rol rol = new Rol(idRol); rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo); rol.setActivo(true);
         PersonaRol a = new PersonaRol(id); a.setIdRol(rol); a.setIdClinica(new Clinica(clinica, "Clínica")); return a;
     }
 

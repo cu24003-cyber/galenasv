@@ -32,8 +32,11 @@ class CitaPublicaRepositoryTest {
         assertTrue(jpql.contains("d.idTipoDocumento.idTipoDocumento=:tipo"));
         assertTrue(jpql.contains("d.idTipoDocumento.activo=true"));
         assertTrue(jpql.contains("d.valor=:valor"));
-        assertTrue(jpql.contains("r.codigo='PACIENTE'"));
+        assertTrue(jpql.contains("LOWER(TRIM(r.nombre))='paciente'"));
         assertTrue(jpql.contains("c.activo=true"));
+        assertTrue(jpql.contains("NOT EXISTS (SELECT otro FROM Documento otro"));
+        assertTrue(jpql.contains("otro.idTipoDocumento.idTipoDocumento=:tipo"));
+        assertTrue(jpql.contains("otro.valor=:valor AND otro.idPersona<>persona"));
     }
 
     @Test void clinicasFiltraPorDocumentoYRolPacienteConParametros() {

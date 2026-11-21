@@ -36,7 +36,7 @@ class PermisosApiHttpTest extends JerseyTest {
         when(consultaPorRol.setParameter(anyString(), any())).thenReturn(consultaPorRol);
         when(consultaPorRol.getSingleResult()).thenReturn(1L);
         var acceso=mock(AccesoSesion.class); var atencion=mock(AtencionSesion.class);
-        clinica=UUID.randomUUID(); rol=new Rol(UUID.randomUUID()); rol.setCodigo("DOCTOR"); rol.setActivo(true);
+        clinica=UUID.randomUUID(); rol=new Rol(UUID.randomUUID()); rol.setNombre("Doctor"); rol.setActivo(true);
         activo=new PersonaRol(UUID.randomUUID()); activo.setIdRol(rol); activo.setIdClinica(new Clinica(clinica)); activo.setIdPersona(new Persona(UUID.randomUUID()));
         paciente=new PersonaRol(UUID.randomUUID()); paciente.setIdClinica(new Clinica(clinica)); paciente.setIdPersona(new Persona(UUID.randomUUID()));
         ajeno=new PersonaRol(UUID.randomUUID()); ajeno.setIdClinica(new Clinica(UUID.randomUUID())); ajeno.setIdPersona(new Persona(UUID.randomUUID()));
@@ -72,13 +72,13 @@ class PermisosApiHttpTest extends JerseyTest {
         }
     }
     @Test void pacienteSoloLeeSuExpediente() {
-        rol.setCodigo("PACIENTE");
+        rol.setNombre("Paciente");
         assertEquals(200,target("personas/"+activo.getIdPersona().getIdPersona()+"/documentos").request().get().getStatus());
         assertEquals(403,target("personas/"+ajeno.getIdPersona().getIdPersona()+"/documentos").request().get().getStatus());
         assertEquals(403,target("consultas").request().get().getStatus());
     }
     @Test void pacienteRegistraDocumentoPropioPeroNoAsignacionesNiConsultas() {
-        rol.setCodigo("PACIENTE");
+        rol.setNombre("Paciente");
         assertEquals(200,target("personas/"+activo.getIdPersona().getIdPersona()+"/documentos").request().post(Entity.json("{\"valor\":\"123\"}")).getStatus());
         assertEquals(403,target("personas-roles/"+activo.getIdPersonaRol()+"/consultas").request().post(Entity.json("{}")).getStatus());
         assertEquals(403,target("recepcion/pacientes").request().post(Entity.json("{}")).getStatus());
@@ -105,7 +105,7 @@ class PermisosApiHttpTest extends JerseyTest {
         assertEquals(403,target("examenes-resultados").request().post(Entity.json("{}")).getStatus());
     }
     @Test void administracionPreparaConsultaPeroNoEscribeResultados() {
-        rol.setCodigo("ADMINISTRACION");
+        rol.setNombre("Atención al público");
         assertEquals(200,target("personas-roles/"+paciente.getIdPersonaRol()+"/consultas").request().post(Entity.json("{\"observaciones\":\"Control\"}")).getStatus());
         assertEquals(403,target("personas-roles/"+ajeno.getIdPersonaRol()+"/consultas").request().post(Entity.json("{}")).getStatus());
         assertEquals(403,target("examenes-resultados").request().post(Entity.json("{}")).getStatus());
@@ -123,7 +123,7 @@ class PermisosApiHttpTest extends JerseyTest {
     }
     @Test void registroDePacientesEstaReservadoAAdministracion() {
         assertEquals(403,target("recepcion/pacientes").request().post(Entity.json("{}")).getStatus());
-        rol.setCodigo("ADMINISTRACION");
+        rol.setNombre("Atención al público");
         assertEquals(200,target("recepcion/pacientes").request().post(Entity.json("{}")).getStatus());
     }
     @Test void doctorUsaCierreYNotasSinBorrarNiReasignarLaConsulta() {
@@ -143,14 +143,14 @@ class PermisosApiHttpTest extends JerseyTest {
     }
     @Test void retrocesoNoAdmitePasosDeOtraClinicaParaNingunRol() {
         for (String codigo : new String[]{"DOCTOR", "ENFERMERA", "ADMINISTRACION", null}) {
-            rol.setCodigo(codigo);
+            rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo);
             assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(ajeno)+"/retroceso").request().put(Entity.json("")).getStatus(), codigo);
         }
     }
     /** B8: el filtro deja pasar a cualquier empleado de la clínica; AtencionService exige el rol del paso. */
     @Test void cualquierEmpleadoDeLaClinicaLlegaALasAccionesDePaso() {
         for (String codigo : new String[]{"ENFERMERA", "ADMINISTRACION", null}) {
-            rol.setCodigo(codigo);
+            rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo);
             UUID paso=pasoDe(paciente);
             assertEquals(200,target("consultas-procedimientos-pasos/"+paso+"/retroceso").request().put(Entity.json("")).getStatus(), codigo);
             assertEquals(200,target("consultas-procedimientos-pasos/"+paso+"/finalizacion").request().put(Entity.json("{\"valor\":\"PA 120/80\"}")).getStatus(), codigo);
@@ -162,13 +162,13 @@ class PermisosApiHttpTest extends JerseyTest {
         assertEquals(200,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/examenes-asignables").request().get().getStatus());
     }
     @Test void listarExamenesAsignablesSigueDisponibleParaOtrosRolesDeLaClinica() {
-        rol.setCodigo("ENFERMERA");
+        rol.setNombre("Enfermera");
         when(consultaPorRol.getSingleResult()).thenReturn(0L);
         assertEquals(200,target("consultas-procedimientos-pasos/"+pasoDe(paciente)+"/examenes-asignables").request().get().getStatus());
     }
     @Test void examenesAsignablesNoAdmitenPasosDeOtraClinica() {
         assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(ajeno)+"/examenes-asignables").request().get().getStatus());
-        rol.setCodigo("ENFERMERA");
+        rol.setNombre("Enfermera");
         assertEquals(403,target("consultas-procedimientos-pasos/"+pasoDe(ajeno)+"/examenes-asignables").request().get().getStatus());
     }
     @Test void accionesSinCuerpoAceptanUnCuerpoEnBlancoConContentTypeJson() {
@@ -196,7 +196,7 @@ class PermisosApiHttpTest extends JerseyTest {
     }
     /** B8: Atención al público (código ADMINISTRACION) atiende el último paso y cierra, así que lee consultas de su clínica. */
     @Test void administracionLeeConsultasDeSuClinicaPeroNoAsignaPersonalEnOtra() {
-        rol.setCodigo("ADMINISTRACION");
+        rol.setNombre("Atención al público");
         assertEquals(403,target("consultas").request().get().getStatus());
         assertEquals(403,target("clinicas/"+ajeno.getIdClinica().getIdClinica()+"/personas-roles").request().post(Entity.json("{}")).getStatus());
     }
@@ -206,7 +206,7 @@ class PermisosApiHttpTest extends JerseyTest {
         when(em.find(Consulta.class,propia.getIdConsulta())).thenReturn(propia);
         when(em.find(Consulta.class,otra.getIdConsulta())).thenReturn(otra);
         for (String codigo : new String[]{"ENFERMERA", null}) {
-            rol.setCodigo(codigo);
+            rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo);
             assertEquals(200,target("consultas/"+propia.getIdConsulta()).request().get().getStatus(), codigo);
             assertEquals(200,target("consultas-procedimientos").queryParam("idConsulta",propia.getIdConsulta()).request().get().getStatus(), codigo);
             assertEquals(200,target("consultas/"+propia.getIdConsulta()+"/sesion").request().put(Entity.json("")).getStatus(), codigo);
@@ -215,7 +215,7 @@ class PermisosApiHttpTest extends JerseyTest {
         }
     }
     @Test void enfermeraNoEscribeCatalogosPersonasNiRecepcion() {
-        rol.setCodigo("ENFERMERA");
+        rol.setNombre("Enfermera");
         assertEquals(403,target("roles").request().post(Entity.json("{}")).getStatus());
         assertEquals(403,target("examenes").request().post(Entity.json("{}")).getStatus());
         assertEquals(403,target("tipos-documento").request().post(Entity.json("{}")).getStatus());
@@ -227,7 +227,7 @@ class PermisosApiHttpTest extends JerseyTest {
     /** Como DOCTOR antes de la B8: crear la consulta por la colección anidada; el servicio valida al operador. */
     @Test void cualquierEmpleadoCreaConsultasSoloPorLaColeccionAnidada() {
         for (String codigo : new String[]{"DOCTOR", "ENFERMERA", "ADMINISTRACION", null}) {
-            rol.setCodigo(codigo);
+            rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo);
             assertEquals(200,target("personas-roles/"+paciente.getIdPersonaRol()+"/consultas").request().post(Entity.json("{}")).getStatus(), codigo);
             assertEquals(403,target("personas-roles/"+ajeno.getIdPersonaRol()+"/consultas").request().post(Entity.json("{}")).getStatus(), codigo);
         }

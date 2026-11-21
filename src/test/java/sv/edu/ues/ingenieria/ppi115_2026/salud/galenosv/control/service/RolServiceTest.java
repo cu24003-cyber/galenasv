@@ -106,4 +106,30 @@ class RolServiceTest {
 
         assertThrows(ServiceException.class, () -> rolService.eliminar(id));
     }
+
+    @Test void noPermiteCambiarLaClasificacionDeUnRolAlEditar() {
+        for (String[] nombres : new String[][]{
+                {"Paciente", "Doctor"}, {"Doctor", "Paciente"},
+                {"Atención al público", "Doctor"}, {"Doctor", "Administración"},
+                {"Paciente", "Administración"}, {null, "Paciente"}}) {
+            Rol anterior = new Rol(UUID.randomUUID()); anterior.setNombre(nombres[0]);
+            Rol cambio = new Rol(anterior.getIdRol()); cambio.setNombre(nombres[1]);
+            when(rolRepository.find(anterior.getIdRol())).thenReturn(anterior);
+            assertEquals("rol.nombreReservado", assertThrows(ServiceException.class,
+                    () -> rolService.actualizar(cambio)).getMessageKey());
+        }
+        verify(rolRepository, never()).update(any());
+    }
+
+    @Test void conservaLaClasificacionAlEditarNombresPermitidos() {
+        for (String[] nombres : new String[][]{
+                {"Paciente", " PACIENTE "}, {"Atención al público", "Administración"},
+                {"Doctor", "Médico general"}}) {
+            Rol anterior = new Rol(UUID.randomUUID()); anterior.setNombre(nombres[0]);
+            Rol cambio = new Rol(anterior.getIdRol()); cambio.setNombre(nombres[1]);
+            when(rolRepository.find(anterior.getIdRol())).thenReturn(anterior);
+            rolService.actualizar(cambio);
+            verify(rolRepository).update(cambio);
+        }
+    }
 }

@@ -31,11 +31,11 @@ class RecepcionHttpTest extends JerseyTest {
         var acceso = mock(AccesoSesion.class);
         var atencion = mock(AtencionSesion.class);
         recurso.em = mock(EntityManager.class);
-        rolActivo = new Rol(UUID.randomUUID()); rolActivo.setCodigo("ADMINISTRACION");
+        rolActivo = new Rol(UUID.randomUUID()); rolActivo.setNombre("Atención al público");
         var asignacion = new PersonaRol(UUID.randomUUID()); asignacion.setIdRol(rolActivo); asignacion.setIdClinica(new Clinica(UUID.randomUUID()));
         when(atencion.getRolActivo()).thenReturn(asignacion);
         when(auth.contexto(any(),any())).thenReturn(new AutenticacionService.Contexto(new Persona(),asignacion));
-        var rolPaciente = new Rol(UUID.randomUUID()); rolPaciente.setCodigo("PACIENTE");
+        var rolPaciente = new Rol(UUID.randomUUID()); rolPaciente.setNombre("Paciente");
         TypedQuery<Rol> query = mock(TypedQuery.class);
         when(recurso.em.createQuery(anyString(),eq(Rol.class))).thenReturn(query);
         when(query.getResultList()).thenReturn(List.of(rolPaciente));
@@ -75,7 +75,7 @@ class RecepcionHttpTest extends JerseyTest {
         verifyNoInteractions(registro);
     }
     @Test void otroPerfilNoRegistraAunqueLlameDirectamenteAlRecurso() {
-        rolActivo.setCodigo("DOCTOR");
+        rolActivo.setNombre("Doctor");
         try (Response respuesta = target("recepcion/pacientes").request().post(Entity.json(
                 "{\"nombres\":\"Ana\",\"apellidos\":\"Pérez\",\"fechaNacimiento\":\"2000-01-01T00:00:00.000Z\"}"))) { assertEquals(403,respuesta.getStatus()); }
         verifyNoInteractions(registro);

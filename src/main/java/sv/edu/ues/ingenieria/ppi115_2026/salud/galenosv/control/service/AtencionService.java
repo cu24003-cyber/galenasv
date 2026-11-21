@@ -26,7 +26,7 @@ public class AtencionService {
     }
     public List<PersonaRol> pacientesClinica() {
         PersonaRol medico = empleadoActivo();
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND rol.codigo='PACIENTE' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
                 .setParameter("clinica", medico.getIdClinica()).getResultList();
     }
     public List<PersonaRol> responsables(UUID clinica) {

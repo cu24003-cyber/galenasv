@@ -10,7 +10,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.*;
 
 class AtencionDtoTest {
     private static PersonaRol asignacion(String codigo, String nombre) {
-        Rol rol = new Rol(UUID.randomUUID()); rol.setCodigo(codigo); rol.setNombre(nombre); rol.setActivo(true);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre(nombre); rol.setActivo(true);
         Clinica clinica = new Clinica(UUID.randomUUID()); clinica.setNombre("Clínica Santa Ana");
         PersonaRol a = new PersonaRol(UUID.randomUUID()); a.setIdRol(rol); a.setIdClinica(clinica);
         return a;

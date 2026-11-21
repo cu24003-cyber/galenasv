@@ -5,11 +5,11 @@ Backend de GalenoSV: Java 21, Jakarta EE 11, Open Liberty (puerto 9080), Postgre
 ## Prioridad absoluta
 - Todo cambio debe cumplir exactamente las historias de usuario de ../ChivoMed/docs/rubrica.md. Si el código actual contradice la rúbrica, se cambia el código.
 - HU1: la búsqueda de citas es pública, sin sesión.
-- HU2: el login de empleados es con tipo de documento y número de documento, sin contraseña. Empleado = cualquier asignación con rol activo excepto Paciente (`rol.codigo = 'PACIENTE'`), en una clínica activa; un rol sin código también es empleado. Paciente, persona sin rol, rol inactivo o clínica inactiva: 401 `auth.credenciales`.
+- HU2: el login de empleados es con tipo de documento y número de documento, sin contraseña. Empleado = cualquier asignación con rol activo excepto Paciente (código de API `PACIENTE`, derivado del nombre acordado), en una clínica activa; un rol sin código también es empleado. Paciente, persona sin rol, rol inactivo o clínica inactiva: 401 `auth.credenciales`.
 - HU3/HU4: cada paso lo atiende, completa, retrocede y le ordena exámenes solo quien tiene en esa clínica el rol responsable del paso (`procedimiento_paso.id_rol`); si no, 403 `consulta.noResponsablePaso`. Al completar un paso, su responsable pasa a ser quien lo completó. La consulta la cierra solo quien completó el paso de finalización (403 `consulta.soloFinalizador`). Detalle en docs/flujo-consulta.md y docs/api-rest.md ("Permisos por rol").
 
 ## Roles
-- El Paciente se identifica siempre por `codigo = 'PACIENTE'`, nunca por nombre. Los pasos se comparan por `id_rol`.
+- Por decisión del usuario, `Rol.getCodigo()` deriva los códigos de los nombres acordados: Paciente; Atención al público o Administración. No mapear `rol.codigo`: no existe en la base original + parche. Las ediciones conservan la clasificación especial. Los pasos se comparan por `id_rol`.
 - `ADMINISTRACION` se muestra como "Atención al público" y conserva su código: es el único rol que escribe catálogos, personas y /api/recepcion/*.
 - Roles de la demo: Atención al público, Paciente, Enfermera, Doctor y Farmacéutico (inactivo).
 

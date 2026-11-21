@@ -176,7 +176,7 @@ class RestApiTest extends JerseyTest {
         ((sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoMedioContacto) records.get(entityType(TipoMedioContactoResource.class)).get(ID)).setExpresionRegular(".");
         PersonaRol asignacionActual = (PersonaRol) records.get(PersonaRol.class).get(ID);
         asignacionActual.getIdRol().setActivo(true);
-        asignacionActual.getIdRol().setCodigo("DOCTOR");
+        asignacionActual.getIdRol().setNombre("Doctor");
         asignacionActual.getIdClinica().setActivo(true);
         when(sesion.getRolActivo()).thenReturn(asignacionActual);
         acceso = mock(AccesoSesion.class);
@@ -762,7 +762,7 @@ class RestApiTest extends JerseyTest {
     void codigoDeAccesoDelRolNoSePuedeCambiarDesdeElCrud() {
         var rol = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol)
                 records.get(entityType(RolResource.class)).get(ID);
-        rol.setCodigo("DOCTOR");
+        rol.setNombre("Doctor");
         try (Response response = target("roles/" + ID).request().method("PATCH", Entity.json("{\"codigo\":\"ADMINISTRACION\"}"))) {
             assertError(response, 400);
         }
@@ -771,6 +771,26 @@ class RestApiTest extends JerseyTest {
             assertEquals(200, response.getStatus());
         }
         assertEquals("DOCTOR", rol.getCodigo());
+    }
+
+    @Test
+    void renombrarNoConvierteUnEmpleadoEnRolReservado() {
+        var rol = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol)
+                records.get(entityType(RolResource.class)).get(ID);
+        rol.setNombre("Doctor");
+        for (String nombre : List.of("Paciente", "Administración")) {
+            try (Response response = target("roles/" + ID).request().method("PATCH",
+                    Entity.json("{\"nombre\":\"" + nombre + "\"}"))) {
+                assertEquals(400, response.getStatus());
+                assertEquals("rol.nombreReservado", json(response).getString("code"));
+            }
+            try (Response response = target("roles/" + ID).request().put(
+                    Entity.json("{\"nombre\":\"" + nombre + "\",\"activo\":true}"))) {
+                assertEquals(400, response.getStatus());
+                assertEquals("rol.nombreReservado", json(response).getString("code"));
+            }
+            assertEquals("Doctor", rol.getNombre());
+        }
     }
 
     @Test
@@ -813,7 +833,6 @@ class RestApiTest extends JerseyTest {
 
     private static PersonaRol asignacion(UUID id, String codigo, String nombreRol, UUID idClinica, String nombreClinica) {
         Rol rol = new Rol(UUID.randomUUID());
-        rol.setCodigo(codigo);
         rol.setNombre(nombreRol);
         rol.setActivo(true);
         PersonaRol a = new PersonaRol(id);

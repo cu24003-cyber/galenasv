@@ -17,14 +17,16 @@ public class CitaPublicaRepository {
     @PersistenceContext EntityManager em;
 
     private static final String PACIENTE_CON_DOCUMENTO =
-            "r.codigo='PACIENTE' AND r.activo=true AND c.activo=true AND EXISTS ("
-            + "SELECT d FROM Documento d WHERE d.idPersona=a.idPersona "
-            + "AND d.idTipoDocumento.idTipoDocumento=:tipo AND d.idTipoDocumento.activo=true AND d.valor=:valor)";
+            "LOWER(TRIM(r.nombre))='paciente' AND r.activo=true AND c.activo=true AND EXISTS ("
+            + "SELECT d FROM Documento d WHERE d.idPersona=persona "
+            + "AND d.idTipoDocumento.idTipoDocumento=:tipo AND d.idTipoDocumento.activo=true AND d.valor=:valor)"
+            + " AND NOT EXISTS (SELECT otro FROM Documento otro WHERE otro.idTipoDocumento.idTipoDocumento=:tipo"
+            + " AND otro.valor=:valor AND otro.idPersona<>persona)";
 
     /** [idClinica, nombre] de las clínicas activas donde el dueño del documento es PACIENTE. */
     public List<Object[]> clinicas(UUID tipo, String numero) {
         if (invalido(tipo, numero)) return List.of();
-        return em.createQuery("SELECT DISTINCT c.idClinica, c.nombre FROM PersonaRol a JOIN a.idClinica c JOIN a.idRol r WHERE "
+        return em.createQuery("SELECT DISTINCT c.idClinica, c.nombre FROM PersonaRol a JOIN a.idClinica c JOIN a.idRol r JOIN a.idPersona persona WHERE "
                 + PACIENTE_CON_DOCUMENTO + " ORDER BY c.nombre, c.idClinica", Object[].class)
                 .setParameter("tipo", tipo).setParameter("valor", numero.strip())
                 .getResultList();
@@ -58,7 +60,7 @@ public class CitaPublicaRepository {
     }
 
     private static final String BASE_CITA = "SELECT con.idConsulta, con.fechaInicio, c.nombre FROM Consulta con "
-            + "JOIN con.idPersonaRol a JOIN a.idClinica c JOIN a.idRol r WHERE " + PACIENTE_CON_DOCUMENTO;
+            + "JOIN con.idPersonaRol a JOIN a.idClinica c JOIN a.idRol r JOIN a.idPersona persona WHERE " + PACIENTE_CON_DOCUMENTO;
 
     private static boolean invalido(UUID tipo, String numero) {
         return tipo == null || numero == null || numero.isBlank();

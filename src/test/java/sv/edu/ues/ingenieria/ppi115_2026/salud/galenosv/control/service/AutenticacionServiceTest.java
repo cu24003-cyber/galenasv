@@ -24,7 +24,7 @@ class AutenticacionServiceTest {
     }
     private PersonaRol asignacion(String codigo, int dias) {
         PersonaRol r = new PersonaRol(UUID.randomUUID()); r.setIdPersona(persona());
-        Rol rol = new Rol(UUID.randomUUID()); rol.setCodigo(codigo); rol.setActivo(true); r.setIdRol(rol);
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("ADMINISTRACION".equals(codigo) ? "Atención al público" : codigo); rol.setActivo(true); r.setIdRol(rol);
         Clinica clinica = new Clinica(UUID.randomUUID()); clinica.setActivo(true); r.setIdClinica(clinica);
         r.setFechaCreacion(Date.from(Instant.parse("2026-01-01T00:00:00Z").plusSeconds(86400L * dias)));
         return r;

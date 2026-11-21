@@ -55,6 +55,12 @@ public class RolResource extends AbstractResource<Rol, RolDto> {
     }
 
     @Override
+    protected void actualizarEntidad(Rol entidad, RolDto datos) {
+        RolService.validarCambioNombre(entidad, datos.getNombre());
+        super.actualizarEntidad(entidad, datos);
+    }
+
+    @Override
     protected void aplicar(RolDto dto, Rol entidad) {
         entidad.setNombre(dto.getNombre());
         entidad.setActivo(dto.getActivo());
