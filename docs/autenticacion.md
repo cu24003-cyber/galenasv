@@ -14,11 +14,12 @@ asignación, su estado y su clínica en cada solicitud.
 ```bash
 mvn verify
 mvn liberty:install-feature
-mvn liberty:run
+bash scripts/liberty.sh
 ```
 
-La configuración local de Liberty debe apuntar a PostgreSQL. `server.xml` contiene
-credenciales locales y está excluido de Git. La base de Julio en Docker se llama
+La configuración local de Liberty debe apuntar a PostgreSQL. `server.xml` referencia
+variables de entorno; las credenciales están en `.env`, excluido de Git.
+El script carga ese archivo; para configurar los valores, vea `docs/LEVANTAR.md` §3. La base de Julio en Docker se llama
 `galenasv`; cada compañero debe utilizar los datos de su entorno.
 
 En ChivoMed, ejecutar `npm start` o Run de WebStorm. BrowserSync sirve el frontend
@@ -196,7 +197,7 @@ Los archivos Java de implementación están bajo
 | Nuevo | `docs/autenticacion.md` | Instrucciones, contrato y alcance de esta etapa. |
 
 La configuración `src/main/liberty/config/server.xml` y las credenciales
-`.env.login-local` son exclusivas del entorno local y están excluidas de Git.
+`.env` y `.env.login-local` son exclusivas del entorno local y están excluidas de Git.
 La cuenta de Julio y la clínica de desarrollo están únicamente en su PostgreSQL;
 no se añaden como datos predeterminados para los demás entornos.
 

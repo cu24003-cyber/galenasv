@@ -59,26 +59,62 @@ La base **no** se crea a mano: la crea `scripts/preparar-bd-desarrollo.sh` en el
 días siguientes basta con `docker start galenasv`; los datos quedan en el volumen
 `galenasv-datos`.
 
-## 3. Configurar Liberty (`server.xml`)
+## 3. Configurar Liberty con variables de entorno
 
-`src/main/liberty/config/server.xml` está en `.gitignore` porque lleva credenciales. Se crea a
-partir de la plantilla versionada, que no tiene contraseñas reales:
+Copiar la plantilla sin secretos y crear el archivo privado de configuración:
 
 ```bash
 cp src/main/liberty/config/server.xml.ejemplo src/main/liberty/config/server.xml
+cp .env.example .env
+chmod 600 .env
 ```
 
-Editar `src/main/liberty/config/server.xml` y reemplazar:
+Si ya tiene `.env`, edítelo sin sobrescribirlo. Complete `PG_USER`, `PG_PASS` y
+`LTPA_KEYS_PASSWORD` con sus valores locales. Conserve la clave LTPA del entorno existente;
+cambiarla puede invalidar tokens. Para un entorno nuevo puede generar una con
+`openssl rand -hex 32`.
 
-| Atributo | Valor |
-| --- | --- |
-| `user` | `postgres`, o el usuario del contenedor |
-| `password` | La `CLAVE_LOCAL` del paso 2 |
-| `keysPassword` (de `<ltpa>`) | Cualquier texto propio |
-| `databaseName` | `galenasv`, o el nombre de base que se pase al script del paso 5 |
-| `portNumber` | `5432`, o el puerto publicado en `docker run -p` |
+| Variable | Uso | Origen |
+| --- | --- | --- |
+| `PG_USER` | Usuario PostgreSQL | Rúbrica, obligatoria |
+| `PG_PASS` | Contraseña PostgreSQL | Rúbrica, obligatoria |
+| `PG_DB` | Base de datos | Rúbrica, obligatoria |
+| `PG_HOST` | Host/IP PostgreSQL | Rúbrica, obligatoria |
+| `PG_PORT` | Puerto PostgreSQL | Rúbrica, obligatoria |
+| `LTPA_KEYS_PASSWORD` | Protección de claves LTPA | `server.xml`, obligatoria |
+| `HTTP_PORT` | Puerto HTTP; predeterminado 9080 | `server.xml`, opcional |
+| `HTTPS_PORT` | Puerto HTTPS; predeterminado 9443 | `server.xml`, opcional |
+| `HTTP_HOST` | Interfaz HTTP; predeterminado localhost | Adicional para contenedores |
 
-No suba `server.xml` a Git.
+`.env` usa el formato literal de `docker --env-file`: una línea `NOMBRE=valor`, sin
+`export`, sin comillas envolventes y sin comentarios al final del valor. Los espacios,
+`$`, `#`, `=` y comillas dentro del valor se conservan; no se ejecutan expresiones.
+No admite valores con saltos de línea. Las variables ya definidas en el proceso tienen
+prioridad. `bash scripts/liberty.sh` carga `.env`, comprueba las seis variables obligatorias
+y ejecuta Maven; admite argumentos como `liberty:dev` o `liberty:run`.
+
+Open Liberty no carga automáticamente un archivo llamado `.env`. El XML referencia las
+variables del proceso mediante `${env.PG_USER}`, etc.; HTTP usa variables con valor
+predeterminado. Si arranca desde el IDE o con `mvn liberty:run` directamente, configure
+esas variables en el entorno del proceso. Véase la
+[documentación oficial de Liberty](https://openliberty.io/docs/latest/reference/config/server-configuration-overview.html).
+
+`.env` y `.env.*` están excluidos de Git; `.env.example` contiene solo valores de ejemplo.
+`.dockerignore` excluye los secretos y `target/` del contexto de construcción. No copie
+`.env` al WAR, a un ZIP de entrega ni a una imagen. El `server.xml` local sigue excluido
+de Git; la plantilla versionada permite reproducir la configuración.
+
+Para la futura imagen, pase `--env-file .env` y `-e 'HTTP_HOST=*'` a `docker run`.
+Use en `PG_HOST` el nombre/IP de PostgreSQL accesible desde el contenedor: `localhost`
+dentro del contenedor apunta al propio contenedor. Si solo pasa las cinco variables
+PostgreSQL de la rúbrica, agregue también `LTPA_KEYS_PASSWORD` para esta configuración.
+La imagen deberá copiar la plantilla como `server.xml` y arrancar Liberty con esas
+variables; no necesita el script Maven si ya incluye el WAR y el runtime.
+
+La dockerización completa queda pendiente: la rúbrica solicita el contexto `/galeno`
+y dependencias de aplicación `provided`; el proyecto todavía usa `/galenosv` y tiene
+OpenPDF, PostgreSQL y PrimeFaces con alcance de compilación. Estos cambios requieren
+preparar las bibliotecas del servidor y coordinar el proxy del frontend.
 
 ## 4. Compilar
 
@@ -87,6 +123,7 @@ mvn -DskipTests package
 ```
 
 Para correr las pruebas: `mvn test`. No necesita la base ni Liberty.
+La carga de variables se comprueba con `python3 scripts/test-liberty-env.py`, sin arrancar servicios.
 
 ## 5. Crear la base y cargar los datos demo
 
@@ -175,7 +212,7 @@ docker exec -i CONTENEDOR pg_restore -U USUARIO -d BASE --clean --if-exists --si
 ## 6. Arrancar Liberty
 
 ```bash
-mvn liberty:run
+bash scripts/liberty.sh
 ```
 
 Deja el servidor en primer plano; se detiene con `Ctrl+C`. La primera vez descarga Open Liberty
@@ -229,7 +266,7 @@ Para usar otro puerto u otro host, definir la variable **antes** de arrancar Lib
 terminal. Reemplaza los valores por defecto, así que incluya también los que quiera conservar:
 
 ```bash
-CHIVOMED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001 mvn liberty:run
+CHIVOMED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001 bash scripts/liberty.sh
 ```
 
 ## 9. Antes de la revisión: reiniciar la demo
@@ -309,32 +346,34 @@ SA-1 a SA-8 son de Clínica Santa Ana; SS-1 a SS-3, de Clínica San Salvador.
 
 | Síntoma | Causa | Solución |
 | --- | --- | --- |
-| `403` con `"code":"auth.origen"` al iniciar sesión o en cualquier escritura | La petición no trae `Origin` (o `Referer`) aceptado: el frontend no corre en el puerto 3000, o se usa curl sin `-H 'Origin: http://localhost:3000'`. | Levantar ChivoMed en el puerto 3000, o definir `CHIVOMED_ORIGINS` antes de `mvn liberty:run` (sección 8). En curl, enviar la cabecera `Origin`. |
+| `403` con `"code":"auth.origen"` al iniciar sesión o en cualquier escritura | La petición no trae `Origin` (o `Referer`) aceptado: el frontend no corre en el puerto 3000, o se usa curl sin `-H 'Origin: http://localhost:3000'`. | Levantar ChivoMed en el puerto 3000, o definir `CHIVOMED_ORIGINS` antes de `bash scripts/liberty.sh` (sección 8). En curl, enviar la cabecera `Origin`. |
 | `403` `consulta.noResponsablePaso` al completar, retroceder u ordenar | El paso lo atiende otro rol (por ejemplo, Carlos intenta completar el Triaje). | Entrar con un empleado que tenga el rol del paso en esa clínica (tabla de la sección 10). |
 | `preparar-bd-desarrollo.sh` falla con `duplicate key value violates unique constraint "uq_documento_tipo_valor"` | Otra persona de la base ya tiene uno de los documentos demo (`0100000N-N`). | Revisar esa persona; si es la demo anterior, seguir la sección 5.1. |
 | La limpieza falla con `No se borró nada: hay datos de otras personas que dependen de la demo anterior` | Hay filas que no son de la demo colgando de ella (el mensaje dice cuáles). | Revisarlas y moverlas o borrarlas a mano, o dejar la demo anterior. La base quedó sin cambios. |
 | `docker run` con `postgres:18` falla diciendo que hay datos en `/var/lib/postgresql/data` | La imagen 18 cambió la ruta del volumen. | Montar el volumen en `/var/lib/postgresql` (sección 2), o usar `postgres:17` con `/var/lib/postgresql/data`. |
 | Las migraciones fallan con `function gen_random_uuid() does not exist` u otra sintaxis | PostgreSQL anterior a 13. | Usar PostgreSQL 17 o 18. |
 | La prueba SQL de una FK `RESTRICT` falla en 17 y no en 18 (o al revés) | PostgreSQL 18 informa `restrict_violation` (23001) donde 17 informaba `foreign_key_violation` (23503). | Las pruebas de `docs/migrations/tests` ya aceptan los dos. Actualice el repositorio. |
-| `mvn liberty:run` no arranca: puerto `9080` en uso (`CWWKO0221E`) | Otro Liberty (otra terminal o un `liberty:start` previo) u otro programa. | `ss -ltnp \| grep 9080` o `lsof -i :9080` para verlo; detener el otro Liberty con `mvn liberty:stop` o cerrar el programa. |
-| `docker run` falla: `port is already allocated` en `5432` | Hay un PostgreSQL local u otro contenedor usando el puerto. | Publicar otro puerto (`-p 5433:5432`) y poner `portNumber="5433"` en `server.xml`. |
+| `bash scripts/liberty.sh` no arranca: puerto `9080` en uso (`CWWKO0221E`) | Otro Liberty (otra terminal o un `liberty:start` previo) u otro programa. | `ss -ltnp \| grep 9080` o `lsof -i :9080` para verlo; detener el otro Liberty con `mvn liberty:stop` o cerrar el programa. |
+| `docker run` falla: `port is already allocated` en `5432` | Hay un PostgreSQL local u otro contenedor usando el puerto. | Publicar otro puerto (`-p 5433:5432`) y poner `PG_PORT=5433` en `.env`. |
 | `preparar-bd-desarrollo.sh` termina con `Primero ejecuta: mvn -DskipTests package` | Falta compilar. | Paso 4. |
 | `preparar-bd-desarrollo.sh` falla con `No such container` o `role "…" does not exist` | El contenedor o el usuario de PostgreSQL tienen otro nombre. | Pasar los argumentos: `bash scripts/preparar-bd-desarrollo.sh CONTENEDOR BASE USUARIO`. |
 | Error 500 al leer o crear órdenes; en `messages.log` aparece `column … id_examen does not exist` | Falta la migración `20261113_orden_examen_examen.sql`, por ejemplo en una base preparada antes de la HU4. | Volver a ejecutar `bash scripts/preparar-bd-desarrollo.sh …` (se puede repetir) y recompilar o reiniciar Liberty. |
 | `…/examenes-asignables` devuelve `[]` en "Consulta médica" | Faltan los datos demo, o el examen o su tipo están inactivos. | Volver a ejecutar `preparar-bd-desarrollo.sh`. |
-| El login con `01000001-1` da 401, o `publico/tipos-documento` devuelve `[]` | No se cargaron los datos demo, o `server.xml` apunta a otra base (`databaseName`). | Revisar `databaseName` y volver a ejecutar `preparar-bd-desarrollo.sh`. |
+| El login con `01000001-1` da 401, o `publico/tipos-documento` devuelve `[]` | No se cargaron los datos demo, o `PG_DB` apunta a otra base. | Revisar `PG_DB` en `.env` y volver a ejecutar `preparar-bd-desarrollo.sh`. |
 | `reiniciar-demo.sh` falla con `Faltan los datos demo del guion` | La base no se preparó con el script. | Ejecutar primero `preparar-bd-desarrollo.sh`. |
 | El dashboard de hoy no muestra consultas | Las fechas demo se anclaron otro día. | `bash scripts/reiniciar-demo.sh` el día de la revisión (sección 9). |
-| Liberty no se conecta a la base (`DSRA…`, `Connection refused` o `password authentication failed`) | El contenedor está detenido, o el usuario o la contraseña de `server.xml` no coinciden. | `docker start galenasv`; revisar `user`, `password` y `portNumber` en `server.xml` y reiniciar Liberty. |
+| Liberty no se conecta a la base (`DSRA…`, `Connection refused` o `password authentication failed`) | El contenedor está detenido, o el usuario o la contraseña de `.env` no coinciden. | `docker start galenasv`; revisar `PG_USER`, `PG_PASS` y `PG_PORT` en `.env` y reiniciar Liberty. |
 
 ## Resumen
 
 ```bash
 docker run -d --name galenasv -e POSTGRES_PASSWORD=CLAVE_LOCAL -p 5432:5432 -v galenasv-datos:/var/lib/postgresql postgres:18
-cp src/main/liberty/config/server.xml.ejemplo src/main/liberty/config/server.xml   # y editar credenciales
+cp src/main/liberty/config/server.xml.ejemplo src/main/liberty/config/server.xml
+cp .env.example .env                              # completar valores locales
+chmod 600 .env
 mvn -DskipTests package
 bash scripts/preparar-bd-desarrollo.sh
-mvn liberty:run                                   # en otra terminal, después:
+bash scripts/liberty.sh                                   # en otra terminal, después:
 curl -s http://localhost:9080/galenosv/api/publico/tipos-documento
 bash scripts/reiniciar-demo.sh                    # el día de la revisión
 ```
