@@ -18,7 +18,13 @@ ARG MVN=https://repo1.maven.org/maven2
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openjdk-21-jre-headless curl unzip ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
+ && ln -s "$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")" /usr/lib/jvm/java-21 \
  && useradd -m -s /bin/bash usuario
+
+# Sin JAVA_HOME, bin/server lo deduce del PATH y lo descarta porque el JRE headless no trae include/;
+# entonces no carga lib/platform/java/java9.options (--add-opens) y Weld falla con
+# "module java.base does not opens java.lang" (WELD-001524). El enlace evita fijar la arquitectura.
+ENV JAVA_HOME=/usr/lib/jvm/java-21
 
 USER usuario
 WORKDIR /home/usuario

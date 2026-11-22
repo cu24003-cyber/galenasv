@@ -64,6 +64,9 @@ desde la librería global de Liberty) y generar un ticket PDF (prueba OpenPDF).
 | Error con `jdbc/postgres` | Variables `PG_*` mal escritas o la base no está en `ppi115net` |
 | `column ... does not exist` | La base no es la original + parche |
 | `curl` desde el host no responde | Falta `host="*"` en `server.xml` |
+| `WELD-001524` … `module java.base does not "opens java.lang"` | Falta `JAVA_HOME`: sin él, Liberty no carga `java9.options` (el JRE headless no trae `include/`) |
+| `Undefined component type org.primefaces.component.…` | PrimeFaces 16 registra sus componentes con `@FacesComponent`, y Liberty no escanea anotaciones en la librería global (ver bitácora) |
+| `CWWKS9660E` (orb / user registry) y `CWWKZ0022W` | Aviso del ORB de `jakartaee-11.0` sin registro de usuarios: la app arranca ~30 s más tarde, pero arranca |
 
 ## 5. Publicar
 

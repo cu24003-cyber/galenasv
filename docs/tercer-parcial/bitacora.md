@@ -27,6 +27,8 @@ Rama: `backend-rubrica`. Una entrada por cambio; los commits nuevos se agregan a
 | 2026-11-22 | `8c835a3` | `finalName` = `galeno`; `openpdf`, `postgresql`, `primefaces` y `primefaces-themes` pasan a `provided`; las rutas se documentan como `/galeno` | El WAR debe llamarse `galeno.war` (context root `/galeno`) y no llevar librerías | 1. Entrega: ".war con dependencias provided" |
 | 2026-11-22 | (este commit) | `docker/Dockerfile` (`debian:stable`, Java 21, Open Liberty kernel + `jakartaee-11.0`, driver y librerías `provided`), `docker/server.xml` (`host="*"`, `jdbc/postgres` con `PG_*`, sin LTPA), `docker/prueba-bd/` (original + parche) y `docker/README.md` | Construir la imagen exigida y probar con una base idéntica a la de calificación | 2. Backend: imagen `debian:stable`, monta el WAR, 5 variables, red `ppi115net` |
 
+| 2026-11-22 | (commit siguiente a `5ef197c`) | `docker/Dockerfile`: `ENV JAVA_HOME=/usr/lib/jvm/java-21` (enlace al JDK detectado, sin fijar la arquitectura) | Sin `JAVA_HOME`, `bin/server` descartaba el Java del PATH por no tener `include/` y no cargaba `java9.options`; la app no arrancaba (`WELD-001524`, `module java.base does not "opens java.lang"`) | 2. Backend: "despliega" |
+
 ## Evidencia de verificación
 
 | Fecha | Qué se verificó | Resultado | Quién |
