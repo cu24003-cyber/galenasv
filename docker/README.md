@@ -1,12 +1,21 @@
 # Contenedor backend (Tercer Parcial PPI115)
 
-Imagen `debian:stable` + Java 21 + Open Liberty (Jakarta EE 11). El WAR **no** va dentro de la
-imagen: se monta al ejecutarla, igual que en el comando del profesor.
+Imagen `debian:stable` + Java 21 + Open Liberty (feature `webProfile-11.0`). El WAR **no** va
+dentro de la imagen: se monta al ejecutarla en `dropins/galeno.war`, igual que en el comando del
+profesor.
+
+Al arrancar, `entrypoint.sh` **copia** ese WAR a `apps/galeno.war`, le agrega PrimeFaces y
+PrimeFaces Themes (`/home/usuario/libs-app`) en `WEB-INF/lib` y ejecuta `server run galeno`.
+Liberty despliega esa copia en `/galeno` (dropins desactivado). El archivo montado no se modifica.
+Hace falta porque PrimeFaces 16 registra sus componentes con `@FacesComponent`, y Liberty no
+busca anotaciones en la librería global. OpenPDF (librería global) y el driver PostgreSQL no
+necesitan esto. Para montar el WAR en otra ruta: `-e WAR_PATH=/ruta/galeno.war`.
 
 | Archivo | Para qué |
 | --- | --- |
 | `Dockerfile` | Construye la imagen |
-| `server.xml` | Configuración de Liberty en el contenedor (puerto 9080 en `*`, dataSource `jdbc/postgres` con `PG_*`) |
+| `server.xml` | Configuración de Liberty en el contenedor (`webProfile-11.0`, puerto 9080 en `*`, dropins desactivado, app `apps/galeno.war` en `/galeno`, dataSource `jdbc/postgres` con `PG_*`) |
+| `entrypoint.sh` | CMD de la imagen: prepara la copia del WAR con PrimeFaces y arranca Liberty |
 | `prueba-bd/01-original.sql` | Esquema original del ingeniero, sin datos |
 | `prueba-bd/02-parche.sql` | Parche del ingeniero (`consulta_procedimiento_paso`) |
 
@@ -47,7 +56,8 @@ docker run --rm --name galeno.backend -h galeno.backend -p 9080:9080 \
   --network ppi115net TUUSUARIO/galeno-backend:1.0
 ```
 
-En el log deben aparecer `CWWKZ0001I: Application galeno started` y `CWWKF0011I`.
+En el log deben aparecer `WAR preparado: …/dropins/galeno.war -> …/apps/galeno.war (+ primefaces-16.0.0.jar primefaces-themes-16.0.0.jar)`,
+`CWWKZ0001I: Application galeno started` (unos 15 s) y `CWWKF0011I`.
 
 ## 4. Verificar
 
@@ -55,18 +65,22 @@ En el log deben aparecer `CWWKZ0001I: Application galeno started` y `CWWKF0011I`
 curl -i http://localhost:9080/galeno/api/publico/tipos-documento     # 200 y []
 ```
 
-Abrir también una pantalla JSF en `http://localhost:9080/galeno/` (prueba que PrimeFaces carga
-desde la librería global de Liberty) y generar un ticket PDF (prueba OpenPDF).
+Abrir también una pantalla JSF, por ejemplo `http://localhost:9080/galeno/paginas/clinica.xhtml`,
+y crear una clínica y un rol con sus botones (prueba PrimeFaces). Generar además un ticket PDF
+(prueba OpenPDF). Al reiniciar el contenedor (`docker restart galeno.backend`) la copia se
+vuelve a preparar desde el WAR montado.
 
 | Síntoma | Causa probable |
 | --- | --- |
-| `ClassNotFoundException` / `NoClassDefFoundError` | Falta un JAR en `lib/global` (agregarlo al Dockerfile) |
+| `ERROR: no se encontró el WAR en …/dropins/galeno.war` y el contenedor termina | No se montó el WAR (falta el `-v`) o la ruta del host no existe |
+| `ClassNotFoundException` / `NoClassDefFoundError` | Falta un JAR en `lib/global` o en `libs-app` (agregarlo al Dockerfile) |
 | Error con `jdbc/postgres` | Variables `PG_*` mal escritas o la base no está en `ppi115net` |
 | `column ... does not exist` | La base no es la original + parche |
 | `curl` desde el host no responde | Falta `host="*"` en `server.xml` |
 | `WELD-001524` … `module java.base does not "opens java.lang"` | Falta `JAVA_HOME`: sin él, Liberty no carga `java9.options` (el JRE headless no trae `include/`) |
-| `Undefined component type org.primefaces.component.…` | PrimeFaces 16 registra sus componentes con `@FacesComponent`, y Liberty no escanea anotaciones en la librería global (ver bitácora) |
-| `CWWKS9660E` (orb / user registry) y `CWWKZ0022W` | Aviso del ORB de `jakartaee-11.0` sin registro de usuarios: la app arranca ~30 s más tarde, pero arranca |
+| `Undefined component type org.primefaces.component.…` | PrimeFaces quedó en la librería global en vez de en `WEB-INF/lib`: revisar que el log muestre `WAR preparado` y que el CMD sea `entrypoint.sh` |
+| `CWWKS9660E` (orb / user registry) y `CWWKZ0022W` | Se volvió a usar `jakartaee-11.0`: activa el ORB, que sin user registry retrasa ~30 s el arranque. Usar `webProfile-11.0` |
+| `CWWJP9991W: [eclipselink.server] Failed to find MBean Server` | Aviso inofensivo con `webProfile-11.0`: EclipseLink no registra sus MBeans de JMX |
 
 ## 5. Publicar
 
