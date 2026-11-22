@@ -11,6 +11,11 @@
     <httpSession cookieSameSite="Lax" useContextRootAsCookiePath="true" />
     <applicationManager autoExpand="true" />
 
+    <!-- dropins/galeno.war es solo el punto de montaje: entrypoint.sh lo copia a apps/ con PrimeFaces
+         en WEB-INF/lib, y se despliega esa copia. Con dropins activo se desplegaría dos veces. -->
+    <applicationMonitor dropinsEnabled="false" />
+    <webApplication id="galeno" name="galeno" location="galeno.war" contextRoot="/galeno" />
+
     <library id="PostgreSQL-Library">
         <fileset dir="${shared.resource.dir}/postgresql" includes="postgresql-*.jar" />
     </library>
