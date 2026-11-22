@@ -14,6 +14,7 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
+import java.text.Normalizer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.Locale;
@@ -74,14 +75,21 @@ public class Rol implements Serializable {
     /** Código de la API: el esquema original solo guarda el nombre del rol. */
     @Transient
     public String getCodigo() {
-        return switch (nombre == null ? "" : nombre.trim().toLowerCase(Locale.ROOT)) {
+        return switch (normalizarNombre(nombre)) {
             case "paciente" -> "PACIENTE";
-            case "atención al público", "administración" -> "ADMINISTRACION";
+            case "atencion al publico", "administracion" -> "ADMINISTRACION";
             case "doctor" -> "DOCTOR";
             case "enfermera" -> "ENFERMERA";
-            case "farmacéutico" -> "FARMACEUTICO";
+            case "farmaceutico" -> "FARMACEUTICO";
             default -> null;
         };
+    }
+
+    /** Forma comparable de un nombre de rol: sin tildes, en minúsculas y con espacios simples. */
+    public static String normalizarNombre(String nombre) {
+        if (nombre == null) return "";
+        return Normalizer.normalize(nombre, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
     }
 
     public Boolean getActivo() {

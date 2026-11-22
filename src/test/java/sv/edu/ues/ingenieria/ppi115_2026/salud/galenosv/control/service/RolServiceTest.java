@@ -132,4 +132,18 @@ class RolServiceTest {
             verify(rolRepository).update(cambio);
         }
     }
+
+    @Test void validarCambioNombreNormalizaVariantesDeLosRolesReservados() {
+        for (String[] nombres : new String[][]{
+                {"Atención al público", "ATENCION  AL PUBLICO"}, {"Administración", "Atencion al publico"},
+                {"Paciente", "  paciénte "}}) {
+            Rol anterior = new Rol(UUID.randomUUID()); anterior.setNombre(nombres[0]);
+            assertDoesNotThrow(() -> RolService.validarCambioNombre(anterior, nombres[1]));
+        }
+        Rol admin = new Rol(UUID.randomUUID()); admin.setNombre("ATENCIÓN  AL PÚBLICO");
+        assertEquals("rol.nombreReservado", assertThrows(ServiceException.class,
+                () -> RolService.validarCambioNombre(admin, "Doctor")).getMessageKey());
+        Rol doctor = new Rol(UUID.randomUUID()); doctor.setNombre("Doctor");
+        assertThrows(ServiceException.class, () -> RolService.validarCambioNombre(doctor, "Administracion"));
+    }
 }

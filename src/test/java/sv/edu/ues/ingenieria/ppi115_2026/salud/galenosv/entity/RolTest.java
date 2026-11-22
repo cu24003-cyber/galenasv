@@ -14,4 +14,20 @@ class RolTest {
             assertEquals(caso[1], rol.getCodigo(), caso[0]);
         }
     }
+
+    @Test void reconoceVariantesSinTildesMayusculasNiEspaciosRepetidos() {
+        String[][] casos = {{"Atencion al publico", "ADMINISTRACION"},
+                {"ATENCIÓN  AL PÚBLICO", "ADMINISTRACION"}, {"Administracion", "ADMINISTRACION"},
+                {"  atención \t al   público ", "ADMINISTRACION"}, {"Farmaceutico", "FARMACEUTICO"},
+                {"PACIENTE", "PACIENTE"}, {"Pacienté", "PACIENTE"}, {"", null}, {"   ", null}};
+        for (String[] caso : casos) {
+            Rol rol = new Rol(); rol.setNombre(caso[0]);
+            assertEquals(caso[1], rol.getCodigo(), caso[0]);
+        }
+    }
+
+    @Test void normalizaNombresParaCompararlos() {
+        assertEquals("atencion al publico", Rol.normalizarNombre("  ATENCIÓN \t AL   PÚBLICO "));
+        assertEquals("", Rol.normalizarNombre(null));
+    }
 }
