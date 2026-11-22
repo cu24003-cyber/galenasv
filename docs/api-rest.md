@@ -1,6 +1,6 @@
 # API REST de GalenoSV
 
-`AppConfig` activa Jakarta REST bajo `/api`. Con el WAR `galenosv.war` y la configuración local de Liberty, la base es `http://localhost:9080/galenosv/api`. Si el despliegue cambia el contexto, sustituir `/galenosv`.
+`AppConfig` activa Jakarta REST bajo `/api`. Con el WAR `galeno.war` (`finalName` del pom) desplegado en `dropins`, la base es `http://localhost:9080/galeno/api`. Si el despliegue cambia el contexto, sustituir `/galeno`.
 
 ## Capas
 
@@ -252,7 +252,7 @@ Restricciones que producen `validacion.invalida` (el `field` es el nombre de la 
   "status": 400,
   "code": "validacion.invalida",
   "message": "Los datos de la solicitud no son válidos.",
-  "path": "/galenosv/api/publico/citas",
+  "path": "/galeno/api/publico/citas",
   "timestamp": "2026-11-13T17:00:00Z",
   "details": [
     {"field": "idClinica", "message": "no debe ser nulo"},
@@ -277,7 +277,7 @@ Límite: las tres rutas comparten **60 solicitudes por IP cada 5 minutos** (`Int
 Ejemplo:
 
 ```http
-POST /galenosv/api/publico/citas
+POST /galeno/api/publico/citas
 Origin: http://localhost:9080
 Content-Type: application/json
 
@@ -650,7 +650,7 @@ Otros estados HTTP se conservan en las excepciones del runtime, junto con cabece
   "status": 404,
   "code": "recurso.noExiste",
   "message": "El recurso no existe.",
-  "path": "/galenosv/api/clinicas/6a4ed47b-8d96-4d83-bbe3-653026ae5120",
+  "path": "/galeno/api/clinicas/6a4ed47b-8d96-4d83-bbe3-653026ae5120",
   "timestamp": "2026-10-08T17:00:00Z",
   "details": []
 }
@@ -669,7 +669,7 @@ Las fechas `OffsetDateTime` usan ISO 8601 con zona (`2026-10-08T10:00:00-06:00`)
 Crear una clínica:
 
 ```bash
-curl -i -X POST http://localhost:9080/galenosv/api/clinicas \
+curl -i -X POST http://localhost:9080/galeno/api/clinicas \
   -H 'Content-Type: application/json' \
   -d '{"nombre":"Clínica Central","activo":true,"tipo":"General","comentarios":"Atención general"}'
 ```
@@ -677,19 +677,19 @@ curl -i -X POST http://localhost:9080/galenosv/api/clinicas \
 Listar las clínicas:
 
 ```bash
-curl -i -H 'Accept: application/json' http://localhost:9080/galenosv/api/clinicas
+curl -i -H 'Accept: application/json' http://localhost:9080/galeno/api/clinicas
 ```
 
 Consultar, actualizar y eliminar usando el UUID devuelto:
 
 ```bash
-curl -i http://localhost:9080/galenosv/api/clinicas/UUID
+curl -i http://localhost:9080/galeno/api/clinicas/UUID
 
-curl -i -X PUT http://localhost:9080/galenosv/api/clinicas/UUID \
+curl -i -X PUT http://localhost:9080/galeno/api/clinicas/UUID \
   -H 'Content-Type: application/json' \
   -d '{"nombre":"Clínica Central","activo":false,"tipo":"General","comentarios":"Horario actualizado"}'
 
-curl -i -X DELETE http://localhost:9080/galenosv/api/clinicas/UUID
+curl -i -X DELETE http://localhost:9080/galeno/api/clinicas/UUID
 ```
 
 Crear una relación persona/rol/clínica:
@@ -706,7 +706,7 @@ Enviar ese objeto a `POST /api/personas-roles`, sustituyendo los valores por UUI
 
 ## OpenAPI y extensión
 
-El contrato importable en Postman/Swagger está en `src/main/webapp/openapi.json` y se publica como `/galenosv/openapi.json`. Describe las 20 entidades, sus campos, filtros, colecciones anidadas, cuerpos y respuestas.
+El contrato importable en Postman/Swagger está en `src/main/webapp/openapi.json` y se publica como `/galeno/openapi.json`. Describe las 20 entidades, sus campos, filtros, colecciones anidadas, cuerpos y respuestas.
 
 Para ampliar los filtros: declarar en `filtrosPermitidos()` el nombre público del parámetro y su ruta de atributos JPA hasta el UUID. Para publicar una colección: declararla en `coleccionesRelacionadas()` con el recurso hijo, el filtro que vincula el padre y las escrituras permitidas; el constructor de dos argumentos habilita solo lectura. `AbstractResource` resuelve el subrecurso, fija el padre antes de validar el DTO y comprueba la pertenencia mediante `AbstractService.perteneceAFiltros` y `AbstractRepository.matchesFilters`. El repositorio usa parámetros de consulta, comparte los JOIN de relaciones y elimina duplicados con `DISTINCT`. Cada recurso puede restringir `metodosEscritura()` y especializar `crearEntidad`, `actualizarEntidad` o `eliminarEntidad` para usar su servicio de flujo. Actualizar OpenAPI y las pruebas del contrato.
 

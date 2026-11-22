@@ -2,7 +2,7 @@
 
 Guía para dejar el backend (`galenasv`) funcionando en otra computadora para la revisión:
 
-- Open Liberty en `http://localhost:9080/galenosv`, con la API en `/galenosv/api`;
+- Open Liberty en `http://localhost:9080/galeno`, con la API en `/galeno/api`;
 - PostgreSQL en Docker, con los datos demo del guion del Primer Parcial para las HU1 a HU4.
 
 Todos los comandos se ejecutan **desde la raíz del repositorio `galenasv`**, salvo que se indique
@@ -111,10 +111,11 @@ PostgreSQL de la rúbrica, agregue también `LTPA_KEYS_PASSWORD` para esta confi
 La imagen deberá copiar la plantilla como `server.xml` y arrancar Liberty con esas
 variables; no necesita el script Maven si ya incluye el WAR y el runtime.
 
-La dockerización completa queda pendiente: la rúbrica solicita el contexto `/galeno`
-y dependencias de aplicación `provided`; el proyecto todavía usa `/galenosv` y tiene
-OpenPDF, PostgreSQL y PrimeFaces con alcance de compilación. Estos cambios requieren
-preparar las bibliotecas del servidor y coordinar el proxy del frontend.
+Tercer parcial: el WAR se llama `galeno.war` (contexto `/galeno`) y OpenPDF, PostgreSQL,
+PrimeFaces y PrimeFaces Themes tienen alcance `provided`, así que `WEB-INF/lib` va vacío.
+El servidor debe aportar esos JAR (por ejemplo en `lib/global` de Liberty, que es una
+biblioteca compartida global) o la aplicación no encontrará PrimeFaces ni OpenPDF. El
+proxy del frontend debe apuntar a `/galeno/api`. La imagen Docker sigue pendiente.
 
 ## 4. Compilar
 
@@ -225,13 +226,13 @@ y la feature `jakartaee-11.0`, así que tarda varios minutos. Al recompilar (`mv
 1. **Log de Liberty.** En la consola o en
    `target/liberty/wlp/usr/servers/galenosv/logs/messages.log` deben aparecer:
    ```text
-   CWWKT0016I: Web application available (default_host): http://localhost:9080/galenosv/
+   CWWKT0016I: Web application available (default_host): http://localhost:9080/galeno/
    CWWKF0011I: The galenosv server is ready to run a smarter planet. ...
    ```
    No debe haber líneas `E ` (error) de JPA o del dataSource.
 2. **API pública, sin sesión:**
    ```bash
-   curl -s http://localhost:9080/galenosv/api/publico/tipos-documento
+   curl -s http://localhost:9080/galeno/api/publico/tipos-documento
    # [{…,"nombre":"DUI"},{…,"nombre":"Pasaporte"}]
    ```
    Debe listar DUI y Pasaporte (Licencia de conducir está inactiva); si responde `[]`, faltan los
@@ -240,13 +241,13 @@ y la feature `jakartaee-11.0`, así que tarda varios minutos. Al recompilar (`mv
 3. **Login de un empleado** (Carlos Gómez, Doctor). Responde `204` y crea la sesión; la cabecera
    `Origin` es obligatoria, ver "Errores comunes". El ejemplo toma el UUID del DUI con `jq`:
    ```bash
-   DUI=$(curl -s http://localhost:9080/galenosv/api/publico/tipos-documento | jq -r '.[] | select(.nombre=="DUI") | .idTipoDocumento')
+   DUI=$(curl -s http://localhost:9080/galeno/api/publico/tipos-documento | jq -r '.[] | select(.nombre=="DUI") | .idTipoDocumento')
    curl -s -o /dev/null -w '%{http_code}\n' -c /tmp/galenosv.cookies \
      -H 'Origin: http://localhost:3000' -H 'Content-Type: application/json' \
-     -X POST http://localhost:9080/galenosv/api/auth/login \
+     -X POST http://localhost:9080/galeno/api/auth/login \
      -d "{\"idTipoDocumento\":\"$DUI\",\"numeroDocumento\":\"01000001-1\"}"
    # 204
-   curl -s -b /tmp/galenosv.cookies http://localhost:9080/galenosv/api/atencion/dashboard
+   curl -s -b /tmp/galenosv.cookies http://localhost:9080/galeno/api/atencion/dashboard
    # [ … consultas de hoy de Clínica Santa Ana … ]
    ```
 
@@ -256,7 +257,7 @@ y la feature `jakartaee-11.0`, así que tarda varios minutos. Al recompilar (`mv
 ## 8. Frontend (ChivoMed) en el puerto 3000
 
 El frontend se levanta en su repositorio con `npm start`, que sirve en `http://localhost:3000`
-y reenvía `/galenosv/api` a `http://localhost:9080/galenosv/api`. **Debe correr en el puerto
+y debe reenviar su ruta de API a `http://localhost:9080/galeno/api` (su proxy aún usa `/galenosv`). **Debe correr en el puerto
 3000**:
 
 - el backend solo acepta escrituras (login, cambio de rol, acciones) cuyo `Origin` sea el propio
@@ -375,6 +376,6 @@ chmod 600 .env
 mvn -DskipTests package
 bash scripts/preparar-bd-desarrollo.sh
 bash scripts/liberty.sh                                   # en otra terminal, después:
-curl -s http://localhost:9080/galenosv/api/publico/tipos-documento
+curl -s http://localhost:9080/galeno/api/publico/tipos-documento
 bash scripts/reiniciar-demo.sh                    # el día de la revisión
 ```

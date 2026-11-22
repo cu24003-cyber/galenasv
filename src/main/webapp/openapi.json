@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "/galenosv/api"
+      "url": "/galeno/api"
     }
   ],
   "tags": [
@@ -15149,7 +15149,7 @@
           },
           "path": {
             "type": "string",
-            "example": "/galenosv/api/clinicas/6a4ed47b-8d96-4d83-bbe3-653026ae5120"
+            "example": "/galeno/api/clinicas/6a4ed47b-8d96-4d83-bbe3-653026ae5120"
           },
           "timestamp": {
             "type": "string",

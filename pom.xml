@@ -20,6 +20,7 @@
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
             <version>2.4.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.platform</groupId>
@@ -33,13 +34,14 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.5</version>
+            <scope>provided</scope>
         </dependency>
         <!-- PrimeFaces (Jakarta Faces 4.1 / EE 11) -->
         <dependency>
             <groupId>org.primefaces</groupId>
             <artifactId>primefaces</artifactId>
             <version>16.0.0</version>
-
+            <scope>provided</scope>
         </dependency>
 
 
@@ -48,6 +50,7 @@
             <groupId>org.primefaces</groupId>
             <artifactId>primefaces-themes</artifactId>
             <version>16.0.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Testing JUnit 5 -->
@@ -99,7 +102,7 @@
     </dependencies>
 
     <build>
-        <finalName>galenosv</finalName>
+        <finalName>galeno</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
