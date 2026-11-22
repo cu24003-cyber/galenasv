@@ -35,7 +35,9 @@ public class ClinicaModel extends AbstractModel<Clinica, UUID> {
 
     @Override
     protected Clinica nuevaInstancia() {
-        return new Clinica();
+        Clinica clinica = new Clinica();
+        clinica.setActivo(true);
+        return clinica;
     }
 
     @Override

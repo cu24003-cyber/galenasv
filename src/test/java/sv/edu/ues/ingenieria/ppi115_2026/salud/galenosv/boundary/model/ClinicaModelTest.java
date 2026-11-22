@@ -41,6 +41,20 @@ class ClinicaModelTest {
     void limpiar() { Contexto.establecer(null); }
 
     @Test
+    void nuevaClinicaVieneActiva() {
+        model.nuevo();
+        assertEquals(Boolean.TRUE, model.getSeleccionada().getActivo());
+    }
+
+    @Test
+    void editarConservaClinicaInactiva() {
+        Clinica original = new Clinica(UUID.randomUUID(), "Antigua");
+        original.setActivo(false);
+        model.editar(original);
+        assertEquals(Boolean.FALSE, model.getSeleccionada().getActivo());
+    }
+
+    @Test
     void guardarOcultaFormularioYConservaFiltro() {
         prepararMensajes();
         model.setSearchName("Central");
