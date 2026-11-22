@@ -3,7 +3,9 @@
 <server description="GalenoSV en contenedor">
 
     <featureManager>
-        <feature>jakartaee-11.0</feature>
+        <!-- webProfile-11.0 basta (EJB Lite, Faces, REST, JPA, CDI); jakartaee-11.0 activaba el ORB de EJB
+             remoto, que sin user registry daba CWWKS9660E y retrasaba el arranque ~30 s. -->
+        <feature>webProfile-11.0</feature>
     </featureManager>
 
     <!-- host="*": escuchar en todas las interfaces del contenedor; con localhost, -p 9080:9080 no llega. -->
