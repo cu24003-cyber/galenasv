@@ -11,12 +11,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ProcedimientoPaso;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.ProcedimientoPasoRepository;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.RolRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ProcedimientoPasoServiceTest {
 
     @Mock
     private ProcedimientoPasoRepository procedimientoPasoRepository;
+
+    @Mock
+    private RolRepository rolRepository;
 
     @InjectMocks
     private ProcedimientoPasoService procedimientoPasoService;
@@ -99,5 +104,53 @@ class ProcedimientoPasoServiceTest {
         doThrow(new PersistenceException("Error BD")).when(procedimientoPasoRepository).delete(id);
 
         assertThrows(ServiceException.class, () -> procedimientoPasoService.eliminar(id));
+    }
+
+    private Rol rol(boolean activo) {
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre("Farmaceutico"); rol.setActivo(activo);
+        lenient().when(rolRepository.find(rol.getIdRol())).thenReturn(rol);
+        return rol;
+    }
+
+    @Test
+    void crearRechazaUnPasoConRolInactivo() {
+        ProcedimientoPaso paso = new ProcedimientoPaso();
+        paso.setIdRol(new Rol(rol(false).getIdRol()));
+        assertEquals("procedimiento.pasoNombreRol", assertThrows(ServiceException.class,
+                () -> procedimientoPasoService.crear(paso)).getMessageKey());
+        verify(procedimientoPasoRepository, never()).create(any());
+    }
+
+    @Test
+    void crearRechazaUnRolInexistente() {
+        ProcedimientoPaso paso = new ProcedimientoPaso();
+        paso.setIdRol(new Rol(UUID.randomUUID()));
+        assertThrows(ServiceException.class, () -> procedimientoPasoService.crear(paso));
+        verify(procedimientoPasoRepository, never()).create(any());
+    }
+
+    @Test
+    void crearAceptaUnRolActivo() {
+        ProcedimientoPaso paso = new ProcedimientoPaso();
+        paso.setIdRol(new Rol(rol(true).getIdRol()));
+        procedimientoPasoService.crear(paso);
+        verify(procedimientoPasoRepository).create(paso);
+    }
+
+    @Test
+    void actualizarRechazaCambiarAUnRolInactivoPeroConservaElQueYaTenia() {
+        Rol inactivo = rol(false);
+        ProcedimientoPaso guardado = new ProcedimientoPaso(UUID.randomUUID()); guardado.setIdRol(inactivo);
+        when(procedimientoPasoRepository.find(guardado.getIdProcedimientoPaso())).thenReturn(guardado);
+        ProcedimientoPaso renombrado = new ProcedimientoPaso(guardado.getIdProcedimientoPaso());
+        renombrado.setIdRol(new Rol(inactivo.getIdRol())); renombrado.setNombre("Otro nombre");
+        procedimientoPasoService.actualizar(renombrado);
+        verify(procedimientoPasoRepository).update(renombrado);
+
+        ProcedimientoPaso otro = new ProcedimientoPaso(UUID.randomUUID()); otro.setIdRol(rol(true));
+        when(procedimientoPasoRepository.find(otro.getIdProcedimientoPaso())).thenReturn(otro);
+        ProcedimientoPaso cambio = new ProcedimientoPaso(otro.getIdProcedimientoPaso()); cambio.setIdRol(new Rol(inactivo.getIdRol()));
+        assertThrows(ServiceException.class, () -> procedimientoPasoService.actualizar(cambio));
+        verify(procedimientoPasoRepository, never()).update(cambio);
     }
 }

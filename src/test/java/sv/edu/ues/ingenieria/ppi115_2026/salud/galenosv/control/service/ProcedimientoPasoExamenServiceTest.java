@@ -11,12 +11,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ProcedimientoPasoExamen;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.ProcedimientoPasoExamenRepository;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Examen;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.ExamenRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ProcedimientoPasoExamenServiceTest {
 
     @Mock
     private ProcedimientoPasoExamenRepository procedimientoPasoExamenRepository;
+
+    @Mock
+    private ExamenRepository examenRepository;
 
     @InjectMocks
     private ProcedimientoPasoExamenService procedimientoPasoExamenService;
@@ -99,5 +104,38 @@ class ProcedimientoPasoExamenServiceTest {
         doThrow(new PersistenceException("Error BD")).when(procedimientoPasoExamenRepository).delete(id);
 
         assertThrows(ServiceException.class, () -> procedimientoPasoExamenService.eliminar(id));
+    }
+
+    private Examen examen(boolean activo) {
+        Examen examen = new Examen(UUID.randomUUID()); examen.setNombre("Electrocardiograma"); examen.setActivo(activo);
+        lenient().when(examenRepository.find(examen.getIdExamen())).thenReturn(examen);
+        return examen;
+    }
+
+    @Test
+    void crearRechazaAsociarUnExamenInactivo() {
+        ProcedimientoPasoExamen asociacion = new ProcedimientoPasoExamen();
+        asociacion.setIdExamen(new Examen(examen(false).getIdExamen()));
+        assertEquals("procedimiento.asociacionInvalida", assertThrows(ServiceException.class,
+                () -> procedimientoPasoExamenService.crear(asociacion)).getMessageKey());
+        verify(procedimientoPasoExamenRepository, never()).create(any());
+    }
+
+    @Test
+    void crearAceptaUnExamenActivo() {
+        ProcedimientoPasoExamen asociacion = new ProcedimientoPasoExamen();
+        asociacion.setIdExamen(new Examen(examen(true).getIdExamen()));
+        procedimientoPasoExamenService.crear(asociacion);
+        verify(procedimientoPasoExamenRepository).create(asociacion);
+    }
+
+    @Test
+    void actualizarRechazaCambiarAUnExamenInactivo() {
+        ProcedimientoPasoExamen guardada = new ProcedimientoPasoExamen(UUID.randomUUID()); guardada.setIdExamen(examen(true));
+        when(procedimientoPasoExamenRepository.find(guardada.getIdProcedimientoPasoExamen())).thenReturn(guardada);
+        ProcedimientoPasoExamen cambio = new ProcedimientoPasoExamen(guardada.getIdProcedimientoPasoExamen());
+        cambio.setIdExamen(new Examen(examen(false).getIdExamen()));
+        assertThrows(ServiceException.class, () -> procedimientoPasoExamenService.actualizar(cambio));
+        verify(procedimientoPasoExamenRepository, never()).update(any());
     }
 }
