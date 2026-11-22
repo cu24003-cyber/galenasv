@@ -55,7 +55,11 @@ public class PacienteModel implements Serializable {
     public void cargar() {
         if (sesion.getRolActivo() == null) return;
         try { pacientes = atencion.pacientesClinica().stream().map(r -> r.getIdPersona()).distinct().toList(); }
-        catch (ServiceException | EJBException e) {
+        catch (ServiceException e) {
+            // Mismo texto que consultas, p. ej. consulta.sinRolPaciente.
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, Mensajes.mensaje(e), null));
+        } catch (EJBException e) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, Mensajes.texto("error.general"), null));
         }
