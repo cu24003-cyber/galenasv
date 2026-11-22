@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- server.xml del contenedor (tercer parcial). El de desarrollo local sigue en src/main/liberty/config. -->
+<server description="GalenoSV en contenedor">
+
+    <featureManager>
+        <feature>jakartaee-11.0</feature>
+    </featureManager>
+
+    <!-- host="*": escuchar en todas las interfaces del contenedor; con localhost, -p 9080:9080 no llega. -->
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443" />
+    <httpSession cookieSameSite="Lax" useContextRootAsCookiePath="true" />
+    <applicationManager autoExpand="true" />
+
+    <library id="PostgreSQL-Library">
+        <fileset dir="${shared.resource.dir}/postgresql" includes="postgresql-*.jar" />
+    </library>
+
+    <!-- jndiName = jta-data-source de persistence.xml. Las 5 variables son las de la rúbrica. -->
+    <dataSource id="postgresDS" jndiName="jdbc/postgres">
+        <jdbcDriver libraryRef="PostgreSQL-Library" />
+        <properties.postgresql serverName="${env.PG_HOST}"
+                               portNumber="${env.PG_PORT}"
+                               databaseName="${env.PG_DB}"
+                               user="${env.PG_USER}"
+                               password="${env.PG_PASS}" />
+    </dataSource>
+
+</server>
