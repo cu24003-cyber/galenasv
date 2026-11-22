@@ -13,13 +13,25 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoException;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContextoRolService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.IntentosAcceso;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TipoDocumentoService;
+import jakarta.faces.application.FacesMessage;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.*;
 
 @ExtendWith(MockitoExtension.class)
 class CambiarRolModelTest {
     @Mock ContextoRolService servicio;
     @Spy AtencionSesion sesion = new AtencionSesion();
+    @Spy AccesoSesion acceso = new AccesoSesion();
+    @Mock AutenticacionService autenticacion;
+    @Mock IntentosAcceso intentos;
+    @Mock TipoDocumentoService tipos;
     @InjectMocks CambiarRolModel model;
 
     private PersonaRol asignacion(Clinica clinica, Persona persona, String nombreRol) {
@@ -99,5 +111,89 @@ class CambiarRolModelTest {
             contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
             assertNull(model.aplicar()); assertNull(sesion.getRolActivo()); verify(faces).validationFailed();
         }
+    }
+
+    // --- Entrada desde la misma pantalla cuando no hay sesión (HU2 en JSF) ---
+
+    private HttpServletRequest peticion() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        lenient().when(request.getRemoteAddr()).thenReturn("10.0.0.7");
+        lenient().when(request.getSession(true)).thenReturn(mock(HttpSession.class));
+        return request;
+    }
+
+    private String mensajeDeError(Runnable accion) {
+        FacesContext faces = mock(FacesContext.class);
+        try (MockedStatic<FacesContext> contexto = mockStatic(FacesContext.class)) {
+            contexto.when(FacesContext::getCurrentInstance).thenReturn(faces);
+            accion.run();
+            ArgumentCaptor<FacesMessage> mensaje = ArgumentCaptor.forClass(FacesMessage.class);
+            verify(faces).addMessage(isNull(), mensaje.capture()); verify(faces).validationFailed();
+            assertEquals(FacesMessage.SEVERITY_ERROR, mensaje.getValue().getSeverity());
+            return mensaje.getValue().getSummary();
+        }
+    }
+
+    @Test void sinSesionMuestraElFormularioConLosTiposDeDocumentoActivos() {
+        TipoDocumento dui = new TipoDocumento(UUID.randomUUID()); dui.setNombre("DUI");
+        when(tipos.listarActivos()).thenReturn(List.of(dui));
+        assertFalse(model.isAutenticado());
+        assertEquals(List.of(dui), model.getTiposDocumento());
+        acceso.autenticar(UUID.randomUUID());
+        assertTrue(model.isAutenticado());
+    }
+
+    @Test void entrarConDocumentoDeEmpleadoUsaElMismoServicioCambiaElIdDeSesionYDejaSuRol() {
+        UUID tipo = UUID.randomUUID();
+        Persona doctor = new Persona(UUID.randomUUID());
+        PersonaRol suRol = asignacion(clinica("Central"), doctor, "Doctor");
+        PersonaRol anterior = asignacion(clinica("Otra"), new Persona(UUID.randomUUID()), "Enfermera");
+        sesion.cambiarRol(anterior); sesion.setConsulta(UUID.randomUUID());
+        when(autenticacion.iniciar(tipo, " 02345678-9 ")).thenReturn(new AutenticacionService.Contexto(doctor, suRol));
+        HttpServletRequest request = peticion();
+        model.setTipoDocumentoId(tipo.toString()); model.setNumeroDocumento(" 02345678-9 ");
+
+        assertEquals("/paginas/cambiar-rol.xhtml?faces-redirect=true", model.entrar(request));
+
+        InOrder orden = inOrder(intentos, autenticacion, request, acceso);
+        orden.verify(intentos).registrar("10.0.0.7");
+        orden.verify(autenticacion).iniciar(tipo, " 02345678-9 ");
+        orden.verify(request).getSession(true);
+        orden.verify(request).changeSessionId();
+        orden.verify(acceso).autenticar(doctor.getIdPersona());
+        assertTrue(acceso.vigente());
+        assertSame(suRol, sesion.getRolActivo());
+        assertNull(sesion.getConsulta());
+    }
+
+    @Test void pacienteOPersonaSinRolNoEntranYLaSesionNoCambia() {
+        UUID tipo = UUID.randomUUID();
+        when(autenticacion.iniciar(any(), any())).thenThrow(new AccesoException(401, "auth.credenciales", "x"));
+        HttpServletRequest request = peticion();
+        model.setTipoDocumentoId(tipo.toString()); model.setNumeroDocumento("01234567-8");
+        String texto = mensajeDeError(() -> assertNull(model.entrar(request)));
+        assertEquals("No encontramos una persona con ese documento activo.", texto);
+        verify(intentos).registrar("10.0.0.7");
+        verify(request, never()).changeSessionId();
+        assertFalse(acceso.vigente()); assertNull(sesion.getRolActivo());
+    }
+
+    @Test void respetaElMismoLimiteDeIntentosQueElApi() {
+        doThrow(new AccesoException(429, "auth.demasiadosIntentos", "x")).when(intentos).registrar("10.0.0.7");
+        HttpServletRequest request = peticion();
+        model.setTipoDocumentoId(UUID.randomUUID().toString()); model.setNumeroDocumento("02345678-9");
+        assertEquals("Espere antes de volver a iniciar sesión.", mensajeDeError(() -> assertNull(model.entrar(request))));
+        verifyNoInteractions(autenticacion);
+        verify(request, never()).changeSessionId();
+    }
+
+    @Test void datosIncompletosOTipoInvalidoNoConsultanNiCuentanIntento() {
+        HttpServletRequest request = peticion();
+        model.setTipoDocumentoId(""); model.setNumeroDocumento("02345678-9");
+        assertEquals("Seleccione el tipo de documento y escriba su número.", mensajeDeError(() -> assertNull(model.entrar(request))));
+        model.setTipoDocumentoId("no-es-uuid");
+        mensajeDeError(() -> assertNull(model.entrar(request)));
+        verifyNoInteractions(autenticacion, intentos);
+        assertFalse(acceso.vigente());
     }
 }

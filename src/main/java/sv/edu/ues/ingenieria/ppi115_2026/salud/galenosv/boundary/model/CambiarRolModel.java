@@ -19,7 +19,13 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.boundary.model.AbstractModel.Mensajes;
+import jakarta.servlet.http.HttpServletRequest;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AccesoSesion;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.AutenticacionService;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ContextoRolService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.IntentosAcceso;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.TipoDocumentoService;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.ServiceException;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona;
@@ -30,6 +36,12 @@ public class CambiarRolModel implements Serializable {
     private static final long serialVersionUID = 1L;
     @EJB private ContextoRolService servicio;
     @Inject private AtencionSesion sesion;
+    @Inject private AccesoSesion acceso;
+    @Inject private IntentosAcceso intentos;
+    @EJB private AutenticacionService autenticacion;
+    @EJB private TipoDocumentoService tipos;
+    private List<TipoDocumento> tiposDocumento;
+    private String tipoDocumentoId, numeroDocumento;
     private List<PersonaRol> asignaciones = List.of();
     private List<Clinica> clinicas = List.of();
     private String clinicaId, personaId, asignacionId;
@@ -110,6 +122,52 @@ public class CambiarRolModel implements Serializable {
                 .findFirst().orElse(roles.isEmpty() ? null : roles.get(0));
         asignacionId = elegida == null ? null : elegida.getIdPersonaRol().toString();
     }
+    // --- HU2 en JSF: entrada con documento cuando no hay sesión ---
+
+    public boolean isAutenticado() { return acceso.vigente(); }
+
+    public List<TipoDocumento> getTiposDocumento() {
+        if (tiposDocumento == null) tiposDocumento = tipos.listarActivos();
+        return tiposDocumento;
+    }
+
+    public String entrar() {
+        return entrar((HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest());
+    }
+
+    /**
+     * Mismas reglas y mismo orden que POST /api/auth/login (AuthResource): límite de intentos por
+     * dirección, AutenticacionService.iniciar (rechaza Paciente, persona sin rol, rol o clínica
+     * inactivos), cambio del id de sesión sin invalidarla y reemplazo del estado anterior.
+     */
+    String entrar(HttpServletRequest request) {
+        UUID tipo;
+        try { tipo = tipoDocumentoId == null || tipoDocumentoId.isBlank() ? null : UUID.fromString(tipoDocumentoId); }
+        catch (IllegalArgumentException e) { tipo = null; }
+        if (tipo == null || numeroDocumento == null || numeroDocumento.isBlank() || numeroDocumento.length() > 50) {
+            error(Mensajes.texto("login.datosRequeridos"));
+            return null;
+        }
+        try {
+            intentos.registrar(request.getRemoteAddr());
+            var contexto = autenticacion.iniciar(tipo, numeroDocumento);
+            request.getSession(true);
+            request.changeSessionId();
+            sesion.limpiar();
+            acceso.autenticar(contexto.persona().getIdPersona());
+            if (contexto.asignacion() != null) sesion.cambiarRol(contexto.asignacion());
+            numeroDocumento = null;
+            return "/paginas/cambiar-rol.xhtml?faces-redirect=true";
+        } catch (ServiceException e) { error(Mensajes.mensaje(e)); }
+        catch (EJBException e) { error(Mensajes.texto("auth.credenciales")); }
+        return null;
+    }
+
+    public String getTipoDocumentoId() { return tipoDocumentoId; }
+    public void setTipoDocumentoId(String id) { tipoDocumentoId = id; }
+    public String getNumeroDocumento() { return numeroDocumento; }
+    public void setNumeroDocumento(String numero) { numeroDocumento = numero; }
+
     public String getClinicaId() { return clinicaId; }
     public void setClinicaId(String id) { clinicaId = id; }
     public String getPersonaId() { return personaId; }

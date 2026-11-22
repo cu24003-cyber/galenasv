@@ -5,8 +5,25 @@
     <ui:define name="pageTitle">#{msg['ui.cambiarRol']}</ui:define>
     <ui:define name="title"><h3>#{msg['ui.cambiarRol']}</h3></ui:define>
     <ui:define name="content">
-        <p>#{msg['ui.seleccioneClinicaPersona']}</p>
         <p:messages id="mensajes" />
+        <!-- HU2: sin sesión, la misma pantalla pide tipo y número de documento (mismas reglas que /api/auth/login). -->
+        <h:form id="frmEntrar" rendered="#{not cambiarRolModel.autenticado}">
+            <h4>#{msg['ui.iniciarSesion']}</h4>
+            <p>#{msg['ui.iniciarSesionAyuda']}</p>
+            <p:panelGrid columns="2" layout="flex">
+                <p:outputLabel for="tipoDocumento" value="#{msg['campo.idTipoDocumento']}" />
+                <p:selectOneMenu id="tipoDocumento" value="#{cambiarRolModel.tipoDocumentoId}">
+                    <f:selectItem itemValue="" itemLabel="#{msg['ui.seleccione']}" noSelectionOption="true" />
+                    <f:selectItems value="#{cambiarRolModel.tiposDocumento}" var="t" itemValue="#{t.idTipoDocumento.toString()}" itemLabel="#{t.nombre}" />
+                </p:selectOneMenu>
+                <p:outputLabel for="numeroDocumento" value="#{msg['ui.numeroDocumento']}" />
+                <p:inputText id="numeroDocumento" value="#{cambiarRolModel.numeroDocumento}" maxlength="50" autocomplete="off" />
+            </p:panelGrid>
+            <p:commandButton id="entrar" value="#{msg['ui.entrar']}" icon="pi pi-sign-in" action="#{cambiarRolModel.entrar}"
+                             process="@form" update="@form :mensajes" />
+        </h:form>
+        <h:panelGroup rendered="#{cambiarRolModel.autenticado}" layout="block">
+        <p>#{msg['ui.seleccioneClinicaPersona']}</p>
         <h:panelGroup rendered="#{not empty atencionSesion.rolActivo}" layout="block">
             <p><strong>#{msg['ui.rolActual']}</strong> #{atencionSesion.rolActivo.idPersona.nombres} #{atencionSesion.rolActivo.idPersona.apellidos}
                 · #{atencionSesion.rolActivo.idRol.nombre} · #{atencionSesion.rolActivo.idClinica.nombre}</p>
@@ -45,6 +62,7 @@
         </h:form>
         <h:panelGroup rendered="#{empty cambiarRolModel.asignaciones}">
             <p>#{msg['ui.sinRoles']}</p>
+        </h:panelGroup>
         </h:panelGroup>
     </ui:define>
 </ui:composition>

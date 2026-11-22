@@ -90,6 +90,21 @@ en cinco minutos; devuelve 429 y `Retry-After: 300`. Se mantiene en memoria por 
 no confía en cabeceras de IP enviadas por el cliente. Con BrowserSync, las conexiones
 al backend comparten la dirección del proxy.
 
+## Entrada desde las pantallas JSF
+
+`paginas/cambiar-rol.xhtml` muestra, si no hay sesión vigente (`AccesoSesion.vigente()`), un
+formulario de tipo y número de documento (`CambiarRolModel.entrar`). Aplica las mismas reglas
+y en el mismo orden que `POST /api/auth/login`:
+1. Cuenta el intento en el límite de login de esa dirección (`IntentosAcceso`), compartido con el API.
+2. Llama a `AutenticacionService.iniciar`, que rechaza Paciente, persona sin rol y rol o clínica inactivos con "No encontramos una persona con ese documento activo.".
+3. Cambia el id de sesión con `changeSessionId()` sin invalidarla.
+4. Reemplaza el estado anterior (rol activo y consulta).
+
+Los datos incompletos no cuentan como intento. Después de entrar, la página se recarga y se
+elige la clínica y el rol como antes. La cookie resultante también sirve para el API. No se
+abrió ninguna ruta: `/api/*` sigue protegida por `AutenticacionFilter`, y las páginas JSF ya
+eran accesibles sin cookie.
+
 ## Rutas públicas
 
 `AutenticacionFilter` deja pasar `/api/publico/*` sin cookie. Para decidirlo usa
