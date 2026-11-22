@@ -30,14 +30,25 @@ public class ProcedimientoPasoService extends AbstractService<ProcedimientoPaso,
 
     /**
      * El responsable de un paso debe ser un rol activo (la pantalla JSF ya lo exige; esto cubre la API).
-     * Al editar solo se comprueba si el rol cambia, para poder renombrar un paso cuyo rol se desactivó.
+     * Al editar, lo de rol activo solo se comprueba si el rol cambia, para poder renombrar un paso cuyo rol
+     * se desactivó; el Paciente se rechaza siempre.
      */
     private void validarRol(ProcedimientoPaso entidad, UUID rolAnterior) {
         UUID id = entidad == null || entidad.getIdRol() == null ? null : entidad.getIdRol().getIdRol();
-        if (id == null || id.equals(rolAnterior)) return;
+        if (id == null) return;
         Rol rol = rolRepository.find(id);
+        rechazarPaciente(rol);
+        if (id.equals(rolAnterior)) return;
         if (rol == null || !Boolean.TRUE.equals(rol.getActivo())) {
             throw ServiceException.localizada("procedimiento.pasoNombreRol", "Indique nombre y rol activo para el paso.");
+        }
+    }
+
+    /** El Paciente (código PACIENTE) nunca es responsable de un paso, ni al crearlo ni al editarlo. */
+    static void rechazarPaciente(Rol rol) {
+        if (rol != null && AutenticacionService.PACIENTE.equals(rol.getCodigo())) {
+            throw ServiceException.localizada("procedimiento.pasoRolPaciente",
+                    "El rol Paciente no puede ser responsable de un paso.");
         }
     }
 

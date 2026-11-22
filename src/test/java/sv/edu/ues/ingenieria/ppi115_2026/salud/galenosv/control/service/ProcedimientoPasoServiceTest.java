@@ -121,6 +121,33 @@ class ProcedimientoPasoServiceTest {
         verify(procedimientoPasoRepository, never()).create(any());
     }
 
+    private Rol paciente() {
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre(" Paciente "); rol.setActivo(true);
+        lenient().when(rolRepository.find(rol.getIdRol())).thenReturn(rol);
+        return rol;
+    }
+
+    @Test
+    void crearRechazaUnPasoConRolPaciente() {
+        ProcedimientoPaso paso = new ProcedimientoPaso();
+        paso.setIdRol(new Rol(paciente().getIdRol()));
+        assertEquals("procedimiento.pasoRolPaciente", assertThrows(ServiceException.class,
+                () -> procedimientoPasoService.crear(paso)).getMessageKey());
+        verify(procedimientoPasoRepository, never()).create(any());
+    }
+
+    @Test
+    void actualizarRechazaUnPasoConRolPacienteAunqueNoCambie() {
+        Rol paciente = paciente();
+        ProcedimientoPaso guardado = new ProcedimientoPaso(UUID.randomUUID()); guardado.setIdRol(paciente);
+        when(procedimientoPasoRepository.find(guardado.getIdProcedimientoPaso())).thenReturn(guardado);
+        ProcedimientoPaso editado = new ProcedimientoPaso(guardado.getIdProcedimientoPaso());
+        editado.setIdRol(new Rol(paciente.getIdRol()));
+        assertEquals("procedimiento.pasoRolPaciente", assertThrows(ServiceException.class,
+                () -> procedimientoPasoService.actualizar(editado)).getMessageKey());
+        verify(procedimientoPasoRepository, never()).update(any());
+    }
+
     @Test
     void crearRechazaUnRolInexistente() {
         ProcedimientoPaso paso = new ProcedimientoPaso();

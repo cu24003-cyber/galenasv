@@ -11,7 +11,9 @@ public class ConfiguracionProcedimientoService {
     @EJB private ProcedimientoService procedimientoService;
     public void eliminar(UUID id) { procedimientoService.eliminar(id); }
     public List<Procedimiento> listar() { return em.createQuery("SELECT p FROM Procedimiento p ORDER BY p.nombre",Procedimiento.class).getResultList(); }
-    public List<Rol> roles() { return em.createQuery("SELECT r FROM Rol r WHERE r.activo=true ORDER BY r.nombre",Rol.class).getResultList(); }
+    /** Roles que pueden ser responsables de un paso: activos y distintos de Paciente. */
+    public List<Rol> roles() { return em.createQuery("SELECT r FROM Rol r WHERE r.activo=true ORDER BY r.nombre",Rol.class).getResultList()
+            .stream().filter(r -> !AutenticacionService.PACIENTE.equals(r.getCodigo())).toList(); }
     public List<ProcedimientoPaso> pasos(UUID id) { return em.createQuery("SELECT p FROM ProcedimientoPaso p LEFT JOIN FETCH p.idRol WHERE p.idProcedimiento.idProcedimiento=:id ORDER BY p.nombre",ProcedimientoPaso.class).setParameter("id",id).getResultList(); }
     public List<ProcedimientoPasoSecuencia> secuencias(UUID id) { return em.createQuery("SELECT s FROM ProcedimientoPasoSecuencia s JOIN FETCH s.idProcedimientoPaso p JOIN FETCH s.idProcedimientoPasoReferencia WHERE p.idProcedimiento.idProcedimiento=:id",ProcedimientoPasoSecuencia.class).setParameter("id",id).getResultList(); }
     public List<Examen> examenes() { return em.createQuery("SELECT e FROM Examen e WHERE e.activo=true ORDER BY e.nombre",Examen.class).getResultList(); }
@@ -36,6 +38,7 @@ public class ConfiguracionProcedimientoService {
         Procedimiento p=em.find(Procedimiento.class,id,LockModeType.PESSIMISTIC_WRITE);
         Rol rol=em.find(Rol.class,rolId);
         if(p==null || nombre==null || nombre.isBlank() || rol==null || !Boolean.TRUE.equals(rol.getActivo())) throw ServiceException.localizada("procedimiento.pasoNombreRol", "Indique nombre y rol activo para el paso.");
+        ProcedimientoPasoService.rechazarPaciente(rol);
         ProcedimientoPaso previo=previoId==null?null:em.find(ProcedimientoPaso.class,previoId);
         if(previoId!=null && (previo==null || !p.equals(previo.getIdProcedimiento()) || Boolean.TRUE.equals(previo.getIndicaFin()))) throw ServiceException.localizada("procedimiento.pasoAnteriorInvalido", "El paso anterior debe pertenecer al procedimiento y no indicar fin.");
         ProcedimientoPaso paso=new ProcedimientoPaso(UUID.randomUUID()); paso.setIdProcedimiento(p); paso.setNombre(nombre.trim()); paso.setIndicaFin(fin); paso.setIdRol(rol); em.persist(paso);

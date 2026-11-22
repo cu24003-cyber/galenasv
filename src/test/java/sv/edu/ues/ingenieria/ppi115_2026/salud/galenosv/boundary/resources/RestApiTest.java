@@ -759,6 +759,24 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void pasoConRolPacienteResponde400() {
+        when(configuracion.paso(ID, "Revision", false, ID, null)).thenThrow(ServiceException.localizada(
+                "procedimiento.pasoRolPaciente", "El rol Paciente no puede ser responsable de un paso."));
+        try (Response response = target("procedimientos/" + ID + "/pasos").request().post(Entity.json(
+                "{\"nombre\":\"Revision\",\"indicaFin\":false,\"idRol\":\"" + ID + "\"}"))) {
+            assertEquals("procedimiento.pasoRolPaciente", assertError(response, 400).getString("code"));
+        }
+        doThrow(ServiceException.localizada("procedimiento.pasoRolPaciente",
+                "El rol Paciente no puede ser responsable de un paso."))
+                .when(services.get(entityType(ProcedimientoPasoResource.class))).crear(any());
+        try (Response response = target("procedimientos-pasos").request().post(Entity.json(
+                "{\"nombre\":\"Revision\",\"indicaFin\":false,\"idProcedimiento\":\"" + ID
+                + "\",\"idRol\":\"" + ID + "\"}"))) {
+            assertEquals("procedimiento.pasoRolPaciente", assertError(response, 400).getString("code"));
+        }
+    }
+
+    @Test
     void codigoDeAccesoDelRolNoSePuedeCambiarDesdeElCrud() {
         var rol = (sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol)
                 records.get(entityType(RolResource.class)).get(ID);
