@@ -462,8 +462,12 @@ responde 400 `rol.nombreReservado`. Se permiten cambios de mayúsculas/espacios,
 nombres administrativos y renombrar empleados sin convertirlos en roles especiales. Los UUID
 siguen identificando los roles responsables de cada paso.
 POST, PUT y PATCH de `/api/roles` (y la edición JSF) rechazan con 409 `rol.nombreDuplicado` un nombre
-que, con esa misma normalización, ya tenga otro rol. Al arrancar, el servidor solo crea el rol
-"Paciente" si no existe ninguno cuyo nombre normalizado sea "paciente". El campo JSON `codigo` sigue siendo
+que, con esa misma normalización, ya tenga otro rol. El servidor **no** crea roles al arrancar: el rol
+"Paciente" lo crea Atención al público (JSF o `POST /api/roles`). Todo lo que lo usa lo busca con esa
+misma normalización (`RolRepository.buscarPorCodigo`) y, si no existe o está inactivo:
+`POST /api/recepcion/pacientes` responde 409 `registro.rolPaciente` ("No hay un rol Paciente activo…"),
+la lista de pacientes de la pantalla de consultas muestra `consulta.sinRolPaciente`, y la búsqueda
+pública (`/api/publico/*`) devuelve lista vacía / 404, sin revelar la configuración. El campo JSON `codigo` sigue siendo
 calculado por el servidor; no sirve para asignar privilegios desde el cliente.
 
 `PermisosApiFilter` distingue tres casos por ese código derivado del rol activo:

@@ -26,8 +26,10 @@ public class AtencionService {
     }
     public List<PersonaRol> pacientesClinica() {
         PersonaRol medico = empleadoActivo();
-        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND LOWER(TRIM(rol.nombre))='paciente' AND rol.activo=true ORDER BY p.apellidos, p.nombres", PersonaRol.class)
-                .setParameter("clinica", medico.getIdClinica()).getResultList();
+        Rol paciente = sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.RolRepository.buscarPorCodigo(em, AutenticacionService.PACIENTE);
+        if (paciente == null || !Boolean.TRUE.equals(paciente.getActivo())) throw ServiceException.localizada("consulta.sinRolPaciente", "No hay un rol Paciente activo. Créelo o actívelo en Roles.");
+        return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica=:clinica AND rol=:paciente ORDER BY p.apellidos, p.nombres", PersonaRol.class)
+                .setParameter("clinica", medico.getIdClinica()).setParameter("paciente", paciente).getResultList();
     }
     public List<PersonaRol> responsables(UUID clinica) {
         return em.createQuery("SELECT r FROM PersonaRol r JOIN FETCH r.idPersona p JOIN FETCH r.idRol rol JOIN FETCH r.idClinica WHERE r.idClinica.idClinica=:clinica AND rol.activo=true ORDER BY p.apellidos, p.nombres, rol.nombre", PersonaRol.class)

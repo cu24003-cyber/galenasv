@@ -22,17 +22,36 @@ class CitaPublicaRepositoryTest {
 
     private ArgumentCaptor<String> preparar() {
         ArgumentCaptor<String> jpql = ArgumentCaptor.forClass(String.class);
+        rolesExistentes(List.of(paciente));
         when(em.createQuery(jpql.capture(), eq(Object[].class))).thenReturn(consulta);
         lenient().when(consulta.setParameter(anyString(), any())).thenReturn(consulta);
         when(consulta.getResultList()).thenReturn(List.of());
         return jpql;
+    }
+    private final sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol paciente = rolPaciente();
+    private static sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol rolPaciente() {
+        var r = new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol(UUID.randomUUID()); r.setNombre("Paciénte"); r.setActivo(true); return r;
+    }
+    @SuppressWarnings("unchecked")
+    private void rolesExistentes(List<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol> roles) {
+        TypedQuery<sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol> q = mock(TypedQuery.class);
+        lenient().when(em.createQuery(anyString(), eq(sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol.class))).thenReturn(q);
+        lenient().when(q.getResultList()).thenReturn(roles);
+    }
+    @Test void sinRolPacienteNoHayCitasNiClinicasYNoSeConsultaNada() {
+        rolesExistentes(List.of());
+        assertTrue(repositorio.clinicas(tipo, "00000000-3").isEmpty());
+        assertTrue(repositorio.citas(tipo, "00000000-3", clinica, desde, hasta).isEmpty());
+        assertTrue(repositorio.cita(tipo, "00000000-3", UUID.randomUUID()).isEmpty());
+        verify(em, never()).createQuery(anyString(), eq(Object[].class));
     }
     private static String select(String jpql) { return jpql.substring(0, jpql.indexOf(" FROM ")); }
     private static void filtraDocumentoYPaciente(String jpql) {
         assertTrue(jpql.contains("d.idTipoDocumento.idTipoDocumento=:tipo"));
         assertTrue(jpql.contains("d.idTipoDocumento.activo=true"));
         assertTrue(jpql.contains("d.valor=:valor"));
-        assertTrue(jpql.contains("LOWER(TRIM(r.nombre))='paciente'"));
+        assertTrue(jpql.contains("r=:paciente AND r.activo=true"));
+        assertFalse(jpql.contains("LOWER(TRIM(r.nombre))"));
         assertTrue(jpql.contains("c.activo=true"));
         assertTrue(jpql.contains("NOT EXISTS (SELECT otro FROM Documento otro"));
         assertTrue(jpql.contains("otro.idTipoDocumento.idTipoDocumento=:tipo"));

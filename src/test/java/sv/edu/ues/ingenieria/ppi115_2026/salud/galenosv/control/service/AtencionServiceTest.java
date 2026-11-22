@@ -475,12 +475,24 @@ class AtencionServiceTest {
     @Test void historialYPacientesSeConsultanConElContextoDeLaSesion() {
         TypedQuery<Consulta> consultas = query(Consulta.class, List.of());
         TypedQuery<PersonaRol> pacientes = query(PersonaRol.class, List.of());
+        Rol rolPaciente = new Rol(UUID.randomUUID()); rolPaciente.setNombre("Paciente"); rolPaciente.setActivo(true);
+        query(Rol.class, List.of(rolPaciente));
         assertTrue(servicio.historial().isEmpty()); assertTrue(servicio.pacientesClinica().isEmpty());
+        verify(pacientes).setParameter("paciente", rolPaciente);
         verify(consultas).setParameter("clinica", medico.getIdClinica());
         verify(pacientes).setParameter("clinica", medico.getIdClinica());
         verify(em).createQuery(contains("WHERE paciente.idClinica=:clinica"), eq(Consulta.class));
         verify(consultas).setParameter("rol", medico.getIdRol());
         verify(em).createQuery(contains("WHERE r.idClinica=:clinica"), eq(PersonaRol.class));
+    }
+    @Test void sinRolPacienteActivoLaListaDePacientesDaUnErrorClaro() {
+        TypedQuery<PersonaRol> pacientes = query(PersonaRol.class, List.of());
+        query(Rol.class, List.of());
+        assertEquals("consulta.sinRolPaciente", assertThrows(ServiceException.class, servicio::pacientesClinica).getMessageKey());
+        Rol inactivo = new Rol(UUID.randomUUID()); inactivo.setNombre("paciente"); inactivo.setActivo(false);
+        query(Rol.class, List.of(inactivo));
+        assertEquals("consulta.sinRolPaciente", assertThrows(ServiceException.class, servicio::pacientesClinica).getMessageKey());
+        verify(pacientes, never()).getResultList();
     }
     @Test void sinRolMedicoNoExponeHistorialNiPacientes() {
         when(sesion.getRolActivo()).thenReturn(null);

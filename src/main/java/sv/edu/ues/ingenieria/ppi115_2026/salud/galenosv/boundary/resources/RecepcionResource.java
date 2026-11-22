@@ -35,10 +35,10 @@ public class RecepcionResource {
     @POST public Response crear(@Valid @NotNull Paciente datos, @Context UriInfo uri) {
         var contexto = autenticacion.contexto(acceso.getIdPersona(), atencion.getRolActivo().getIdPersonaRol());
         if (!"ADMINISTRACION".equals(contexto.asignacion().getIdRol().getCodigo())) throw new AccesoException(403, "auth.permiso", "Se requiere administración.");
-        var roles = em.createQuery("SELECT r FROM Rol r WHERE LOWER(TRIM(r.nombre))='paciente' AND r.activo=true", Rol.class).getResultList();
-        if (roles.size() != 1) throw new AccesoException(409, "registro.rolPaciente", "Configura un único rol de paciente activo antes de registrar.");
+        Rol paciente = sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.RolRepository.buscarPorCodigo(em, AutenticacionService.PACIENTE);
+        if (paciente == null || !Boolean.TRUE.equals(paciente.getActivo())) throw new AccesoException(409, "registro.rolPaciente", "No hay un rol Paciente activo. Créelo o actívelo en Roles antes de registrar pacientes.");
         Persona persona = new Persona(); persona.setNombres(datos.nombres.trim()); persona.setApellidos(datos.apellidos.trim()); persona.setFechaNacimiento(datos.fechaNacimiento);
-        var idAsignacion = registro.guardar(persona, roles.getFirst(), contexto.asignacion().getIdClinica(), null);
+        var idAsignacion = registro.guardar(persona, paciente, contexto.asignacion().getIdClinica(), null);
         var body = Json.createObjectBuilder().add("idPersona", persona.getIdPersona().toString())
                 .add("idPersonaRol", idAsignacion.toString()).build();
         return Response.created(uri.getBaseUriBuilder().path("personas").path(persona.getIdPersona().toString()).build()).entity(body.toString()).build();
