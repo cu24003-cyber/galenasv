@@ -1540,6 +1540,7 @@ class RestApiTest extends JerseyTest {
                 Arguments.of(new ServiceException("tipoDocumento.enUso", "Tiene documentos asociados.", null), 409),
                 Arguments.of(ServiceException.localizada("consulta.cerrarAntesCrear", "Cierre la consulta."), 409),
                 Arguments.of(ServiceException.localizada("consulta.fechaOcupada", "Fecha ocupada."), 409),
+                Arguments.of(ServiceException.localizada("rol.nombreDuplicado", "Duplicado."), 409),
                 Arguments.of(ServiceException.localizada("rolCambio.cerrarAntesCambiar", "Cierre la consulta."), 409),
                 Arguments.of(ServiceException.localizada("consulta.retrocesoPrimerPaso", "Primer paso."), 409),
                 Arguments.of(ServiceException.localizada("consulta.retrocesoConRegistros", "Con registros."), 409),

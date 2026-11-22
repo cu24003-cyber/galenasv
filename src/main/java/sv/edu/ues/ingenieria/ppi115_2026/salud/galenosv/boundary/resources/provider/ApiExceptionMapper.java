@@ -34,7 +34,7 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
     private static final Set<String> NOT_FOUND = Set.of("error.noExisteActualizar", "error.noExisteEliminar",
             "procedimiento.noExiste");
     private static final Set<String> CONFLICT = Set.of("error.duplicado", "error.relacionado",
-            "tipoDocumento.enUso", "tipoMedioContacto.enUso", "documento.duiUnico",
+            "tipoDocumento.enUso", "tipoMedioContacto.enUso", "documento.duiUnico", "rol.nombreDuplicado",
             "persona.eliminar.historial", "procedimiento.examenYaAsociado", "consulta.pacienteEnCurso",
             "consulta.yaCerrada", "consulta.pasoYaCompletado", "consulta.ordenPasoCompletado",
             "consulta.examenPasoCompletado", "consulta.cerrarAntesCrear", "consulta.completeAntesCerrar",

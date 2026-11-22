@@ -146,4 +146,43 @@ class RolServiceTest {
         Rol doctor = new Rol(UUID.randomUUID()); doctor.setNombre("Doctor");
         assertThrows(ServiceException.class, () -> RolService.validarCambioNombre(doctor, "Administracion"));
     }
+
+    private Rol rol(String nombre) {
+        Rol rol = new Rol(UUID.randomUUID()); rol.setNombre(nombre); return rol;
+    }
+
+    @Test void crearRechazaNombreYaExistenteConLaMismaNormalizacion() {
+        when(rolRepository.findAll()).thenReturn(java.util.List.of(rol("Atención al público"), rol("Paciente")));
+        for (String nombre : new String[]{"ATENCION  AL PUBLICO", " paciente ", "Pacienté"}) {
+            assertEquals("rol.nombreDuplicado", assertThrows(ServiceException.class,
+                    () -> rolService.crear(rol(nombre))).getMessageKey(), nombre);
+        }
+        verify(rolRepository, never()).create(any());
+    }
+
+    @Test void crearPermiteNombreNuevo() {
+        when(rolRepository.findAll()).thenReturn(java.util.List.of(rol("Paciente")));
+        Rol nuevo = rol("Laboratorista");
+        rolService.crear(nuevo);
+        verify(rolRepository).create(nuevo);
+    }
+
+    @Test void actualizarRechazaNombreDeOtroRol() {
+        Rol enfermera = rol("Enfermera");
+        Rol cambio = rol("  DOCTOR "); cambio.setIdRol(enfermera.getIdRol());
+        when(rolRepository.find(enfermera.getIdRol())).thenReturn(enfermera);
+        when(rolRepository.findAll()).thenReturn(java.util.List.of(enfermera, rol("Doctor")));
+        assertEquals("rol.nombreDuplicado", assertThrows(ServiceException.class,
+                () -> rolService.actualizar(cambio)).getMessageKey());
+        verify(rolRepository, never()).update(any());
+    }
+
+    @Test void actualizarPermiteConservarSuPropioNombre() {
+        Rol doctor = rol("Doctor");
+        Rol cambio = rol("DOCTOR"); cambio.setIdRol(doctor.getIdRol());
+        when(rolRepository.find(doctor.getIdRol())).thenReturn(doctor);
+        when(rolRepository.findAll()).thenReturn(java.util.List.of(doctor));
+        rolService.actualizar(cambio);
+        verify(rolRepository).update(cambio);
+    }
 }

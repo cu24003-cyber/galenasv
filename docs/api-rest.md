@@ -445,7 +445,9 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 ### Permisos por rol (B8)
 
 `codigo` y `codigoRol` se calculan desde `Rol.nombre`; ya no requieren la columna `rol.codigo`.
-Se ignoran mayúsculas y espacios exteriores; se conservan las tildes. Los nombres acordados son:
+El nombre se normaliza antes de compararlo: sin tildes, en minúsculas, sin espacios exteriores y
+con los espacios interiores repetidos reducidos a uno ("ATENCIÓN  AL PÚBLICO" = "Atencion al publico").
+Los nombres acordados son:
 
 | Nombre almacenado | Código devuelto |
 | --- | --- |
@@ -458,7 +460,10 @@ Al crear los roles especiales, usar esos nombres. En PUT/PATCH de `/api/roles/{i
 no se puede cambiar un rol entre Paciente, Administración y empleado mediante un renombrado:
 responde 400 `rol.nombreReservado`. Se permiten cambios de mayúsculas/espacios, alternar los dos
 nombres administrativos y renombrar empleados sin convertirlos en roles especiales. Los UUID
-siguen identificando los roles responsables de cada paso. El campo JSON `codigo` sigue siendo
+siguen identificando los roles responsables de cada paso.
+POST, PUT y PATCH de `/api/roles` (y la edición JSF) rechazan con 409 `rol.nombreDuplicado` un nombre
+que, con esa misma normalización, ya tenga otro rol. Al arrancar, el servidor solo crea el rol
+"Paciente" si no existe ninguno cuyo nombre normalizado sea "paciente". El campo JSON `codigo` sigue siendo
 calculado por el servidor; no sirve para asignar privilegios desde el cliente.
 
 `PermisosApiFilter` distingue tres casos por ese código derivado del rol activo:

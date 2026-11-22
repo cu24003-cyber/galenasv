@@ -41,11 +41,26 @@ public class RolService extends AbstractService<Rol, UUID> {
         return "PACIENTE".equals(codigo) || "ADMINISTRACION".equals(codigo);
     }
 
+    /** Sin UNIQUE en la base original: dos nombres que se normalizan igual serían el mismo rol. */
+    private void validarNombreUnico(Rol entidad) {
+        String nombre = Rol.normalizarNombre(entidad.getNombre());
+        if (nombre.isEmpty()) return;
+        for (Rol otro : rolRepository.findAll()) {
+            if (!Objects.equals(otro.getIdRol(), entidad.getIdRol())
+                    && nombre.equals(Rol.normalizarNombre(otro.getNombre()))) {
+                throw ServiceException.localizada("rol.nombreDuplicado", "Ya existe un rol con ese nombre.");
+            }
+        }
+    }
+
     @Override
     public void actualizar(Rol entidad) {
         validar(entidad);
         Rol anterior = rolRepository.find(entidad.getIdRol());
-        if (anterior != null) validarCambioNombre(anterior, entidad.getNombre());
+        if (anterior != null) {
+            validarCambioNombre(anterior, entidad.getNombre());
+            validarNombreUnico(entidad);
+        }
         super.actualizar(entidad);
     }
 
@@ -54,6 +69,8 @@ public class RolService extends AbstractService<Rol, UUID> {
         if (entidad.getIdRol() == null) {
             entidad.setIdRol(UUID.randomUUID());
         }
+        validar(entidad);
+        validarNombreUnico(entidad);
         super.crear(entidad);
     }
 
