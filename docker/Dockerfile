@@ -2,7 +2,7 @@
 # Base exigida por la rúbrica: debian:stable.
 # La imagen NO contiene el WAR: el profesor lo monta en
 #   /home/usuario/wlp/usr/servers/galeno/dropins/galeno.war
-# Contiene Java, Open Liberty (Jakarta EE 11) y las dependencias "provided" del pom.xml.
+# Contiene Java, Open Liberty (Jakarta EE 11 Web Profile) y las dependencias "provided" del pom.xml.
 # entrypoint.sh copia el WAR montado a apps/ y le agrega PrimeFaces (ver ese archivo).
 
 FROM debian:stable
@@ -30,7 +30,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-21
 USER usuario
 WORKDIR /home/usuario
 
-# Open Liberty (kernel) + feature jakartaee-11.0, en /home/usuario/wlp, servidor "galeno".
+# Open Liberty (kernel) + feature webProfile-11.0 (la que usa server.xml), en /home/usuario/wlp, servidor "galeno".
 RUN set -eu; \
     if [ "$OL_VERSION" = "latest" ]; then \
       OL_VERSION=$(curl -fsSL "$MVN/io/openliberty/openliberty-kernel/maven-metadata.xml" \
@@ -39,7 +39,7 @@ RUN set -eu; \
     echo "Open Liberty $OL_VERSION"; \
     curl -fsSL -o ol.zip "$MVN/io/openliberty/openliberty-kernel/$OL_VERSION/openliberty-kernel-$OL_VERSION.zip"; \
     unzip -q ol.zip; rm ol.zip; \
-    wlp/bin/featureUtility installFeature jakartaee-11.0 --acceptLicense; \
+    wlp/bin/featureUtility installFeature webProfile-11.0 --acceptLicense; \
     wlp/bin/server create galeno; \
     mkdir -p wlp/usr/servers/galeno/dropins \
              wlp/usr/shared/resources/postgresql \
