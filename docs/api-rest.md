@@ -52,7 +52,7 @@ Detalle completo en `docs/autenticacion.md`. Resumen del contrato (HU1, HU2):
 | Operación | Sesión | Cuerpo / respuesta |
 | --- | --- | --- |
 | `GET /api/publico/tipos-documento` | No | 200 con `[{idTipoDocumento, nombre, indicaciones, expresionRegular}]`, solo tipos activos, ordenados por nombre. `indicaciones` y `expresionRegular` pueden ser `null`. |
-| `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"01000001-1"}` → 204 y cookie nueva. |
+| `POST /api/auth/login` | No (exige `Origin` permitido) | `{"idTipoDocumento":"UUID","numeroDocumento":"01000001-1"}` → 204 y cookie con id de sesión nuevo; reemplaza la identidad, el CSRF, el rol activo y la consulta de una sesión previa. |
 | `GET /api/auth/me` | Sí | Identidad basada en persona, rol activo o `null`, y `csrfToken`. |
 | `POST /api/auth/logout` | Sí + `X-CSRF-Token` | 204. |
 

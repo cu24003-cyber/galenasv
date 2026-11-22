@@ -43,11 +43,27 @@ class AuthResourceTest {
         UUID dui = UUID.randomUUID(); var contexto = contexto("ADMINISTRACION");
         when(servicio.iniciar(dui, "00000000-1")).thenReturn(contexto);
         when(request.getRemoteAddr()).thenReturn("192.0.2.10");
-        when(request.getSession(false)).thenReturn(http); when(request.getSession(true)).thenReturn(http);
+        when(request.getSession(true)).thenReturn(http);
         assertEquals(204, resource.login(credenciales(dui, "00000000-1")).getStatus());
-        verify(intentos).registrar("192.0.2.10"); verify(http).invalidate(); verify(request).changeSessionId();
+        verify(intentos).registrar("192.0.2.10"); verify(request).changeSessionId();
+        // Invalidar dejaba los beans @SessionScoped de esta petición en la sesión destruida: la nueva quedaba sin login.
+        verify(http, never()).invalidate();
         assertTrue(acceso.vigente()); assertEquals(idPersona, acceso.getIdPersona());
         assertSame(contexto.asignacion(), atencion.getRolActivo()); assertNotNull(acceso.getCsrfToken());
+    }
+    @Test void reloginSobreUnaSesionConDatosPreviosLimpiaElEstadoAnterior() {
+        UUID dui = UUID.randomUUID();
+        var anterior = contexto("DOCTOR");
+        acceso.autenticar(UUID.randomUUID()); atencion.cambiarRol(anterior.asignacion());
+        atencion.setConsulta(UUID.randomUUID());
+        String csrfAnterior = acceso.getCsrfToken();
+        var nuevo = contexto("ENFERMERA");
+        when(servicio.iniciar(dui, "00000000-2")).thenReturn(nuevo);
+        when(request.getSession(true)).thenReturn(http);
+        assertEquals(204, resource.login(credenciales(dui, "00000000-2")).getStatus());
+        verify(request).changeSessionId(); verify(http, never()).invalidate();
+        assertEquals(idPersona, acceso.getIdPersona()); assertNotEquals(csrfAnterior, acceso.getCsrfToken());
+        assertSame(nuevo.asignacion(), atencion.getRolActivo()); assertNull(atencion.getConsulta());
     }
     @Test void documentoRechazadoCuentaElIntentoPeroNoCreaNiReemplazaSesion() {
         when(request.getRemoteAddr()).thenReturn("192.0.2.10");

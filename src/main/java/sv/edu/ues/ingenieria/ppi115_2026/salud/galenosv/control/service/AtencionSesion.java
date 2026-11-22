@@ -15,6 +15,12 @@ public class AtencionSesion implements Serializable {
 
     public PersonaRol getRolActivo() { return rolActivo; }
 
+    /** Olvida el rol activo y la consulta seleccionada; se usa al iniciar sesión otra persona. */
+    public void limpiar() {
+        consulta = null;
+        rolActivo = null;
+    }
+
     public void cambiarRol(PersonaRol rol) {
         if (rol == null || rol.getIdPersonaRol() == null || rol.getIdPersona() == null
                 || rol.getIdClinica() == null || rol.getIdRol() == null

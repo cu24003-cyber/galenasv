@@ -38,7 +38,7 @@ y ruta del contexto. En producción se requiere HTTPS y `cookieSecure=true`.
 | Operación | Entrada | Resultado |
 | --- | --- | --- |
 | `GET /api/publico/tipos-documento` | Nada (sin cookie ni CSRF) | Tipos activos: `idTipoDocumento`, `nombre`, `indicaciones`, `expresionRegular`. |
-| `POST /api/auth/login` | JSON con `idTipoDocumento` (UUID) y `numeroDocumento` | 204 y cookie de sesión nueva. |
+| `POST /api/auth/login` | JSON con `idTipoDocumento` (UUID) y `numeroDocumento` | 204 y cookie de sesión con id nuevo (`changeSessionId`): se reemplazan la identidad y el token CSRF, y se olvidan el rol activo y la consulta anteriores. La sesión previa no se invalida, porque los datos de login de esa misma petición quedarían en la sesión destruida. |
 | `GET /api/auth/me` | Cookie de sesión | Identidad de la persona, rol activo o `null`, y token CSRF. |
 | `POST /api/auth/logout` | Cookie y cabecera `X-CSRF-Token` | 204; invalida toda la sesión. |
 | `GET /api/atencion/asignaciones` | Cookie de sesión | Asignaciones de empleado activas de la persona en todas sus clínicas; `activa` marca el rol activo. Sin sesión: 401 `auth.sesion`. |

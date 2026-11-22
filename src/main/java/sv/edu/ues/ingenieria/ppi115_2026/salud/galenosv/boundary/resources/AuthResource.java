@@ -33,10 +33,13 @@ public class AuthResource {
     public Response login(@Valid @NotNull Credenciales datos) {
         intentos.registrar(request.getRemoteAddr());
         var contexto = servicio.iniciar(datos.idTipoDocumento, datos.numeroDocumento);
-        var anterior = request.getSession(false);
-        if (anterior != null) anterior.invalidate();
+        // No se invalida la sesión anterior: los beans @SessionScoped de esta misma petición seguirían
+        // ligados a la sesión destruida y la nueva quedaría sin login (204 y luego 401 en /me si antes
+        // se abrió una pantalla JSF o hubo otro login). Cambiar el id evita la fijación de sesión, y el
+        // estado anterior se reemplaza o limpia de forma explícita.
         request.getSession(true);
         request.changeSessionId();
+        atencion.limpiar();
         acceso.autenticar(contexto.persona().getIdPersona());
         if (contexto.asignacion() != null) atencion.cambiarRol(contexto.asignacion());
         return Response.noContent().build();
