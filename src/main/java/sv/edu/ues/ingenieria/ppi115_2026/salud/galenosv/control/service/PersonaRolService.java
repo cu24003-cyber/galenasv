@@ -23,12 +23,31 @@ public class PersonaRolService extends AbstractService<PersonaRol, UUID> {
         return entidad.getIdPersonaRol();
     }
 
+    /** Sin UNIQUE en la base original: no se repite persona + rol + clínica. */
+    private void validarUnica(PersonaRol entidad, UUID excluir) {
+        if (entidad == null || entidad.getIdPersona() == null || entidad.getIdPersona().getIdPersona() == null
+                || entidad.getIdClinica() == null || entidad.getIdClinica().getIdClinica() == null) return;
+        UUID rol = entidad.getIdRol() == null ? null : entidad.getIdRol().getIdRol();
+        if (personaRolRepository.existeAsignacion(entidad.getIdPersona().getIdPersona(), rol,
+                entidad.getIdClinica().getIdClinica(), excluir)) {
+            throw ServiceException.localizada("personaRol.duplicada",
+                    "La persona ya tiene ese rol en esa clínica.");
+        }
+    }
+
     @Override
     public void crear(PersonaRol entidad) {
+        validarUnica(entidad, null);
         if (entidad.getIdPersonaRol() == null) {
             entidad.setIdPersonaRol(UUID.randomUUID());
         }
         super.crear(entidad);
+    }
+
+    @Override
+    public void actualizar(PersonaRol entidad) {
+        validarUnica(entidad, entidad == null ? null : entidad.getIdPersonaRol());
+        super.actualizar(entidad);
     }
 
 }

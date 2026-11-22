@@ -40,6 +40,12 @@ public class DocumentoService extends AbstractService<Documento, UUID> {
         if (tipo == null) {
             throw ServiceException.localizada("registro.seleccionInvalida", "Seleccione un tipo de documento válido.");
         }
+        String valor = entidad.getValor() == null ? "" : entidad.getValor().strip();
+        UUID dueno = entidad.getIdPersona() == null ? null : entidad.getIdPersona().getIdPersona();
+        if (!valor.isEmpty() && documentoRepository.existeValorEnOtraPersona(tipo.getIdTipoDocumento(), valor, dueno)) {
+            throw ServiceException.localizada("documento.valorDuplicado",
+                    "Ese documento ya está registrado para otra persona.");
+        }
         String nombre = tipo.getNombre() == null ? "" : Normalizer.normalize(tipo.getNombre().trim(), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
         if (!nombre.equals("dui") && !nombre.equals("documento unico de identidad")) return;

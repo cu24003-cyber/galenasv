@@ -35,6 +35,7 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
             "procedimiento.noExiste");
     private static final Set<String> CONFLICT = Set.of("error.duplicado", "error.relacionado",
             "tipoDocumento.enUso", "tipoMedioContacto.enUso", "documento.duiUnico", "rol.nombreDuplicado",
+            "documento.valorDuplicado", "personaRol.duplicada",
             "persona.eliminar.historial", "procedimiento.examenYaAsociado", "consulta.pacienteEnCurso",
             "consulta.yaCerrada", "consulta.pasoYaCompletado", "consulta.ordenPasoCompletado",
             "consulta.examenPasoCompletado", "consulta.cerrarAntesCrear", "consulta.completeAntesCerrar",

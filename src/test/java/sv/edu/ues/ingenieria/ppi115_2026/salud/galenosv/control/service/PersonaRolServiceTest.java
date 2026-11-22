@@ -100,4 +100,40 @@ class PersonaRolServiceTest {
 
         assertThrows(ServiceException.class, () -> personaRolService.eliminar(id));
     }
+
+    private PersonaRol asignacion(UUID id, boolean conRol) {
+        PersonaRol e = new PersonaRol(); e.setIdPersonaRol(id);
+        e.setIdPersona(new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona(UUID.randomUUID()));
+        if (conRol) e.setIdRol(new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol(UUID.randomUUID()));
+        e.setIdClinica(new sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Clinica(UUID.randomUUID()));
+        return e;
+    }
+
+    @Test
+    void crearRechazaPersonaRolYClinicaDuplicados() {
+        PersonaRol e = asignacion(null, true);
+        when(personaRolRepository.existeAsignacion(e.getIdPersona().getIdPersona(), e.getIdRol().getIdRol(),
+                e.getIdClinica().getIdClinica(), null)).thenReturn(true);
+        assertEquals("personaRol.duplicada", assertThrows(ServiceException.class,
+                () -> personaRolService.crear(e)).getMessageKey());
+        verify(personaRolRepository, never()).create(any());
+    }
+
+    @Test
+    void actualizarRechazaConvertirseEnOtraAsignacionExistente() {
+        PersonaRol e = asignacion(UUID.randomUUID(), false);
+        when(personaRolRepository.existeAsignacion(e.getIdPersona().getIdPersona(), null,
+                e.getIdClinica().getIdClinica(), e.getIdPersonaRol())).thenReturn(true);
+        assertThrows(ServiceException.class, () -> personaRolService.actualizar(e));
+        verify(personaRolRepository, never()).update(any());
+    }
+
+    @Test
+    void crearPermiteAsignacionNueva() {
+        PersonaRol e = asignacion(null, true);
+        personaRolService.crear(e);
+        verify(personaRolRepository).existeAsignacion(e.getIdPersona().getIdPersona(), e.getIdRol().getIdRol(),
+                e.getIdClinica().getIdClinica(), null);
+        verify(personaRolRepository).create(e);
+    }
 }

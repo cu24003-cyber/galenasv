@@ -48,4 +48,14 @@ public class DocumentoRepository extends AbstractRepository<Documento, UUID> {
         if (excluir != null) consulta.setParameter("excluir", excluir);
         return consulta.getSingleResult() > 0;
     }
+
+    /** Sin UNIQUE en la base original: tipo + valor (sin espacios exteriores) solo puede tener un dueño. */
+    public boolean existeValorEnOtraPersona(UUID tipo, String valor, UUID persona) {
+        String jpql = "SELECT COUNT(d) FROM Documento d WHERE d.idTipoDocumento.idTipoDocumento=:tipo"
+                + " AND TRIM(d.valor)=:valor"
+                + (persona == null ? "" : " AND (d.idPersona IS NULL OR d.idPersona.idPersona<>:persona)");
+        var consulta = em.createQuery(jpql, Long.class).setParameter("tipo", tipo).setParameter("valor", valor);
+        if (persona != null) consulta.setParameter("persona", persona);
+        return consulta.getSingleResult() > 0;
+    }
 }

@@ -22,4 +22,16 @@ public class PersonaRolRepository extends AbstractRepository<PersonaRol, UUID> {
                 sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Persona.class)
                 .setParameter("rol", "paciente").getResultList();
     }
+
+    /** Persona + rol (o sin rol) + clínica identifican una asignación; excluir es la que se edita. */
+    public boolean existeAsignacion(UUID persona, UUID rol, UUID clinica, UUID excluir) {
+        String jpql = "SELECT COUNT(pr) FROM PersonaRol pr WHERE pr.idPersona.idPersona=:persona"
+                + " AND pr.idClinica.idClinica=:clinica"
+                + (rol == null ? " AND pr.idRol IS NULL" : " AND pr.idRol.idRol=:rol")
+                + (excluir == null ? "" : " AND pr.idPersonaRol<>:excluir");
+        var consulta = em.createQuery(jpql, Long.class).setParameter("persona", persona).setParameter("clinica", clinica);
+        if (rol != null) consulta.setParameter("rol", rol);
+        if (excluir != null) consulta.setParameter("excluir", excluir);
+        return consulta.getSingleResult() > 0;
+    }
 }

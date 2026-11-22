@@ -214,4 +214,41 @@ class DocumentoServiceTest {
 
         assertThrows(ServiceException.class, () -> documentoService.eliminar(id));
     }
+
+    private Documento pasaporte(String valor) {
+        TipoDocumento tipo = new TipoDocumento(UUID.randomUUID()); tipo.setNombre("Pasaporte");
+        when(tipoDocumentoRepository.find(tipo.getIdTipoDocumento())).thenReturn(tipo);
+        Documento documento = new Documento(); documento.setIdTipoDocumento(tipo);
+        documento.setIdPersona(new Persona(UUID.randomUUID())); documento.setValor(valor);
+        return documento;
+    }
+
+    @Test
+    void rechazaTipoYValorQueYaPertenecenAOtraPersona() {
+        Documento documento = pasaporte(" A123 ");
+        when(documentoRepository.existeValorEnOtraPersona(documento.getIdTipoDocumento().getIdTipoDocumento(),
+                "A123", documento.getIdPersona().getIdPersona())).thenReturn(true);
+        assertEquals("documento.valorDuplicado", assertThrows(ServiceException.class,
+                () -> documentoService.crear(documento)).getMessageKey());
+        verify(documentoRepository, never()).create(any());
+    }
+
+    @Test
+    void rechazaAlActualizarUnDuiConElNumeroDeOtraPersona() {
+        Documento documento = pasaporte("01234567-8"); documento.setIdDocumento(UUID.randomUUID());
+        documento.getIdTipoDocumento().setNombre("DUI");
+        when(documentoRepository.existeValorEnOtraPersona(documento.getIdTipoDocumento().getIdTipoDocumento(),
+                "01234567-8", documento.getIdPersona().getIdPersona())).thenReturn(true);
+        assertThrows(ServiceException.class, () -> documentoService.actualizar(documento));
+        verify(documentoRepository, never()).update(any());
+    }
+
+    @Test
+    void permiteElMismoValorSiNoPerteneceAOtraPersona() {
+        Documento documento = pasaporte("A123");
+        documentoService.crear(documento);
+        verify(documentoRepository).existeValorEnOtraPersona(documento.getIdTipoDocumento().getIdTipoDocumento(),
+                "A123", documento.getIdPersona().getIdPersona());
+        verify(documentoRepository).create(documento);
+    }
 }
