@@ -519,6 +519,17 @@ class AtencionServiceTest {
         servicio.asignarResponsable(id, paso.getIdConsultaProcedimientoPaso(), laboratorio.getIdPersonaRol());
         assertSame(laboratorio, paso.getIdPersonaRol());
     }
+    @Test void noAsignaComoResponsableAUnaPersonaDeLaClinicaConOtroRol() {
+        Consulta c = abierta(); Clinica clinica = new Clinica(UUID.randomUUID()); c.getIdPersonaRol().setIdClinica(clinica); medico.setIdClinica(clinica);
+        PersonaRol paciente = responsable(clinica, "Paciente");
+        ProcedimientoPaso definicion = new ProcedimientoPaso(UUID.randomUUID()); definicion.setNombre("Evaluacion"); definicion.setIdRol(medico.getIdRol());
+        ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);
+        ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdConsultaProcedimiento(cp); paso.setIdProcedimientoPaso(definicion);
+        when(em.find(ConsultaProcedimientoPaso.class, paso.getIdConsultaProcedimientoPaso())).thenReturn(paso);
+        assertEquals("consulta.rolInvalido", assertThrows(ServiceException.class,
+                () -> servicio.asignarResponsable(id, paso.getIdConsultaProcedimientoPaso(), paciente.getIdPersonaRol())).getMessageKey());
+        assertNull(paso.getIdPersonaRol());
+    }
     @Test void noReasignaPasosCompletados() {
         Consulta c = abierta();
         ConsultaProcedimiento cp = new ConsultaProcedimiento(UUID.randomUUID()); cp.setIdConsulta(c);

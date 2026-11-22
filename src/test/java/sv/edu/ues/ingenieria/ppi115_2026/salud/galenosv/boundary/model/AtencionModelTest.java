@@ -11,6 +11,8 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.*;
+import java.util.List;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Consulta;
 
@@ -80,5 +82,32 @@ class AtencionModelTest {
             model.agregar(); assertTrue(model.isProcedimientoVisible()); assertEquals(procedimiento.toString(), model.getProcedimientoId());
             verify(faces).validationFailed();
         }
+    }
+
+    private static PersonaRol asignacion(Clinica clinica, Rol rol, String nombre) {
+        PersonaRol pr = new PersonaRol(UUID.randomUUID()); Persona persona = new Persona(UUID.randomUUID()); persona.setNombres(nombre);
+        pr.setIdPersona(persona); pr.setIdRol(rol); pr.setIdClinica(clinica); return pr;
+    }
+    private static Rol rol(String nombre) { Rol r = new Rol(UUID.randomUUID()); r.setNombre(nombre); r.setActivo(true); return r; }
+
+    @Test void selectorDeResponsableSoloOfrecePersonasConElRolDelPaso() {
+        Clinica clinica = new Clinica(UUID.randomUUID());
+        Rol atencion = rol("Atencion al publico"), enfermera = rol("Enfermera"), doctor = rol("Doctor"), paciente = rol("Paciente");
+        PersonaRol carlos = asignacion(clinica, atencion, "Carlos"), ana = asignacion(clinica, enfermera, "Ana"),
+                jose = asignacion(clinica, doctor, "Jose"), maria = asignacion(clinica, paciente, "Maria");
+        consulta.setIdPersonaRol(maria);
+        when(servicio.responsables(clinica.getIdClinica())).thenReturn(List.of(carlos, ana, jose, maria));
+        model.iniciar();
+
+        ProcedimientoPaso signos = new ProcedimientoPaso(UUID.randomUUID()); signos.setIdRol(new Rol(enfermera.getIdRol()));
+        ConsultaProcedimientoPaso paso = new ConsultaProcedimientoPaso(UUID.randomUUID()); paso.setIdProcedimientoPaso(signos);
+        assertEquals(List.of(ana), model.responsablesDe(paso));
+
+        ProcedimientoPaso llegada = new ProcedimientoPaso(UUID.randomUUID()); llegada.setIdRol(atencion);
+        paso.setIdProcedimientoPaso(llegada);
+        assertEquals(List.of(carlos), model.responsablesDe(paso));
+
+        paso.setIdProcedimientoPaso(null);
+        assertTrue(model.responsablesDe(paso).isEmpty());
     }
 }

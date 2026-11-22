@@ -52,7 +52,7 @@
     <p:selectOneMenu id="responsable" value="#{atencionModel.responsableIds[p.idConsultaProcedimientoPaso]}"
                      rendered="#{empty p.fechaFin}" filter="true" filterMatchMode="contains">
         <f:selectItem itemLabel="#{msg['ui.seleccioneResponsable']}" itemValue="" noSelectionOption="true" />
-        <f:selectItems value="#{atencionModel.responsables}" var="r" itemValue="#{r.idPersonaRol.toString()}"
+        <f:selectItems value="#{atencionModel.responsablesDe(p)}" var="r" itemValue="#{r.idPersonaRol.toString()}"
             itemLabel="#{r.idPersona.nombres} #{r.idPersona.apellidos} / #{r.idRol.nombre}" />
         <p:ajax listener="#{atencionModel.asignar(p)}" process="@this" update=":mensajes" />
     </p:selectOneMenu>

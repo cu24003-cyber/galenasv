@@ -67,6 +67,16 @@ public class AtencionModel implements Serializable {
         return sesion.getRolActivo().getIdPersonaRol();
     }
     public List<PersonaRol> getResponsables() { return responsables; }
+    /**
+     * Candidatos para el responsable de un paso: personas de la clínica de la consulta con el rol
+     * responsable del paso (procedimiento_paso.id_rol). AtencionService.asignarResponsable valida lo mismo.
+     */
+    public List<PersonaRol> responsablesDe(ConsultaProcedimientoPaso paso) {
+        UUID rol = paso == null || paso.getIdProcedimientoPaso() == null || paso.getIdProcedimientoPaso().getIdRol() == null
+                ? null : paso.getIdProcedimientoPaso().getIdRol().getIdRol();
+        if (rol == null) return List.of();
+        return responsables.stream().filter(r -> r.getIdRol() != null && rol.equals(r.getIdRol().getIdRol())).toList();
+    }
     public Map<UUID, String> getResponsableIds() { return responsableIds; }
     public void asignar(ConsultaProcedimientoPaso paso) {
         ejecutar(() -> {
