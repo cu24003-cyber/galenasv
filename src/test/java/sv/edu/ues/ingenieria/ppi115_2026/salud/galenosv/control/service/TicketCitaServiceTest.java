@@ -25,13 +25,14 @@ class TicketCitaServiceTest {
 
     @Test void elTicketContieneExactamenteElResumenDeLaCita() throws Exception {
         var cita = new CitaPublica(id, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica de demostración",
-                List.of("Consulta general de demostración", "Curación"));
+                "Paciente de Demostración", List.of("Consulta general de demostración", "Curación"));
         byte[] pdf = servicio.generar(cita);
         assertEquals("%PDF-", new String(pdf, 0, 5, StandardCharsets.US_ASCII));
         assertEquals(List.of(
                 "GalenoSV",
                 "Ticket de cita",
                 "Código de cita: de110009-0000-4000-8000-000000000002",
+                "Paciente: Paciente de Demostración",
                 "Fecha y hora: 12/11/2026 08:00 (hora de El Salvador)",
                 "Clínica: Clínica de demostración",
                 "Procedimientos:",
@@ -41,8 +42,16 @@ class TicketCitaServiceTest {
     }
 
     @Test void sinProcedimientosLoIndica() throws Exception {
-        var cita = new CitaPublica(id, OffsetDateTime.parse("2026-11-19T16:00Z"), "Clínica Norte", List.of());
+        var cita = new CitaPublica(id, OffsetDateTime.parse("2026-11-19T16:00Z"), "Clínica Norte", "Paciente Norte", List.of());
         assertTrue(lineas(servicio.generar(cita)).contains("Sin procedimientos registrados"));
+    }
+
+    @Test void sinNombreDelPacienteNoAgregaLaLineaPaciente() throws Exception {
+        var cita = new CitaPublica(id, OffsetDateTime.parse("2026-11-19T16:00Z"), "Clínica Norte", null, List.of("Control"));
+        var lineas = lineas(servicio.generar(cita));
+        assertTrue(lineas.stream().noneMatch(l -> l.startsWith("Paciente")), lineas.toString());
+        assertEquals("Código de cita: de110009-0000-4000-8000-000000000002", lineas.get(2));
+        assertTrue(lineas.get(3).startsWith("Fecha y hora: "));
     }
 
     @Test void nombreDeArchivoUsaElInicioDelCodigo() {

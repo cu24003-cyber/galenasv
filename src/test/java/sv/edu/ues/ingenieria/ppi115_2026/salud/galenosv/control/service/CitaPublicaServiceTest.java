@@ -45,20 +45,36 @@ class CitaPublicaServiceTest {
 
     @Test void agrupaProcedimientosSinRepetirYEnOrden() {
         when(repositorio.citas(any(), any(), any(), any(), any())).thenReturn(List.of(
-                new Object[]{c1, f1, "Clínica Uno"}, new Object[]{c2, f2, "Clínica Uno"}));
+                new Object[]{c1, f1, "Clínica Uno", " Ana ", "Prueba Uno"}, new Object[]{c2, f2, "Clínica Uno", "Ana", "Prueba Uno"}));
         when(repositorio.procedimientos(List.of(c1, c2))).thenReturn(List.of(
                 new Object[]{c1, "Consulta general"}, new Object[]{c1, "Curación"}, new Object[]{c1, "Consulta general"},
                 new Object[]{c2, "Consulta general"}));
         var citas = servicio.citas(tipo, "x", clinica, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30));
         assertEquals(2, citas.size());
-        assertEquals(new CitaPublicaService.CitaPublica(c1, f1, "Clínica Uno", List.of("Consulta general", "Curación")), citas.get(0));
+        assertEquals(new CitaPublicaService.CitaPublica(c1, f1, "Clínica Uno", "Ana Prueba Uno", List.of("Consulta general", "Curación")), citas.get(0));
         assertEquals(List.of("Consulta general"), citas.get(1).procedimientos());
     }
 
     @Test void citaSinProcedimientosTieneListaVacia() {
-        when(repositorio.cita(tipo, "x", c1)).thenReturn(List.<Object[]>of(new Object[]{c1, f1, "Clínica Uno"}));
+        when(repositorio.cita(tipo, "x", c1)).thenReturn(List.<Object[]>of(new Object[]{c1, f1, "Clínica Uno", "Ana", null}));
         when(repositorio.procedimientos(List.of(c1))).thenReturn(List.of());
-        assertEquals(List.of(), servicio.cita(tipo, "x", c1).orElseThrow().procedimientos());
+        var cita = servicio.cita(tipo, "x", c1).orElseThrow();
+        assertEquals(List.of(), cita.procedimientos());
+        assertEquals("Ana", cita.nombrePaciente(), "sin apellidos queda solo el nombre");
+    }
+
+    @Test void nombreCompletoUneNombresYApellidosOEsNullSiFaltanLosDos() {
+        assertEquals("Ana Prueba", CitaPublicaService.nombreCompleto("  Ana ", " Prueba  "));
+        assertEquals("Prueba", CitaPublicaService.nombreCompleto(null, "Prueba"));
+        assertEquals("Ana", CitaPublicaService.nombreCompleto("Ana", "   "));
+        assertNull(CitaPublicaService.nombreCompleto(null, null));
+        assertNull(CitaPublicaService.nombreCompleto(" ", ""));
+    }
+
+    @Test void citaSinNombresNiApellidosTieneNombrePacienteNull() {
+        when(repositorio.cita(tipo, "x", c1)).thenReturn(List.<Object[]>of(new Object[]{c1, f1, "Clínica Uno", null, " "}));
+        when(repositorio.procedimientos(List.of(c1))).thenReturn(List.of());
+        assertNull(servicio.cita(tipo, "x", c1).orElseThrow().nombrePaciente());
     }
 
     @Test void citaAjenaOInexistenteEsVacio() {

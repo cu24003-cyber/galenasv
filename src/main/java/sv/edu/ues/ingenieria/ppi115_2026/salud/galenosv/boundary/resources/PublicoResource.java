@@ -24,7 +24,8 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.TipoDocumento;
 
 /**
  * Rutas sin sesión. AutenticacionFilter y PermisosApiFilter excluyen /api/publico/.
- * Nunca devuelven notas, valores clínicos ni resultados. Las búsquedas por documento son POST
+ * Nunca devuelven notas, valores clínicos ni resultados. Las citas incluyen el nombre del paciente
+ * (decisión del equipo: lo ve quien conoce el número de documento). Las búsquedas por documento son POST
  * para que el número nunca viaje en la URL.
  */
 @Path("publico")
@@ -105,12 +106,13 @@ public class PublicoResource {
     static JsonObjectBuilder cita(CitaPublicaService.CitaPublica c) {
         var procedimientos = Json.createArrayBuilder();
         c.procedimientos().forEach(procedimientos::add);
-        return Json.createObjectBuilder()
+        var json = Json.createObjectBuilder()
                 .add("idConsulta", c.idConsulta().toString())
                 .add("fechaInicio", c.fechaInicio().atZoneSameInstant(CitaPublicaService.ZONA).toOffsetDateTime()
                         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                .add("nombreClinica", c.nombreClinica())
-                .add("procedimientos", procedimientos);
+                .add("nombreClinica", c.nombreClinica());
+        opcional(json, "nombrePaciente", c.nombrePaciente());
+        return json.add("procedimientos", procedimientos);
     }
 
     /** Cuenta el intento antes de validar o consultar: los cuerpos inválidos también consumen el límite. */

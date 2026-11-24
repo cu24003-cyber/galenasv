@@ -15,8 +15,9 @@ import jakarta.ejb.Stateless;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.control.service.CitaPublicaService.CitaPublica;
 
 /**
- * HU1: ticket PDF con el mismo resumen que la card de la cita (OpenPDF 2.4.0). Recibe solo
- * CitaPublica, que no tiene nombre, documento, notas, valores, responsables ni resultados.
+ * HU1: ticket PDF con el mismo resumen que la card de la cita (OpenPDF 2.4.0): código, nombre del
+ * paciente (si lo tiene), fecha y hora, clínica y procedimientos. Recibe solo CitaPublica, que no
+ * tiene documento, notas, valores, responsables ni resultados.
  */
 @Stateless
 public class TicketCitaService {
@@ -38,6 +39,7 @@ public class TicketCitaService {
             documento.add(centrado("GalenoSV", titulo));
             documento.add(centrado("Ticket de cita", subtitulo));
             documento.add(linea("Código de cita: " + cita.idConsulta(), texto, 10));
+            if (cita.nombrePaciente() != null) documento.add(linea("Paciente: " + cita.nombrePaciente(), texto, 4));
             documento.add(linea("Fecha y hora: " + cita.fechaInicio().atZoneSameInstant(CitaPublicaService.ZONA).format(FECHA)
                     + " (hora de El Salvador)", texto, 4));
             documento.add(linea("Clínica: " + cita.nombreClinica(), texto, 4));

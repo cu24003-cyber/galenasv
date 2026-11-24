@@ -217,13 +217,14 @@ Las tres rutas son `POST` con cuerpo JSON: el número de documento nunca viaja e
 | Operación | Cuerpo | Respuesta |
 | --- | --- | --- |
 | `POST /api/publico/clinicas` | `{idTipoDocumento, numeroDocumento}` | `200 [{idClinica, nombre}]`: clínicas activas donde el dueño del documento es PACIENTE, ordenadas por nombre. |
-| `POST /api/publico/citas` | `{idTipoDocumento, numeroDocumento, idClinica, desde, hasta}` | `200 [{idConsulta, fechaInicio, nombreClinica, procedimientos: [String]}]` ordenado por `fechaInicio`. |
+| `POST /api/publico/citas` | `{idTipoDocumento, numeroDocumento, idClinica, desde, hasta}` | `200 [{idConsulta, fechaInicio, nombreClinica, nombrePaciente, procedimientos: [String]}]` ordenado por `fechaInicio`. |
 | `POST /api/publico/citas/{idConsulta}/ticket` | `{idTipoDocumento, numeroDocumento}` | `200 application/pdf` con `Content-Disposition: attachment; filename="ticket-cita-<8 primeros>.pdf"`. |
 
 - `desde` y `hasta` son fechas `yyyy-MM-dd` en hora de El Salvador; `hasta` se incluye completo.
 - Rango: se rechaza con 400 `citas.rango` si `hasta < desde` o si `ChronoUnit.DAYS.between(desde, hasta) > 366`, es decir, se compara la **diferencia** entre fechas, no los días contados con ambos extremos. `hasta = desde + 366 días` se acepta (367 días calendario, contando ambos extremos); `desde + 367 días` da 400. Ejemplo: `2026-01-01`→`2027-01-02` se acepta; `2026-01-01`→`2027-01-03` no. `desde = hasta` es válido (un día). Este límite no es el del dashboard, que cuenta ambos extremos.
 - `fechaInicio` va en ISO-8601 con offset de El Salvador, p. ej. `2026-11-12T08:00:00-06:00`.
-- Nunca se devuelven `observaciones`, `referenciaExterna`, `valor`, estados, responsables, órdenes ni resultados, ni tampoco nombre o documento del paciente. El PDF contiene lo mismo que la card: código, fecha y hora, clínica y procedimientos.
+- `nombrePaciente` es el nombre completo del dueño del documento (`nombres` y `apellidos` de `persona`, unidos por un espacio y sin espacios sobrantes); es `null` si la persona no tiene ninguno de los dos. Exponerlo es una decisión del equipo: lo ve quien conozca el número de documento.
+- Nunca se devuelven `observaciones`, `referenciaExterna`, `valor`, estados, responsables, órdenes ni resultados, ni tampoco el documento del paciente. El PDF contiene lo mismo que la card: código, nombre del paciente (la línea `Paciente:` se omite si `nombrePaciente` es `null`), fecha y hora, clínica y procedimientos.
 - `numeroDocumento`: obligatorio, hasta 50 caracteres, sin saltos de línea. Se compara exacto después de recortar espacios.
 
 Errores de validación del cuerpo (las tres rutas `POST`):
@@ -287,7 +288,7 @@ Content-Type: application/json
 
 ```json
 [{"idConsulta":"de120010-0000-4000-8000-000000000003","fechaInicio":"2026-11-13T08:00:00-06:00",
-  "nombreClinica":"Clínica Santa Ana","procedimientos":["Consulta general"]}]
+  "nombreClinica":"Clínica Santa Ana","nombrePaciente":"Ana Martínez","procedimientos":["Consulta general"]}]
 ```
 
 ## Filtros y colecciones relacionadas

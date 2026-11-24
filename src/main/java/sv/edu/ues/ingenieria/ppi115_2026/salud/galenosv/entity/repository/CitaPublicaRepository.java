@@ -10,7 +10,7 @@ import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.Rol;
 
 /**
  * HU1: consultas sin sesión. Devuelven proyecciones (nunca entidades) con solo los campos
- * públicos, y siempre filtran por el documento en la misma consulta: no hay un paso previo
+ * públicos (las citas incluyen el nombre del paciente, decisión del equipo), y siempre filtran por el documento en la misma consulta: no hay un paso previo
  * que distinga "documento inexistente" de "documento sin datos".
  */
 @Stateless
@@ -34,7 +34,10 @@ public class CitaPublicaRepository {
                 .getResultList();
     }
 
-    /** [idConsulta, fechaInicio, nombreClinica] de las consultas del documento en esa clínica, desde ≤ fecha < hasta. */
+    /**
+     * [idConsulta, fechaInicio, nombreClinica, nombres, apellidos] de las consultas del documento en esa
+     * clínica, desde ≤ fecha < hasta. Nombres y apellidos son los de la persona dueña del documento.
+     */
     public List<Object[]> citas(UUID tipo, String numero, UUID clinica, OffsetDateTime desde, OffsetDateTime hasta) {
         if (invalido(tipo, numero) || clinica == null || desde == null || hasta == null) return List.of();
         Rol paciente = paciente(); if (paciente == null) return List.of();
@@ -45,7 +48,7 @@ public class CitaPublicaRepository {
                 .getResultList();
     }
 
-    /** La consulta indicada, solo si pertenece al documento (para el ticket). */
+    /** La consulta indicada, solo si pertenece al documento (para el ticket); mismas columnas que citas(). */
     public List<Object[]> cita(UUID tipo, String numero, UUID idConsulta) {
         if (invalido(tipo, numero) || idConsulta == null) return List.of();
         Rol paciente = paciente(); if (paciente == null) return List.of();
@@ -63,7 +66,7 @@ public class CitaPublicaRepository {
                 .getResultList();
     }
 
-    private static final String BASE_CITA = "SELECT con.idConsulta, con.fechaInicio, c.nombre FROM Consulta con "
+    private static final String BASE_CITA = "SELECT con.idConsulta, con.fechaInicio, c.nombre, persona.nombres, persona.apellidos FROM Consulta con "
             + "JOIN con.idPersonaRol a JOIN a.idClinica c JOIN a.idRol r JOIN a.idPersona persona WHERE " + PACIENTE_CON_DOCUMENTO;
 
     /** Sin rol Paciente no hay citas: lista vacía, sin revelar la configuración (HU1). */

@@ -67,11 +67,11 @@ class CitaPublicaRepositoryTest {
         assertFalse(jpql.getValue().contains("00000000-3"));
     }
 
-    @Test void citasSoloSeleccionaIdFechaYClinica() {
+    @Test void citasSoloSeleccionaIdFechaClinicaYNombreDelPaciente() {
         var jpql = preparar();
         repositorio.citas(tipo, "00000000-3", clinica, desde, hasta);
         filtraDocumentoYPaciente(jpql.getValue());
-        assertEquals("SELECT con.idConsulta, con.fechaInicio, c.nombre", select(jpql.getValue()));
+        assertEquals("SELECT con.idConsulta, con.fechaInicio, c.nombre, persona.nombres, persona.apellidos", select(jpql.getValue()));
         assertTrue(jpql.getValue().contains("c.idClinica=:clinica"));
         assertTrue(jpql.getValue().contains("con.fechaInicio>=:desde AND con.fechaInicio<:hasta"));
         assertTrue(jpql.getValue().endsWith("ORDER BY con.fechaInicio, con.idConsulta"));
@@ -84,6 +84,7 @@ class CitaPublicaRepositoryTest {
         assertTrue(repositorio.cita(tipo, "00000000-3", id).isEmpty());
         filtraDocumentoYPaciente(jpql.getValue());
         assertTrue(jpql.getValue().contains("con.idConsulta=:consulta"));
+        assertEquals("SELECT con.idConsulta, con.fechaInicio, c.nombre, persona.nombres, persona.apellidos", select(jpql.getValue()));
         verify(consulta).setParameter("consulta", id);
     }
 
@@ -108,7 +109,8 @@ class CitaPublicaRepositoryTest {
         repositorio.clinicas(tipo, "a"); repositorio.citas(tipo, "a", clinica, desde, hasta);
         repositorio.cita(tipo, "a", UUID.randomUUID()); repositorio.procedimientos(List.of(UUID.randomUUID()));
         for (String q : jpql.getAllValues()) {
-            String s = select(q).toLowerCase();
+            // Del paciente solo se permiten nombres y apellidos (decisión del equipo); nada más de persona.
+            String s = select(q).toLowerCase().replace("persona.nombres", "").replace("persona.apellidos", "");
             for (String prohibido : List.of("observaciones", "valor", "referencia", "estado", "personarol", "resultado", "persona"))
                 assertFalse(s.contains(prohibido), q);
         }

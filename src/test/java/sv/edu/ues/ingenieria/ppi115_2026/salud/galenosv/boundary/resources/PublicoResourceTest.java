@@ -111,16 +111,24 @@ class PublicoResourceTest {
     }
 
     // --- POST /publico/citas ---
-    @Test void citasSoloDevuelveLosCuatroCamposPublicos() {
-        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", List.of("Consulta general"));
+    @Test void citasSoloDevuelveLosCincoCamposPublicos() {
+        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", "Ana Prueba", List.of("Consulta general"));
         when(citas.citas(dui, "00000000-3", clinica, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30))).thenReturn(List.of(cita));
         String body = cuerpo(resource.citas(busqueda("00000000-3")));
         var json = Json.createReader(new StringReader(body)).readArray().getJsonObject(0);
-        assertEquals(Set.of("idConsulta", "fechaInicio", "nombreClinica", "procedimientos"), json.keySet());
+        assertEquals(Set.of("idConsulta", "fechaInicio", "nombreClinica", "nombrePaciente", "procedimientos"), json.keySet());
+        assertEquals("Ana Prueba", json.getString("nombrePaciente"));
         assertEquals("2026-11-12T08:00:00-06:00", json.getString("fechaInicio"), "fecha en hora de El Salvador");
         assertEquals("Consulta general", json.getJsonArray("procedimientos").getString(0));
         for (String campo : PROHIBIDOS) assertFalse(body.contains(campo), campo);
         verify(intentos).registrar(IntentosAcceso.Ambito.BUSQUEDA_PUBLICA, "192.0.2.20");
+    }
+    @Test void citasSinNombreDelPacienteLoEnviaComoNull() {
+        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", null, List.of());
+        when(citas.citas(dui, "00000000-3", clinica, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30))).thenReturn(List.of(cita));
+        var json = Json.createReader(new StringReader(cuerpo(resource.citas(busqueda("00000000-3"))))).readArray().getJsonObject(0);
+        assertTrue(json.containsKey("nombrePaciente"));
+        assertTrue(json.isNull("nombrePaciente"));
     }
     @Test void citasDocumentoInexistenteYDocumentoSinCitasDevuelvenLoMismo() {
         when(citas.citas(eq(dui), anyString(), any(), any(), any())).thenReturn(List.of());
@@ -138,7 +146,7 @@ class PublicoResourceTest {
 
     // --- POST /publico/citas/{id}/ticket ---
     @Test void ticketDevuelvePdfComoAdjunto() {
-        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", List.of());
+        var cita = new CitaPublica(idConsulta, OffsetDateTime.parse("2026-11-12T14:00Z"), "Clínica Uno", "Ana Prueba", List.of());
         when(citas.cita(dui, "00000000-3", idConsulta)).thenReturn(java.util.Optional.of(cita));
         when(tickets.generar(cita)).thenReturn("%PDF-1.4".getBytes());
         var r = resource.ticket(idConsulta.toString(), documento(dui, "00000000-3"));
