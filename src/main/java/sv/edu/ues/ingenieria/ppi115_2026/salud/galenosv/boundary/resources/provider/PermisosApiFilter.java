@@ -127,7 +127,7 @@ public class PermisosApiFilter implements ContainerRequestFilter {
             if (RELACIONES.containsKey(entry.getKey())) for (String id : entry.getValue()) verificar(RELACIONES.get(entry.getKey()), uuid(id), activo, rol);
             if (entry.getKey().equals("idClinica")) for (String id : entry.getValue()) mismaClinica(uuid(id), activo);
         }
-        if (!lectura && request.hasEntity()) {
+        if (!lectura && (request.hasEntity() || accion)) {
             byte[] bytes = request.getEntityStream().readNBytes(1_048_577);
             if (bytes.length > 1_048_576) throw new AccesoException(413, "cuerpo.grande", "La solicitud es demasiado grande.");
             // Una acción sin cuerpo puede llegar con Content-Type: application/json y el cuerpo

@@ -439,7 +439,7 @@ Las nuevas rutas del flujo no habilitan DELETE del historial ni reemplazo genér
 | `PUT /api/consultas-procedimientos-pasos/{id}/responsable` | `idPersonaRol` | Cambia el responsable de un paso pendiente. La asignación debe ser de la clínica de la consulta, con rol activo (400 `consulta.responsableActivo`) e igual al rol responsable del paso, `procedimiento_paso.id_rol` (400 `consulta.rolInvalido`; un Paciente u otro empleado no sirven). En JSF (`consulta.xhtml`) el selector de cada paso solo ofrece esas personas (`AtencionModel.responsablesDe`). |
 | `PUT /api/consultas-procedimientos-pasos/{id}/finalizacion` | `valor` opcional | Completa el paso y genera sus sucesores cuando se cumplen los predecesores. |
 | `POST /api/consultas-procedimientos-pasos/{id}/examenes` | `nombre`, `idTipoExamen`, `observaciones` opcionales | Crea examen, clasificación y asociación al paso en una transacción. |
-| `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | Sin cuerpo | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
+| `PUT /api/consultas-procedimientos-pasos/{id}/retroceso` | `{ observaciones?, indicaciones? }` | HU4: elimina este paso, si está vacío, y reabre el anterior. Responde 200 con el paso anterior reabierto. |
 | `GET /api/consultas-procedimientos-pasos/{id}/examenes-asignables` | — | HU4: exámenes que se pueden ordenar en el paso. Ver abajo. |
 
 ### Permisos por rol (B8)
@@ -502,7 +502,7 @@ Al completar un paso (`finalizacion`), su responsable pasa a ser el rol activo d
 completó; así el dashboard muestra quién lo realizó.
 
 Las acciones admiten el cuerpo vacío aunque lleguen con `Content-Type: application/json`: un
-cuerpo vacío o en blanco se trata como `{}`. Así, `…/retroceso` y `…/sesion` no lo usan,
+cuerpo vacío o en blanco se trata como `{}`. Así, `…/retroceso` sin notas y `…/sesion` siguen admitiéndolo,
 `…/finalizacion` completa el paso sin valor y `…/cierre` conserva la referencia y las
 observaciones. Un cuerpo que no es un objeto JSON sigue dando 400 `json.invalido`.
 
@@ -518,7 +518,21 @@ Condiciones:
 
 Si se cumplen, en una sola transacción se borra el paso y el anterior queda PENDIENTE con
 `fechaFin` null, **conservando su `valor` y su responsable**. Si algo falla, no cambia nada.
-El campo `message` explica el motivo, para mostrarlo en la vista.
+El cuerpo opcional admite `observaciones` (hasta 10000 caracteres) e `indicaciones`
+(hasta 255). Se guardan en `motivoRetroceso` del paso anterior, con fecha y nombre del paso
+que devuelve, sin reemplazar `valor`. Los motivos previos de ambos pasos se conservan,
+también al completar otra vez. GET del paso y la respuesta de retroceso incluyen este campo;
+las escrituras CRUD no lo modifican. No se expone en endpoints públicos ni se guarda en la
+copia offline del frontend. Un fallo de validación no elimina el paso ni las notas.
+
+Compatible con la base original más su parche, **sin migraciones adicionales**.
+Se persisten `valor` y `motivoRetroceso` dentro de la columna `consulta_procedimiento_paso.valor`
+(`text`, ya incluida en el parche), con el formato versionado
+`@galenosv/paso/v1:{"valor":...,"motivoRetroceso":...}`. La API los devuelve separados.
+Los valores antiguos en texto plano siguen siendo legibles; un formato desconocido o dañado
+se conserva íntegro como texto. Editar o completar la atención conserva los motivos.
+El dashboard decodifica el contenido antes de calcular `tieneValor` o devolver el valor clínico.
+El campo `message` de los errores explica el rechazo, para mostrarlo en la vista.
 
 | Código | Caso |
 | --- | --- |

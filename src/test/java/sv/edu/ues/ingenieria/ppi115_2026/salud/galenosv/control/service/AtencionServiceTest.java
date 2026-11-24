@@ -620,6 +620,34 @@ class AtencionServiceTest {
         verify(em).find(Consulta.class, id, LockModeType.PESSIMISTIC_WRITE);
     }
 
+    @Test void retrocesoConservaNotasSinReemplazarAtencionAnterior() {
+        Retroceso r = new Retroceso();
+        r.a.setMotivoRetroceso("Motivo anterior");
+        r.b.setMotivoRetroceso("Motivo del siguiente paso");
+        servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso(), "  Verificar medición  ", " Repetir en reposo ");
+        assertEquals("PA 120/80", r.a.getValor());
+        assertTrue(r.a.getMotivoRetroceso().contains("Motivo anterior"));
+        assertTrue(r.a.getMotivoRetroceso().contains("Motivo del siguiente paso"));
+        assertTrue(r.a.getMotivoRetroceso().contains("Observaciones: Verificar medición"));
+        assertTrue(r.a.getMotivoRetroceso().contains("Indicaciones: Repetir en reposo"));
+        verify(em).remove(r.b);
+    }
+
+    @Test void retrocesoRechazaNotasLargasSinEliminarElPaso() {
+        Retroceso r = new Retroceso();
+        assertThrows(ServiceException.class, () -> servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso(), "x".repeat(10001), null));
+        assertThrows(ServiceException.class, () -> servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso(), null, "x".repeat(256)));
+        verify(em, never()).remove(any());
+        assertEquals("COMPLETADO", r.a.getEstado());
+        assertNull(r.a.getMotivoRetroceso());
+    }
+
+    @Test void retrocesoSinNotasNoAgregaUnMotivoVacio() {
+        Retroceso r = new Retroceso();
+        servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso(), " ", " ");
+        assertNull(r.a.getMotivoRetroceso());
+    }
+
     @Test void retrocesoSoloConsideraSecuenciasSiguiente() {
         Retroceso r = new Retroceso();
         servicio.retroceder(id, r.b.getIdConsultaProcedimientoPaso());

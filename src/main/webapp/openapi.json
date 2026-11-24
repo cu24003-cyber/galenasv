@@ -13798,6 +13798,16 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtencionRetroceso"
+              }
+            }
+          }
         }
       },
       "parameters": [
@@ -14562,6 +14572,12 @@
             "type": "string",
             "format": "uuid",
             "description": "UUID de ProcedimientoPaso; debe existir."
+          },
+          "motivoRetroceso": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true,
+            "description": "Motivos conservados al retroceder; se mantienen al editar o completar el paso."
           }
         },
         "required": [
@@ -16154,6 +16170,21 @@
           "idExamen",
           "nombre"
         ]
+      },
+      "AtencionRetroceso": {
+        "type": "object",
+        "properties": {
+          "observaciones": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 10000
+          },
+          "indicaciones": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          }
+        }
       }
     },
     "responses": {

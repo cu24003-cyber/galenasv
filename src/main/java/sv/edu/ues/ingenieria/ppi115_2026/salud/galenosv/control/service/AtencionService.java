@@ -340,6 +340,14 @@ public class AtencionService {
      * su valor. Todo en la transacción del EJB, con la consulta bloqueada por abierta().
      */
     public ConsultaProcedimientoPaso retroceder(UUID consulta, UUID pasoId) {
+        return retroceder(consulta, pasoId, null, null);
+    }
+
+    public ConsultaProcedimientoPaso retroceder(UUID consulta, UUID pasoId, String observaciones, String indicaciones) {
+        String notas = texto(observaciones, "Las observaciones del retroceso", "consulta.observacionesRetrocesoValidas", 10000);
+        String instrucciones = texto(indicaciones, "Las indicaciones", "consulta.indicacionesValidas", 255);
+        if (notas != null && notas.isBlank()) notas = null;
+        if (instrucciones != null && instrucciones.isBlank()) instrucciones = null;
         abierta(consulta);
         ConsultaProcedimientoPaso paso = pasoPropio(consulta, pasoId);
         exigirResponsable(paso);
@@ -366,6 +374,15 @@ public class AtencionService {
                 .setParameter("cp", paso.getIdConsultaProcedimiento()).setParameter("actual", paso)
                 .setParameter("previo", previo).setParameter("tipo", SIGUIENTE).getSingleResult();
         if (hermanos > 0) throw ramificado();
+        // El motivo viaja con el paso reabierto; nunca reemplaza la atención ya registrada.
+        String motivo = anterior.getMotivoRetroceso() == null ? "" : anterior.getMotivoRetroceso();
+        if (paso.getMotivoRetroceso() != null) motivo += (motivo.isEmpty() ? "" : "\n\n") + paso.getMotivoRetroceso();
+        if (notas != null || instrucciones != null) {
+            motivo += (motivo.isEmpty() ? "" : "\n\n") + "Retroceso desde " + paso.getIdProcedimientoPaso().getNombre() + " — " + ahora();
+            if (notas != null) motivo += "\nObservaciones: " + notas;
+            if (instrucciones != null) motivo += "\nIndicaciones: " + instrucciones;
+        }
+        anterior.setMotivoRetroceso(motivo.isEmpty() ? null : motivo);
         em.remove(paso);
         anterior.setEstado("PENDIENTE");
         anterior.setFechaFin(null);

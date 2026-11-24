@@ -109,12 +109,17 @@ public class ConsultaProcedimientoPaso implements Serializable {
         this.estado = estado;
     }
 
+    public String getMotivoRetroceso() { return ContenidoPaso.leer(valor).motivoRetroceso(); }
+    public void setMotivoRetroceso(String motivo) {
+        this.valor = ContenidoPaso.guardar(getValor(), motivo);
+    }
+
     public String getValor() {
-        return valor;
+        return ContenidoPaso.leer(valor).valor();
     }
 
     public void setValor(String valor) {
-        this.valor = valor;
+        this.valor = ContenidoPaso.guardar(valor, getMotivoRetroceso());
     }
 
     public ConsultaProcedimiento getIdConsultaProcedimiento() {

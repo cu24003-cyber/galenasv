@@ -53,7 +53,7 @@ class DashboardServiceTest {
     static Object[] paso(UUID consulta, UUID cp, UUID proc, UUID id, UUID def, String nombre, String estado,
             String inicio, String fin, UUID rolDef, boolean valor) {
         return new Object[]{consulta, cp, proc, "Procedimiento", utc("2026-11-13T14:00Z"), null, id, def, nombre, estado,
-                inicio == null ? null : utc(inicio), fin == null ? null : utc(fin), "Luis", "Gómez", "Doctor", rolDef, rolDef, valor,
+                inicio == null ? null : utc(inicio), fin == null ? null : utc(fin), "Luis", "Gómez", "Doctor", rolDef, rolDef, valor ? "Registro ficticio" : null,
                 null, false, rolDef == null ? null : "Doctor"};
     }
 
@@ -409,6 +409,31 @@ class DashboardServiceTest {
         UUID c1 = datosDeUnaConsulta();
         assertFalse(servicio.consulta(c1).pendienteParaMi());
         verify(repositorio).consulta(c1, clinica);
+    }
+
+    @Test void dashboardDistingueMotivoDeValorSinExponerContenido() {
+        UUID c = UUID.randomUUID();
+        when(repositorio.consulta(c, clinica)).thenReturn(List.<Object[]>of(consulta(c, "2026-11-13T14:00Z", UUID.randomUUID(), null)));
+        Object[] fila = paso(c, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "Triaje", "PENDIENTE", "2026-11-13T14:00Z", null, rolDoctor, false);
+        when(repositorio.pasos(any())).thenReturn(List.<Object[]>of(fila));
+        for (String valor : new String[]{null, "Registro ficticio"}) {
+            fila[17] = ContenidoPaso.guardar(valor, "Motivo reservado");
+            var resultado = servicio.consulta(c);
+            assertEquals(valor != null, resultado.procedimientos().getFirst().pasos().getFirst().tieneValor());
+            assertFalse(resultado.toString().contains("Motivo reservado"));
+            assertFalse(resultado.toString().contains("@galenosv/paso/"));
+        }
+    }
+
+    @Test void lecturaDirectaDelValorDecodificaElFormatoDelParche() {
+        UUID paso = UUID.randomUUID();
+        for (String valor : new String[]{null, "Registro ficticio"}) {
+            String almacenado = ContenidoPaso.guardar(valor, "Revisar");
+            when(repositorio.valorPaso(paso, clinica)).thenReturn(List.<Object[]>of(
+                    new Object[]{paso, "Triaje", "PENDIENTE", null, almacenado, rolDoctor}));
+            assertEquals(valor, servicio.valor(paso).valor());
+        }
     }
 
     // ---- valor de un paso

@@ -69,6 +69,13 @@ class PermisosApiFilterCuerpoTest {
         assertEquals("{}", new String(reenviado()));
     }
 
+    @Test void accionSinEntityTambienLlegaComoObjetoVacio() throws Exception {
+        when(request.hasEntity()).thenReturn(false);
+        when(request.getEntityStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+        filtro.filter(request);
+        assertEquals("{}", new String(reenviado()));
+    }
+
     @Test void cuerpoEnBlancoLlegaComoObjetoVacio() throws Exception {
         when(request.getEntityStream()).thenReturn(new ByteArrayInputStream(" \r\n\t".getBytes()));
         assertDoesNotThrow(() -> filtro.filter(request));

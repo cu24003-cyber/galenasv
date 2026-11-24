@@ -7,6 +7,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.PersonaRol;
+import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.ContenidoPaso;
 import sv.edu.ues.ingenieria.ppi115_2026.salud.galenosv.entity.repository.DashboardRepository;
 
 /**
@@ -79,7 +80,7 @@ public class DashboardService {
         PersonaRol activo = asignacion(exigirSesion());
         Object[] fila = repositorio.valorPaso(idPaso, activo.getIdClinica().getIdClinica()).stream().findFirst()
                 .orElseThrow(() -> new AccesoException(404, "consulta.pasoNoExiste", "El paso no existe."));
-        return new ValorPaso((UUID) fila[0], (String) fila[1], (String) fila[2], local((OffsetDateTime) fila[3]), (String) fila[4]);
+        return new ValorPaso((UUID) fila[0], (String) fila[1], (String) fila[2], local((OffsetDateTime) fila[3]), ContenidoPaso.leer((String) fila[4]).valor());
     }
 
     private UUID exigirSesion() {
@@ -174,7 +175,7 @@ public class DashboardService {
                     : new Responsable(nombre((String) f[12], (String) f[13]), (String) f[14]);
             pasos.add(new PasoDashboard((UUID) f[6], (String) f[8], i + 1,
                     f[7] == null ? 0 : niveles.getOrDefault((UUID) f[7], 0), (String) f[9], responsable,
-                    local((OffsetDateTime) f[10]), local((OffsetDateTime) f[11]), Boolean.TRUE.equals(f[17]), rolPaso(f)));
+                    local((OffsetDateTime) f[10]), local((OffsetDateTime) f[11]), ContenidoPaso.leer((String) f[17]).valor() != null, rolPaso(f)));
         }
         return List.copyOf(pasos);
     }

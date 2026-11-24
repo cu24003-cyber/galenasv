@@ -62,9 +62,11 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
     /** HU4: reabre el paso anterior y elimina este paso vacío. Responde con el anterior reabierto. */
     @PUT
     @Path("{id}/retroceso")
-    public Response retroceder(@PathParam("id") String id) {
+    public Response retroceder(@PathParam("id") String id, @Valid AtencionDto.Retroceso datos) {
         ConsultaProcedimientoPaso paso = buscarExistente(parseId(id));
-        ConsultaProcedimientoPaso anterior = atencion.retroceder(consultaDe(paso), paso.getIdConsultaProcedimientoPaso());
+        ConsultaProcedimientoPaso anterior = datos == null || (datos.getObservaciones() == null && datos.getIndicaciones() == null)
+                ? atencion.retroceder(consultaDe(paso), paso.getIdConsultaProcedimientoPaso())
+                : atencion.retroceder(consultaDe(paso), paso.getIdConsultaProcedimientoPaso(), datos.getObservaciones(), datos.getIndicaciones());
         return Response.ok(toDto(anterior)).build();
     }
 
@@ -132,6 +134,7 @@ public class ConsultaProcedimientoPasoResource extends AbstractResource<Consulta
         dto.setFechaFin(entidad.getFechaFin());
         dto.setEstado(entidad.getEstado());
         dto.setValor(entidad.getValor());
+        dto.setMotivoRetroceso(entidad.getMotivoRetroceso());
         dto.setIdConsultaProcedimiento(entidad.getIdConsultaProcedimiento() == null ? null : entidad.getIdConsultaProcedimiento().getIdConsultaProcedimiento());
         dto.setIdPersonaRol(entidad.getIdPersonaRol() == null ? null : entidad.getIdPersonaRol().getIdPersonaRol());
         dto.setIdProcedimientoPaso(entidad.getIdProcedimientoPaso() == null ? null : entidad.getIdProcedimientoPaso().getIdProcedimientoPaso());

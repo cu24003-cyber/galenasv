@@ -1160,7 +1160,7 @@ class RestApiTest extends JerseyTest {
     @Test
     void retrocesoLlamaAlServicioConLaConsultaDelPasoYDevuelveElAnterior() {
         when(atencion.retroceder(ID, ID)).thenReturn(anteriorReabierto());
-        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json("{}"))) {
             assertEquals(200, response.getStatus());
             JsonObject paso = json(response);
             assertEquals(A1.toString(), paso.getString("idConsultaProcedimientoPaso"));
@@ -1171,13 +1171,52 @@ class RestApiTest extends JerseyTest {
     }
 
     @Test
+    void retrocesoRecibeNotasYDevuelveElMotivoGuardado() {
+        ConsultaProcedimientoPaso anterior = anteriorReabierto();
+        anterior.setMotivoRetroceso("Observaciones: Revisar medición\nIndicaciones: En reposo");
+        when(atencion.retroceder(ID, ID, "Revisar medición", "En reposo")).thenReturn(anterior);
+        for (String ruta : List.of("consultas-procedimientos-pasos/" + ID,
+                "consultas-procedimientos/" + ID + "/pasos/" + ID)) {
+            try (Response response = target(ruta + "/retroceso").request()
+                    .put(Entity.json("{\"observaciones\":\"Revisar medición\",\"indicaciones\":\"En reposo\"}"))) {
+                assertEquals(200, response.getStatus());
+                JsonObject paso = json(response);
+                assertEquals(anterior.getMotivoRetroceso(), paso.getString("motivoRetroceso"));
+                assertEquals("PA 120/80", paso.getString("valor"));
+            }
+        }
+        verify(atencion, times(2)).retroceder(ID, ID, "Revisar medición", "En reposo");
+    }
+
+    @Test
+    void crudNoPuedeReescribirElMotivoDelRetroceso() {
+        var paso = (ConsultaProcedimientoPaso) records.get(ConsultaProcedimientoPaso.class).get(ID);
+        paso.setMotivoRetroceso("Motivo original");
+        JsonObject cuerpo = Json.createObjectBuilder(payload(ConsultaProcedimientoPaso.class))
+                .add("motivoRetroceso", "Reemplazo no permitido").build();
+        try (Response response = target("consultas-procedimientos-pasos/" + ID).request().put(Entity.json(cuerpo.toString()))) {
+            assertEquals(200, response.getStatus());
+            assertEquals("Motivo original", json(response).getString("motivoRetroceso"));
+        }
+    }
+
+    @Test
+    void retrocesoRechazaIndicacionesLargasAntesDelServicio() {
+        try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request()
+                .put(Entity.json("{\"indicaciones\":\"" + "x".repeat(256) + "\"}"))) {
+            assertError(response, 400);
+        }
+        verify(atencion, never()).retroceder(any(), any(), any(), any());
+    }
+
+    @Test
     void retrocesoFuncionaEnLaRutaAnidadaYRechazaPasosDeOtroProcedimiento() {
         when(atencion.retroceder(ID, ID)).thenReturn(anteriorReabierto());
-        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json("{}"))) {
             assertEquals(200, response.getStatus());
         }
         when(services.get(ConsultaProcedimientoPaso.class).perteneceAFiltros(eq(ID), anyMap())).thenReturn(false);
-        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+        try (Response response = target("consultas-procedimientos/" + ID + "/pasos/" + ID + "/retroceso").request().put(Entity.json("{}"))) {
             assertError(response, 404);
         }
         verify(atencion, times(1)).retroceder(any(), any());
@@ -1189,7 +1228,7 @@ class RestApiTest extends JerseyTest {
                 "consulta.retrocesoAnteriorPendiente", "consulta.retrocesoRamificado", "consulta.pasoYaCompletado")) {
             reset(atencion);
             when(atencion.retroceder(ID, ID)).thenThrow(ServiceException.localizada(codigo, "Motivo legible."));
-            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json(""))) {
+            try (Response response = target("consultas-procedimientos-pasos/" + ID + "/retroceso").request().put(Entity.json("{}"))) {
                 JsonObject error = assertError(response, 409);
                 assertEquals(codigo, error.getString("code"));
                 assertEquals("Motivo legible.", error.getString("message"));

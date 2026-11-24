@@ -49,17 +49,17 @@ class DashboardRepositoryTest {
         verifyNoInteractions(em);
     }
 
-    @Test void pasosNoSeleccionaElValorSoloSiExiste() {
+    @Test void pasosSeleccionaValorParaDecodificarEnElServicio() {
         var jpql = preparar();
         repositorio.pasos(List.of(id, otro));
         String q = jpql.getValue();
         String columnas = select(q);
-        assertTrue(columnas.contains("CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END"));
-        assertFalse(columnas.replace("CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END", "").contains("valor"));
+        assertTrue(columnas.contains("p.valor"));
+        assertFalse(columnas.replace("p.valor", "").contains("valor"));
         assertFalse(columnas.contains("observaciones"));
         assertTrue(q.contains("LEFT JOIN cp.consultaProcedimientoPasoCollection p"));
         // B8: 18 quién completó o tiene asignado el paso y 19 si es de finalización (pendienteParaMi).
-        assertTrue(columnas.endsWith("CASE WHEN p.valor IS NOT NULL THEN TRUE ELSE FALSE END, resp.idPersonaRol, def.indicaFin, rolDef.nombre"), columnas);
+        assertTrue(columnas.endsWith("p.valor, resp.idPersonaRol, def.indicaFin, rolDef.nombre"), columnas);
         assertTrue(q.contains("cp.idConsulta.idConsulta IN :consultas"));
         verify(consulta).setParameter("consultas", List.of(id, otro));
         assertFalse(q.contains(id.toString()));

@@ -37,6 +37,15 @@ public final class AtencionDto {
         public void setObservaciones(String value) { observaciones = value; }
     }
 
+    public static class Retroceso {
+        @Size(max = 10000) private String observaciones;
+        @Size(max = 255) private String indicaciones;
+        public String getObservaciones() { return observaciones; }
+        public void setObservaciones(String valor) { observaciones = valor; }
+        public String getIndicaciones() { return indicaciones; }
+        public void setIndicaciones(String valor) { indicaciones = valor; }
+    }
+
     public static class Finalizacion {
         private String valor;
         public String getValor() { return valor; }

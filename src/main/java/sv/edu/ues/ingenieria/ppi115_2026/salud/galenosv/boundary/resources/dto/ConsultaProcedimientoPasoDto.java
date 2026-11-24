@@ -21,6 +21,8 @@ public class ConsultaProcedimientoPasoDto implements IdentifiableDto {
 
     private String valor;
 
+    private String motivoRetroceso;
+
     @NotNull(message = "idConsultaProcedimiento es obligatorio.")
     private UUID idConsultaProcedimiento;
 
@@ -61,6 +63,9 @@ public class ConsultaProcedimientoPasoDto implements IdentifiableDto {
     public void setEstado(String estado) {
         this.estado = estado;
     }
+
+    public String getMotivoRetroceso() { return motivoRetroceso; }
+    public void setMotivoRetroceso(String valor) { this.motivoRetroceso = valor; }
 
     public String getValor() {
         return valor;

@@ -379,3 +379,9 @@ bash scripts/liberty.sh                                   # en otra terminal, de
 curl -s http://localhost:9080/galeno/api/publico/tipos-documento
 bash scripts/reiniciar-demo.sh                    # el día de la revisión
 ```
+
+### Notas al retroceder un paso
+
+El retroceso conserva observaciones e indicaciones usando `consulta_procedimiento_paso.valor`
+del parche original. No requiere una columna `motivo_retroceso` ni ejecutar SQL adicional.
+La aplicación sigue leyendo los registros anteriores en texto plano. Ver [API REST](api-rest.md).
